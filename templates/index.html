@@ -1,0 +1,1294 @@
+{% extends "base.html" %}
+{% set current_page = 'dashboard' %}
+
+{% block content %}
+<!-- Header Section -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2">Panel de Control</h1>
+        {% if selected_client %}
+        <small class="text-muted">
+            Mostrando análisis de: <strong>{{ selected_client.name }}</strong>
+        </small>
+        {% elif request.args.get('client_id') == 'null' %}
+        <small class="text-muted">
+            Mostrando análisis: <strong>Sin cliente asignado</strong>
+        </small>
+        {% endif %}
+    </div>
+    <div class="btn-toolbar" role="toolbar">
+        <div class="btn-group me-2" role="group">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUrlModal">
+                <i class="bi bi-plus-lg"></i> Analizar URL
+            </button>
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#batchAnalyzeModal">
+                <i class="bi bi-card-list"></i> Análisis Masivo
+            </button>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="/export/db" class="btn btn-outline-secondary">
+                <i class="bi bi-cloud-download"></i> Respaldo
+            </a>
+
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards Section -->
+<div class="row mb-4">
+    <div class="col-6 col-md-4 col-lg-2 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-search display-6 text-primary mb-2"></i>
+                <h3 class="mb-1">{{ stats.total_scans or 0 }}</h3>
+                <small class="text-muted">Total Escaneos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-clock display-6 text-warning mb-2"></i>
+                <h3 class="mb-1">{{ stats.pending_scans or 0 }}</h3>
+                <small class="text-muted">Pendientes</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-check-circle display-6 text-success mb-2"></i>
+                <h3 class="mb-1">{{ stats.reviewed_scans or 0 }}</h3>
+                <small class="text-muted">Revisados</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-collection display-6 text-info mb-2"></i>
+                <h3 class="mb-1">{{ stats.global_libraries_count or 0 }}</h3>
+                <small class="text-muted">Bibliotecas Globales</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2 mb-3">
+        <a href="/statistics" class="text-decoration-none">
+            <div class="card stat-card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-shield-exclamation display-6 text-danger mb-2"></i>
+                    <h3 class="mb-1">{{ stats.vulnerable_scans or 0 }}</h3>
+                    <small class="text-muted">Escaneos Vulnerables</small>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-md-4 col-lg-2 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-person-badge display-6 text-primary mb-2"></i>
+                <h3 class="mb-1">{{ stats.total_clients or 0 }}</h3>
+                <small class="text-muted">Proyectos</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Filters and Search Section -->
+<div class="row mb-4">
+    {% if clients %}
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="card-title mb-3">
+                    <i class="bi bi-funnel"></i> Filtrar por Proyecto
+                </h6>
+                <form method="GET" action="/" id="clientFilterForm">
+                    <input type="hidden" name="search" value="{{ request.args.get('search', '') }}" />
+                    <select name="client_id" class="form-select" onchange="this.form.submit()">
+                        <option value="">Todos los escaneos</option>
+                        <option value="null" {% if request.args.get('client_id') == 'null' %}selected{% endif %}>
+                            Sin cliente asignado
+                        </option>
+                        <optgroup label="Proyectos">
+                            {% for client in clients %}
+                            <option value="{{ client.id }}" {% if selected_client and selected_client.id == client.id %}selected{% endif %}>
+                                {{ client.name }}
+                            </option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="col-md-{% if clients %}6{% else %}12{% endif %} mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="card-title mb-3">
+                    <i class="bi bi-search"></i> Buscar Escaneos
+                </h6>
+                <form method="GET" action="/" id="searchForm">
+                    <input type="hidden" name="client_id" value="{{ request.args.get('client_id', '') }}" />
+                    <div class="input-group">
+                        <input type="text" name="search" class="form-control"
+                               placeholder="Buscar en títulos, URLs, librerías..."
+                               value="{{ request.args.get('search', '') }}" />
+                        <button type="submit" class="btn btn-outline-success">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                        {% if request.args.get('search') %}
+                        <a href="/?client_id={{ request.args.get('client_id', '') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x"></i> Limpiar
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Results Info -->
+{% if request.args.get('search') or selected_client or request.args.get('client_id') == 'null' %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-info d-flex align-items-center">
+            <i class="bi bi-info-circle me-2"></i>
+            <div>
+                <strong>Resultados filtrados:</strong> {{ pagination.total }} escaneo{{ 's' if pagination.total != 1 else '' }}
+                {% if request.args.get('search') %}
+                    | Búsqueda: "{{ request.args.get('search') }}"
+                {% endif %}
+                {% if selected_client %}
+                    | Proyecto: {{ selected_client.name }}
+                {% elif request.args.get('client_id') == 'null' %}
+                    | Sin cliente asignado
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
+
+
+
+<!-- Main Content -->
+<div class="row g-4">
+    <!-- Recent Scans -->
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history"></i>
+                        {% if request.args.get('search') %} Resultados de
+                        Búsqueda {% else %} Escaneos Recientes {% endif %} {% if
+                        selected_client %}
+                        <small class="text-muted"
+                            >- {{ selected_client.name }}</small
+                        >
+                        {% elif request.args.get('client_id') == 'null' %}
+                        <small class="text-muted"
+                            >- Sin cliente asignado</small
+                        >
+                        {% endif %} {% if request.args.get('search') %}
+                        <small class="text-muted"
+                            >- "{{ request.args.get('search') }}"</small
+                        >
+                        {% endif %}
+                    </h5>
+                    {% if pagination.total_pages > 1 %}
+                    <small class="text-muted">
+                        Página {{ pagination.page }} de {{
+                        pagination.total_pages }} ({{ pagination.total }}
+                        escaneos total)
+                    </small>
+                    {% endif %} {% if pagination.total_pages > 1 %}
+                    <div class="card-footer bg-white">
+                        <nav aria-label="Navegación de páginas">
+                            <ul class="pagination justify-content-center mb-0">
+                                <!-- Previous Page -->
+                                {% if pagination.has_prev %}
+                                <li class="page-item">
+                                    <a
+                                        class="page-link"
+                                        href="{{ url_for('index', page=pagination.prev_num) }}"
+                                        aria-label="Anterior"
+                                    >
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span
+                                        class="page-link"
+                                        aria-label="Anterior"
+                                    >
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </span>
+                                </li>
+                                {% endif %}
+
+                                <!-- Page Numbers -->
+                                {% set start_page = [pagination.page - 2, 1] |
+                                max %} {% set end_page = [pagination.page + 2,
+                                pagination.total_pages] | min %}
+
+                                <!-- First page if not in range -->
+                                {% if start_page > 1 %}
+                                <li class="page-item">
+                                    <a
+                                        class="page-link"
+                                        href="{{ url_for('index', page=1) }}"
+                                        >1</a
+                                    >
+                                </li>
+                                {% if start_page > 2 %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                                {% endif %} {% endif %}
+
+                                <!-- Page range -->
+                                {% for page_num in range(start_page, end_page +
+                                1) %} {% if page_num == pagination.page %}
+                                <li
+                                    class="page-item active"
+                                    aria-current="page"
+                                >
+                                    <span class="page-link"
+                                        >{{ page_num }}</span
+                                    >
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a
+                                        class="page-link"
+                                        href="{{ url_for('index', page=page_num) }}"
+                                        >{{ page_num }}</a
+                                    >
+                                </li>
+                                {% endif %} {% endfor %}
+
+                                <!-- Last page if not in range -->
+                                {% if end_page < pagination.total_pages %} {% if
+                                end_page < pagination.total_pages - 1 %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                                {% endif %}
+                                <li class="page-item">
+                                    <a
+                                        class="page-link"
+                                        href="{{ url_for('index', page=pagination.total_pages) }}"
+                                        >{{ pagination.total_pages }}</a
+                                    >
+                                </li>
+                                {% endif %}
+
+                                <!-- Next Page -->
+                                {% if pagination.has_next %}
+                                <li class="page-item">
+                                    <a
+                                        class="page-link"
+                                        href="{{ url_for('index', page=pagination.next_num) }}"
+                                        aria-label="Siguiente"
+                                    >
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span
+                                        class="page-link"
+                                        aria-label="Siguiente"
+                                    >
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_scans %}
+                <!-- Bulk Actions -->
+                <div
+                    class="p-3 border-bottom"
+                    id="bulkActionsBar"
+                    style="display: none"
+                >
+                    <div class="d-flex gap-2 align-items-center">
+                        <span class="text-muted"
+                            ><span id="selectedCount">0</span> escaneos
+                            seleccionados</span
+                        >
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            class="bulk-edit-client-btn"
+                        >
+                            <i class="bi bi-pencil"></i> Editar Proyecto
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col" width="30">
+                                    <input
+                                        type="checkbox"
+                                        id="selectAllScans"
+                                        class="form-check-input"
+                                    />
+                                </th>
+                                <th scope="col">URL</th>
+                                {% if not selected_client %}
+                                <th scope="col">Proyecto</th>
+                                {% endif %}
+                                <th scope="col">Estado</th>
+                                <th scope="col">Conteos</th>
+                                <th scope="col">Fecha</th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for scan in recent_scans %}
+                            <tr>
+                                <td>
+                                    <input
+                                        type="checkbox"
+                                        class="form-check-input scan-checkbox"
+                                        value="{{ scan.id }}"
+                                    />
+                                </td>
+                                <td>
+                                    <a
+                                        href="{{ url_for('scan_detail', scan_id=scan.id) }}"
+                                        class="text-decoration-none fw-bold"
+                                        >{{ (scan.title or scan.url)|e }}</a
+                                    >
+                                    <br />
+                                    <small class="text-muted"
+                                        >{{ scan.url|e }}</small
+                                    >
+                                </td>
+                                {% if not selected_client %}
+                                <td>
+                                    {% if scan.client_name %}
+                                    <a
+                                        href="/?client_id={{ scan.client_id }}{% if request.args.get('search') %}&search={{ request.args.get('search') }}{% endif %}"
+                                        class="text-decoration-none"
+                                    >
+                                        <small class="text-primary"
+                                            >{{ scan.client_name }}</small
+                                        >
+                                    </a>
+                                    {% else %}
+                                    <small class="text-muted"
+                                        >Sin cliente</small
+                                    >
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+                                <td>
+                                    {% if scan.status_code == 200 %}
+                                    <span
+                                        class="badge bg-success-light text-success"
+                                        >{{ scan.status_code }}</span
+                                    >
+                                    {% else %}
+                                    <span
+                                        class="badge bg-danger-light text-danger"
+                                        >{{ scan.status_code or 'Error' }}</span
+                                    >
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span
+                                        class="badge bg-secondary-light text-secondary me-1"
+                                        title="Bibliotecas"
+                                        ><i class="bi bi-bookshelf"></i> {{
+                                        scan.library_count }}</span
+                                    >
+                                    <span
+                                        class="badge bg-info-light text-info me-1"
+                                        title="Archivos"
+                                        ><i class="bi bi-file-earmark-code"></i>
+                                        {{ scan.file_count }}</span
+                                    >
+                                    <span
+                                        class="badge bg-warning-light text-warning me-1"
+                                        title="Versiones"
+                                        ><i class="bi bi-hash"></i> {{
+                                        scan.version_string_count }}</span
+                                    >
+                                    {% if scan.vulnerability_count > 0 %}
+                                    <span
+                                        class="badge bg-danger text-white me-1"
+                                        title="Vulnerabilidades detectadas"
+                                        ><i class="bi bi-shield-exclamation"></i>
+                                        {{ scan.vulnerability_count }}</span
+                                    >
+                                    {% endif %}
+                                    {% if scan.error_count > 0 %}
+                                    <span
+                                        class="badge bg-danger-light text-danger"
+                                        title="Errores"
+                                        ><i
+                                            class="bi bi-exclamation-triangle"
+                                        ></i>
+                                        {{ scan.error_count }}</span
+                                    >
+                                    {% endif %}
+                                    <!-- Reviewed Status Badge -->
+                                    {% if scan.reviewed %}
+                                    <span
+                                        class="badge bg-success text-white me-1"
+                                        title="Revisado por usuario"
+                                        ><i class="bi bi-check-circle-fill"></i>
+                                        Revisado</span
+                                    >
+                                    {% else %}
+                                    <span
+                                        class="badge bg-secondary text-white me-1"
+                                        title="Pendiente de revisión"
+                                        ><i class="bi bi-clock"></i>
+                                        Pendiente</span
+                                    >
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ scan.scan_date }}</small>
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group" role="group">
+                                        <a
+                                            href="{{ url_for('scan_detail', scan_id=scan.id) }}"
+                                            class="btn btn-sm btn-outline-primary"
+                                            ><i
+                                                class="bi bi-arrow-right-circle"
+                                            ></i>
+                                            Detalles</a
+                                        >
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#editScanClientModal"
+                                            data-scan-id="{{ scan.id }}"
+                                            data-scan-title="{{ (scan.title or scan.url)|e|truncate(30) }}"
+                                            data-current-client-id="{{ scan.client_id or '' }}"
+                                            title="Editar cliente del escaneo"
+                                        >
+                                            <i class="bi bi-pencil"></i> Editar Proyecto
+                                        </button>
+                                        <form method="POST" action="{{ url_for('toggle_reviewed', scan_id=scan.id) }}" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <button
+                                                type="submit"
+                                                class="btn btn-sm {{ 'btn-outline-success' if scan.reviewed else 'btn-outline-warning' }}"
+                                                title="{{ 'Marcar como no revisado' if scan.reviewed else 'Marcar como revisado' }}"
+                                            >
+                                                <i class="bi {{ 'bi-check-circle' if not scan.reviewed else 'bi-clock' }}"></i>
+                                                {{ 'No Revisado' if scan.reviewed else 'Revisado' }}
+                                            </button>
+                                        </form>
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            data-scan-id="{{ scan.id }}" data-scan-title="{{ (scan.title or scan.url)|e|truncate(30)|e }}" class="delete-scan-btn"
+                                            title="Eliminar escaneo"
+                                        >
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Controls -->
+                {% if pagination.total_pages > 1 %}
+                <div class="card-footer bg-white">
+                    <nav aria-label="Navegación de páginas">
+                        <ul class="pagination justify-content-center mb-0">
+                            <!-- Previous Page -->
+                            {% if pagination.has_prev %}
+                            <li class="page-item">
+                                <a
+                                    class="page-link"
+                                    href="{{ url_for('index', page=pagination.prev_num) }}"
+                                    aria-label="Anterior"
+                                >
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-label="Anterior">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </span>
+                            </li>
+                            {% endif %}
+
+                            <!-- Page Numbers -->
+                            {% set start_page = [pagination.page - 2, 1] | max
+                            %} {% set end_page = [pagination.page + 2,
+                            pagination.total_pages] | min %}
+
+                            <!-- First page if not in range -->
+                            {% if start_page > 1 %}
+                            <li class="page-item">
+                                <a
+                                    class="page-link"
+                                    href="{{ url_for('index', page=1) }}"
+                                    >1</a
+                                >
+                            </li>
+                            {% if start_page > 2 %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %} {% endif %}
+
+                            <!-- Page range -->
+                            {% for page_num in range(start_page, end_page + 1)
+                            %} {% if page_num == pagination.page %}
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a
+                                    class="page-link"
+                                    href="{{ url_for('index', page=page_num) }}"
+                                    >{{ page_num }}</a
+                                >
+                            </li>
+                            {% endif %} {% endfor %}
+
+                            <!-- Last page if not in range -->
+                            {% if end_page < pagination.total_pages %} {% if
+                            end_page < pagination.total_pages - 1 %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                            <li class="page-item">
+                                <a
+                                    class="page-link"
+                                    href="{{ url_for('index', page=pagination.total_pages) }}"
+                                    >{{ pagination.total_pages }}</a
+                                >
+                            </li>
+                            {% endif %}
+
+                            <!-- Next Page -->
+                            {% if pagination.has_next %}
+                            <li class="page-item">
+                                <a
+                                    class="page-link"
+                                    href="{{ url_for('index', page=pagination.next_num) }}"
+                                    aria-label="Siguiente"
+                                >
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-label="Siguiente">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </span>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %} {% else %}
+                <div class="text-center p-5">
+                    <i class="bi bi-search display-4 text-muted"></i>
+                    <h5 class="mt-3">No se Encontraron Escaneos</h5>
+                    <p class="text-muted">
+                        Ejecuta un análisis para ver los resultados aquí.
+                    </p>
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#addUrlModal"
+                    >
+                        <i class="bi bi-plus-lg"></i> Ejecutar Primer Escaneo
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Add URL Modal -->
+<div
+    class="modal fade"
+    id="addUrlModal"
+    tabindex="-1"
+    aria-labelledby="addUrlModalLabel"
+    aria-hidden="true"
+>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addUrlModalLabel">
+                    <i class="bi bi-plus-lg"></i> Analizar Nueva URL
+                </h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Cerrar"
+                ></button>
+            </div>
+            <form method="POST" action="/analyze-url" id="analyzeUrlForm">
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    id="analyze_url_csrf"
+                    value="{{ csrf_token() }}"
+                />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="urlInput" class="form-label"
+                            >URL del Sitio Web</label
+                        >
+                        <input
+                            type="url"
+                            class="form-control"
+                            id="urlInput"
+                            name="url"
+                            placeholder="https://example.com"
+                            required
+                        />
+                        <div class="form-text">
+                            Ingresa la URL completa del sitio web que quieres
+                            analizar.
+                        </div>
+                    </div>
+                    {% if clients %}
+                    <div class="mb-3">
+                        <label for="clientSelect" class="form-label"
+                            >Proyecto (Opcional)</label
+                        >
+                        <select
+                            class="form-select"
+                            id="clientSelect"
+                            name="client_id"
+                        >
+                            <option value="">Sin cliente específico</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}">
+                                {{ client.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            Selecciona un cliente para asociar este análisis.
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="alert alert-info" role="alert">
+                        <small>
+                            <strong>Nota:</strong> El análisis puede tomar entre
+                            30-60 segundos dependiendo de la complejidad del
+                            sitio web. La página mostrará un indicador de carga
+                            durante el proceso.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                        id="analyzeButton"
+                    >
+                        <span id="analyzeButtonText"
+                            ><i class="bi bi-search"></i> Iniciar Análisis</span
+                        >
+                        <span id="analyzeButtonSpinner" class="d-none">
+                            <span
+                                class="spinner-border spinner-border-sm me-2"
+                                role="status"
+                                aria-hidden="true"
+                            ></span>
+                            Analyzing...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Batch Analyze Modal -->
+<div
+    class="modal fade"
+    id="batchAnalyzeModal"
+    tabindex="-1"
+    aria-labelledby="batchAnalyzeModalLabel"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="batchAnalyzeModalLabel">
+                    <i class="bi bi-card-list"></i> Análisis Masivo de URLs
+                </h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Cerrar"
+                ></button>
+            </div>
+            <form method="POST" action="/batch-analyze" id="batchAnalyzeForm">
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    id="batch_analyze_csrf"
+                    value="{{ csrf_token() }}"
+                />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="urlsTextarea" class="form-label"
+                            >URLs de Sitios Web (una por línea)</label
+                        >
+                        <textarea
+                            class="form-control"
+                            id="urlsTextarea"
+                            name="urls"
+                            rows="10"
+                            placeholder="https://example1.com
+https://example2.com
+github.com
+stackoverflow.com
+
+# Lines starting with # are comments
+# You can add http:// or https://, or just the domain"
+                            required
+                        ></textarea>
+                        <div class="form-text">
+                            Ingresa una URL por línea. Puedes incluir u omitir
+                            el protocolo http(s)://. Las líneas que comienzan
+                            con # se tratan como comentarios.
+                        </div>
+                    </div>
+                    {% if clients %}
+                    <div class="mb-3">
+                        <label for="batchClientSelect" class="form-label"
+                            >Proyecto (Opcional)</label
+                        >
+                        <select
+                            class="form-select"
+                            id="batchClientSelect"
+                            name="client_id"
+                        >
+                            <option value="">Sin cliente específico</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}">
+                                {{ client.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            Selecciona un cliente para asociar todos estos
+                            análisis.
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                        id="batchAnalyzeButton"
+                    >
+                        <span id="batchAnalyzeButtonText"
+                            ><i class="bi bi-play-circle"></i> Iniciar Análisis
+                            Masivo</span
+                        >
+                        <span id="batchAnalyzeButtonSpinner" class="d-none">
+                            <span
+                                class="spinner-border spinner-border-sm me-2"
+                                role="status"
+                                aria-hidden="true"
+                            ></span>
+                            Analyzing...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- Delete Scan Confirmation Modal -->
+<div
+    class="modal fade"
+    id="deleteScanModal"
+    tabindex="-1"
+    aria-labelledby="deleteScanModalLabel"
+    aria-hidden="true"
+>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteScanModalLabel">
+                    <i class="bi bi-trash"></i> Eliminar Escaneo
+                </h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Cerrar"
+                ></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger" role="alert">
+                    <strong>Warning!</strong> This action cannot be undone.
+                </div>
+                <p>¿Estás seguro de que quieres eliminar el escaneo para:</p>
+                <p><strong id="deleteScanName">Loading...</strong></p>
+                <p>
+                    Esto eliminará permanentemente el escaneo y todos los datos
+                    asociados incluyendo librerías, archivos y cadenas de
+                    versión.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                >
+                    Cancel
+                </button>
+                <form
+                    method="POST"
+                    action=""
+                    id="deleteScanForm"
+                    style="display: inline"
+                >
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        id="delete_scan_csrf"
+                        value="{{ csrf_token() }}"
+                    />
+                    <!-- Preserve current URL parameters -->
+                    <input
+                        type="hidden"
+                        name="return_client_id"
+                        value="{{ request.args.get('client_id', '') }}"
+                    />
+                    <input
+                        type="hidden"
+                        name="return_search"
+                        value="{{ request.args.get('search', '') }}"
+                    />
+                    <input
+                        type="hidden"
+                        name="return_page"
+                        value="{{ request.args.get('page', '') }}"
+                    />
+                    <button type="submit" class="btn btn-danger">
+                        Sí, Eliminar Escaneo
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Scan Client Modal -->
+<div
+    class="modal fade"
+    id="editScanClientModal"
+    tabindex="-1"
+    aria-labelledby="editScanClientModalLabel"
+    aria-hidden="true"
+>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editScanClientModalLabel">
+                    <i class="bi bi-pencil"></i> Editar Proyecto del Escaneo
+                </h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Cerrar"
+                ></button>
+            </div>
+            <form method="POST" action="" id="editScanClientForm">
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    id="edit_scan_client_csrf"
+                    value="{{ csrf_token() }}"
+                />
+                <!-- Preserve current URL parameters -->
+                <input
+                    type="hidden"
+                    name="return_client_id"
+                    value="{{ request.args.get('client_id', '') }}"
+                />
+                <input
+                    type="hidden"
+                    name="return_search"
+                    value="{{ request.args.get('search', '') }}"
+                />
+                <input
+                    type="hidden"
+                    name="return_page"
+                    value="{{ request.args.get('page', '') }}"
+                />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="scanClientSelect" class="form-label"
+                            >Proyecto</label
+                        >
+                        <select
+                            class="form-select"
+                            id="scanClientSelect"
+                            name="client_id"
+                        >
+                            <option value="">Sin cliente específico</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}">
+                                {{ client.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            Selecciona el cliente al que deseas asociar este
+                            escaneo.
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Escaneo:</strong>
+                        <span id="editScanName">Loading...</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Actualizar Proyecto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Edit Client Modal -->
+<div
+    class="modal fade"
+    id="bulkEditClientModal"
+    tabindex="-1"
+    aria-labelledby="bulkEditClientModalLabel"
+    aria-hidden="true"
+>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkEditClientModalLabel">
+                    <i class="bi bi-pencil"></i> Editar Proyecto de Múltiples
+                    Escaneos
+                </h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Cerrar"
+                ></button>
+            </div>
+            <form
+                method="POST"
+                action="/bulk-update-scan-project"
+                id="bulkEditClientForm"
+            >
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    id="bulk_edit_client_csrf"
+                    value="{{ csrf_token() }}"
+                />
+                <input
+                    type="hidden"
+                    name="scan_ids"
+                    id="bulkScanIds"
+                    value=""
+                />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="bulkClientSelect" class="form-label"
+                            >Proyecto</label
+                        >
+                        <select
+                            class="form-select"
+                            id="bulkClientSelect"
+                            name="client_id"
+                        >
+                            <option value="">Sin cliente específico</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}">
+                                {{ client.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            Selecciona el cliente al que deseas asociar todos
+                            los escaneos seleccionados.
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Escaneos seleccionados:</strong>
+                        <span id="bulkSelectedCount">0</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Actualizar Proyecto de Todos
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <h5>Analizando Sitio Web...</h5>
+            <p class="text-muted mb-0">Esto puede tomar entre 30-60 segundos</p>
+        </div>
+    </div>
+
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+<script>
+    // Funciones inline removidas - ahora se usan handlers externos seguros en secure_event_handlers.js
+
+    // Bulk actions functionality
+    document.addEventListener("DOMContentLoaded", function () {
+        const selectAllCheckbox = document.getElementById("selectAllScans");
+        const scanCheckboxes = document.querySelectorAll(".scan-checkbox");
+        const bulkActionsBar = document.getElementById("bulkActionsBar");
+        const selectedCountSpan = document.getElementById("selectedCount");
+
+        // Handle select all checkbox
+        selectAllCheckbox.addEventListener("change", function () {
+            scanCheckboxes.forEach((checkbox) => {
+                checkbox.checked = this.checked;
+            });
+            updateBulkActionsVisibility();
+        });
+
+        // Handle individual checkboxes
+        scanCheckboxes.forEach((checkbox) => {
+            checkbox.addEventListener("change", function () {
+                updateSelectAllState();
+                updateBulkActionsVisibility();
+            });
+        });
+
+        function updateSelectAllState() {
+            const checkedCount = document.querySelectorAll(
+                ".scan-checkbox:checked",
+            ).length;
+            const totalCount = scanCheckboxes.length;
+
+            selectAllCheckbox.checked = checkedCount === totalCount;
+            selectAllCheckbox.indeterminate =
+                checkedCount > 0 && checkedCount < totalCount;
+        }
+
+        function updateBulkActionsVisibility() {
+            const checkedCount = document.querySelectorAll(
+                ".scan-checkbox:checked",
+            ).length;
+            selectedCountSpan.textContent = checkedCount;
+
+            if (checkedCount > 0) {
+                bulkActionsBar.style.display = "block";
+            } else {
+                bulkActionsBar.style.display = "none";
+            }
+        }
+    });
+
+    // función bulkEditClient removida - ahora se usa handler externo seguro
+
+    // Function to build URL with current parameters
+    function buildUrlWithParams(page) {
+        const url = new URL(window.location.origin + "/");
+        const params = new URLSearchParams();
+
+        if (page && page !== 1) {
+            params.set("page", page);
+        }
+
+        const clientId = '{{ request.args.get("client_id", "") }}';
+        if (clientId) {
+            params.set("client_id", clientId);
+        }
+
+        const search = '{{ request.args.get("search", "") }}';
+        if (search) {
+            params.set("search", search);
+        }
+
+        if (params.toString()) {
+            url.search = params.toString();
+        }
+
+        return url.toString();
+    }
+
+    // Update pagination links on page load
+    document.addEventListener("DOMContentLoaded", function () {
+        // Update all pagination links
+        const paginationLinks = document.querySelectorAll(
+            'a[href*="/?page="], a[href="/?"]',
+        );
+        paginationLinks.forEach((link) => {
+            const href = link.getAttribute("href");
+            if (href === "/?") {
+                link.href = buildUrlWithParams(1);
+            } else {
+                const pageMatch = href.match(/page=(\d+)/);
+                if (pageMatch) {
+                    const pageNum = parseInt(pageMatch[1]);
+                    link.href = buildUrlWithParams(pageNum);
+                }
+            }
+        });
+    });
+</script>
+
+<!-- Edit Scan Client Modal -->
+<div class="modal fade" id="editScanClientModal" tabindex="-1" aria-labelledby="editScanClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editScanClientModalLabel">
+                    <i class="bi bi-pencil"></i> Editar Proyecto del Escaneo
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form method="POST" action="" id="editScanClientForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="return_client_id" value="{{ request.args.get('client_id', '') }}"/>
+                <input type="hidden" name="return_search" value="{{ request.args.get('search', '') }}"/>
+                <input type="hidden" name="return_page" value="{{ request.args.get('page', '') }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="scanClientSelect" class="form-label">Seleccionar Proyecto</label>
+                        <select class="form-select" id="scanClientSelect" name="client_id">
+                            <option value="">Sin cliente específico</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}">{{ client.name|e }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            Selecciona el cliente al que deseas asociar este escaneo.
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Escaneo:</strong>
+                        <span id="editScanName">Loading...</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Aplicar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Handle edit scan client modal
+document.addEventListener('DOMContentLoaded', function() {
+    const editScanClientModal = document.getElementById('editScanClientModal');
+    editScanClientModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const scanId = button.getAttribute('data-scan-id');
+        const scanTitle = button.getAttribute('data-scan-title');
+        const currentClientId = button.getAttribute('data-current-client-id');
+
+        // Update form action
+        const form = document.getElementById('editScanClientForm');
+        form.action = '/update-scan-project-dashboard/' + scanId;
+
+        // Update scan name
+        const scanNameSpan = document.getElementById('editScanName');
+        scanNameSpan.textContent = scanTitle;
+
+        // Set current client selection
+        const clientSelect = document.getElementById('scanClientSelect');
+        clientSelect.value = currentClientId || '';
+    });
+});
+</script>
+
+{% endblock %}

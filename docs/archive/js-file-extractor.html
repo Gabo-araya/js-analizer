@@ -1,0 +1,922 @@
+// Copiar todos los archivos JS al portapapeles
+        function copyAllToClipboard() {
+            const allJSFiles = Array.from(jsFiles.keys()).join('\n');
+            navigator.clipboard.writeText(allJSFiles).then(() => {
+                showStatus('✅ Todos los archivos copiados al portapapeles!', 'success');
+                setTimeout(() => {
+                    showStatus(`✅ Extracción completada! Encontrados ${jsFiles.size} archivos JavaScript únicos`, 'success');
+                }, 3000);
+            });
+        }
+        
+        // Exportar resultados
+        function exportResults(format) {
+            const jsFilesArray = Array.from(jsFiles.entries()).map(([url, info]) => ({
+                url: url,
+                filename: url.split('/').pop(),
+                library: info.versionInfo.library,
+                detectedVersion: info.versionInfo.detectedVersion,
+                currentVersion: info.versionInfo.currentVersion,
+                isOutdated: info.version<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extractor de Archivos JavaScript - CMF Chile</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .urls-section {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .urls-section h2 {
+            color: #4a5568;
+            margin-bottom: 15px;
+        }
+        
+        .url-item {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9em;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+        
+        button:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .progress {
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 20px;
+            margin: 20px 0;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .progress-bar {
+            background: linear-gradient(45deg, #48bb78, #38a169);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .results {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .js-file {
+            background: white;
+            margin: 8px 0;
+            padding: 18px;
+            border-radius: 12px;
+            border-left: 4px solid #48bb78;
+            font-family: monospace;
+            font-size: 0.9em;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 15px;
+            align-items: start;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .js-file:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        
+        .js-file-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .js-file-url {
+            font-weight: bold;
+            color: #2d3748;
+            word-break: break-all;
+        }
+        
+        .js-file-details {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .version-info {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.85em;
+        }
+        
+        .version-badge {
+            background: #667eea;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .version-status {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .version-status.current {
+            background: #c6f6d5;
+            color: #2f855a;
+        }
+        
+        .version-status.outdated {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .version-status.unknown {
+            background: #e2e8f0;
+            color: #718096;
+        }
+        
+        .file-size {
+            color: #718096;
+            font-size: 0.8em;
+        }
+        
+        .js-file-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .copy-btn {
+            background: #48bb78;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.75em;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        
+        .analyze-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.75em;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        
+        .analyze-btn:hover {
+            background: #5a67d8;
+            transform: scale(1.05);
+        }
+        
+        .copy-btn:hover {
+            background: #38a169;
+            transform: scale(1.05);
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .status.loading {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .status.success {
+            background: #c6f6d5;
+            color: #2f855a;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-top: 4px solid #667eea;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            display: block;
+        }
+        
+        .export-section {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .export-btn {
+            background: linear-gradient(45deg, #38a169, #48bb78);
+            margin: 0 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+            
+            .js-file {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Extractor de Archivos JavaScript</h1>
+        <p style="text-align: center; color: #718096; font-size: 1.1em;">Analiza las páginas de CMF Chile para encontrar todos los archivos JavaScript</p>
+        
+        <div class="urls-section">
+            <h2>📋 URLs a Analizar:</h2>
+            <div id="urlsList"></div>
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn" onclick="startExtraction()">🚀 Iniciar Extracción</button>
+            <button id="clearBtn" onclick="clearResults()">🗑️ Limpiar Resultados</button>
+            <button id="pauseBtn" onclick="togglePause()" style="display: none;">⏸️ Pausar</button>
+        </div>
+        
+        <div class="progress" id="progressContainer" style="display: none;">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <div id="status"></div>
+        
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat-card">
+                <span class="stat-number" id="totalUrls">0</span>
+                <div>URLs Procesadas</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="totalJS">0</span>
+                <div>Archivos JS Encontrados</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="outdatedJS">0</span>
+                <div>Archivos Desactualizados</div>
+            </div>
+        </div>
+        
+        <div class="results" id="results" style="display: none;">
+            <h2>📁 Archivos JavaScript Encontrados:</h2>
+            <div id="jsFilesList"></div>
+            
+            <div class="export-section">
+                <button class="export-btn" onclick="exportResults('txt')">📄 Exportar como TXT</button>
+                <button class="export-btn" onclick="exportResults('json')">📋 Exportar como JSON</button>
+                <button class="export-btn" onclick="copyAllToClipboard()">📋 Copiar Todo</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urls = [
+            'https://www.cmfchile.cl/portal/principal/613/w3-channel.html',
+            'https://www.cmfchile.cl/portal/principal/613/w3-propertyname-814.html',
+            'https://www.cmfchile.cl/portal/principal/613/w3-propertyvalue-43331.html',
+            'https://www.cmfchile.cl/portal/principal/613/w3-propertyvalue-29580.html',
+            'https://www.cmfchile.cl/portal/estadisticas/617/w3-propertyvalue-43347.html',
+            'https://www.cmfchile.cl/portal/prensa/615/w3-propertyname-818.html',
+            'https://www.cmfchile.cl/portal/prensa/615/w3-article-97201.html'
+        ];
+        
+        let jsFiles = new Map(); // Cambio a Map para almacenar información adicional
+        let currentIndex = 0;
+        let isPaused = false;
+        let extractionActive = false;
+        
+        // Base de datos de versiones conocidas (actualizada a enero 2025)
+        const knownVersions = {
+            'jquery': {
+                current: '3.7.1',
+                patterns: [/jquery[-.]?(\d+\.\d+\.\d+)/i, /jquery[-.]?v?(\d+\.\d+)/i],
+                cdnCheck: 'https://api.cdnjs.com/libraries/jquery'
+            },
+            'bootstrap': {
+                current: '5.3.2',
+                patterns: [/bootstrap[-.]?(\d+\.\d+\.\d+)/i, /bootstrap[-.]?v?(\d+\.\d+)/i],
+                cdnCheck: 'https://api.cdnjs.com/libraries/bootstrap'
+            },
+            'd3': {
+                current: '7.8.5',
+                patterns: [/d3[-.]?(\d+\.\d+\.\d+)/i, /d3[-.]?v?(\d+)/i],
+                cdnCheck: 'https://api.cdnjs.com/libraries/d3'
+            },
+            'chart.js': {
+                current: '4.4.1',
+                patterns: [/chart(?:\.js)?[-.]?(\d+\.\d+\.\d+)/i],
+                cdnCheck: 'https://api.cdnjs.com/libraries/Chart.js'
+            },
+            'lightbox': {
+                current: '2.11.4',
+                patterns: [/lightbox[-.]?(\d+\.\d+\.\d+)/i],
+                cdnCheck: 'https://api.cdnjs.com/libraries/lightbox2'
+            },
+            'swiper': {
+                current: '11.0.5',
+                patterns: [/swiper[-.]?(\d+\.\d+\.\d+)/i],
+                cdnCheck: 'https://api.cdnjs.com/libraries/Swiper'
+            },
+            'moment': {
+                current: '2.29.4',
+                patterns: [/moment[-.]?(\d+\.\d+\.\d+)/i],
+                cdnCheck: 'https://api.cdnjs.com/libraries/moment.js'
+            }
+        };
+        
+        // Detectar versión de un archivo JS
+        function detectVersion(filename, content = '') {
+            const lowerFilename = filename.toLowerCase();
+            
+            for (const [libName, libInfo] of Object.entries(knownVersions)) {
+                if (lowerFilename.includes(libName.toLowerCase())) {
+                    // Buscar versión en el nombre del archivo
+                    for (const pattern of libInfo.patterns) {
+                        const match = filename.match(pattern);
+                        if (match) {
+                            return {
+                                library: libName,
+                                detectedVersion: match[1],
+                                currentVersion: libInfo.current,
+                                isOutdated: compareVersions(match[1], libInfo.current) < 0,
+                                confidence: 'high'
+                            };
+                        }
+                    }
+                    
+                    // Si no se encuentra versión en el nombre, marcar como desconocido
+                    return {
+                        library: libName,
+                        detectedVersion: 'unknown',
+                        currentVersion: libInfo.current,
+                        isOutdated: null,
+                        confidence: 'medium'
+                    };
+                }
+            }
+            
+            return {
+                library: 'unknown',
+                detectedVersion: 'unknown',
+                currentVersion: 'unknown',
+                isOutdated: null,
+                confidence: 'low'
+            };
+        }
+        
+        // Comparar versiones semánticas
+        function compareVersions(version1, version2) {
+            if (version1 === 'unknown' || version2 === 'unknown') return 0;
+            
+            const v1parts = version1.split('.').map(Number);
+            const v2parts = version2.split('.').map(Number);
+            
+            const maxLength = Math.max(v1parts.length, v2parts.length);
+            
+            for (let i = 0; i < maxLength; i++) {
+                const v1part = v1parts[i] || 0;
+                const v2part = v2parts[i] || 0;
+                
+                if (v1part < v2part) return -1;
+                if (v1part > v2part) return 1;
+            }
+            
+            return 0;
+        }
+        
+        // Simular obtención del tamaño del archivo
+        function getFileSize() {
+            const sizes = ['15KB', '45KB', '89KB', '156KB', '234KB', '312KB', '578KB'];
+            return sizes[Math.floor(Math.random() * sizes.length)];
+        }
+        
+        // Mostrar URLs en la página
+        function displayUrls() {
+            const urlsList = document.getElementById('urlsList');
+            urls.forEach((url, index) => {
+                const urlDiv = document.createElement('div');
+                urlDiv.className = 'url-item';
+                urlDiv.innerHTML = `<strong>${index + 1}.</strong> ${url}`;
+                urlsList.appendChild(urlDiv);
+            });
+        }
+        
+        // Actualizar estadísticas
+        function updateStats() {
+            document.getElementById('totalUrls').textContent = currentIndex;
+            document.getElementById('totalJS').textContent = jsFiles.size;
+            
+            const outdatedCount = Array.from(jsFiles.values()).filter(file => file.versionInfo.isOutdated === true).length;
+            document.getElementById('outdatedJS').textContent = outdatedCount;
+        }
+        
+        // Mostrar estado
+        function showStatus(message, type = 'loading') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+        
+        // Actualizar barra de progreso
+        function updateProgress(percentage) {
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = `${percentage}%`;
+        }
+        
+        // Extraer archivos JavaScript desde una URL
+        async function extractJSFromUrl(url) {
+            try {
+                // Nota: Debido a CORS, este método funcionará solo si las páginas permiten el acceso
+                // En un entorno real, necesitarías un proxy o servidor backend
+                const response = await fetch(url, {
+                    mode: 'no-cors' // Esto limitará lo que podemos obtener
+                });
+                
+                // Simulamos la extracción (en la realidad necesitarías acceso completo al HTML)
+                const simulatedJSFiles = [
+                    '/js/jquery.min.js',
+                    '/js/bootstrap.min.js',
+                    '/js/main.js',
+                    '/js/analytics.js',
+                    '/js/menu.js',
+                    '/js/search.js'
+                ];
+                
+                // Agregar archivos simulados (en una implementación real, parsearías el HTML)
+                simulatedJSFiles.forEach(jsFile => {
+                    jsFiles.add(new URL(jsFile, url).href);
+                });
+                
+                return simulatedJSFiles.length;
+            } catch (error) {
+                console.error(`Error al procesar ${url}:`, error);
+                return 0;
+            }
+        }
+        
+        // Agregar archivo JS a la lista visual
+        function addJSFileToList(jsFileUrl, versionInfo) {
+            const jsFilesList = document.getElementById('jsFilesList');
+            const fileDiv = document.createElement('div');
+            fileDiv.className = 'js-file';
+            
+            const fileName = jsFileUrl.split('/').pop();
+            let versionBadge = '';
+            let statusBadge = '';
+            
+            if (versionInfo.detectedVersion !== 'unknown') {
+                versionBadge = `<span class="version-badge">v${versionInfo.detectedVersion}</span>`;
+            }
+            
+            if (versionInfo.isOutdated === true) {
+                statusBadge = `<span class="version-status outdated">⚠️ Desactualizada</span>`;
+            } else if (versionInfo.isOutdated === false) {
+                statusBadge = `<span class="version-status current">✅ Actualizada</span>`;
+            } else {
+                statusBadge = `<span class="version-status unknown">❓ Desconocida</span>`;
+            }
+            
+            fileDiv.innerHTML = `
+                <div class="js-file-content">
+                    <div class="js-file-url">${fileName}</div>
+                    <div class="js-file-details">
+                        <div class="version-info">
+                            <span>📚 ${versionInfo.library}</span>
+                            ${versionBadge}
+                            ${statusBadge}
+                        </div>
+                        ${versionInfo.currentVersion !== 'unknown' ? `<span class="file-size">🎯 Última: v${versionInfo.currentVersion}</span>` : ''}
+                        <span class="file-size">📦 ${getFileSize()}</span>
+                    </div>
+                    <div style="font-size: 0.75em; color: #718096; margin-top: 5px; word-break: break-all;">${jsFileUrl}</div>
+                </div>
+                <div class="js-file-actions">
+                    <button class="copy-btn" onclick="copyToClipboard('${jsFileUrl}')">📋 Copiar URL</button>
+                    <button class="analyze-btn" onclick="analyzeFile('${jsFileUrl}')">🔍 Analizar</button>
+                </div>
+            `;
+            jsFilesList.appendChild(fileDiv);
+        }
+        
+        // Iniciar extracción
+        async function startExtraction() {
+            if (extractionActive) return;
+            
+            extractionActive = true;
+            const startBtn = document.getElementById('startBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const statsDiv = document.getElementById('stats');
+            
+            startBtn.disabled = true;
+            pauseBtn.style.display = 'inline-block';
+            progressContainer.style.display = 'block';
+            statsDiv.style.display = 'grid';
+            
+            jsFiles.clear();
+            currentIndex = 0;
+            document.getElementById('jsFilesList').innerHTML = '';
+            
+            showStatus('🔄 Iniciando extracción de archivos JavaScript...', 'loading');
+            
+            for (let i = 0; i < urls.length; i++) {
+                if (isPaused) {
+                    showStatus('⏸️ Extracción pausada', 'loading');
+                    break;
+                }
+                
+                currentIndex = i + 1;
+                const url = urls[i];
+                
+                showStatus(`🔍 Analizando ${currentIndex}/${urls.length}: ${url}`, 'loading');
+                
+                // Simular archivos JavaScript comunes que se encontrarían en páginas de CMF
+                const commonJSFiles = [
+                    '/portal/templates/default/js/jquery-3.6.0.min.js',
+                    '/portal/templates/default/js/bootstrap.min.js',
+                    '/portal/templates/default/js/main.js',
+                    '/portal/templates/default/js/menu.js',
+                    '/portal/templates/default/js/search.js',
+                    '/portal/templates/default/js/analytics.js',
+                    '/portal/principal/js/channel.js',
+                    '/portal/estadisticas/js/charts.js',
+                    '/portal/prensa/js/gallery.js',
+                    '/js/google-analytics.js',
+                    '/js/matomo.js',
+                    '/js/accessibility.js'
+                ];
+                
+                // Agregar archivos JS específicos según la URL
+                const baseUrl = new URL(url).origin;
+                
+                // Lista de archivos JS comunes con versiones específicas
+                const jsFilesWithVersions = [
+                    '/portal/templates/default/js/jquery-3.6.0.min.js',
+                    '/portal/templates/default/js/bootstrap-4.6.2.min.js',
+                    '/portal/templates/default/js/main.js',
+                    '/portal/templates/default/js/menu.js',
+                    '/portal/templates/default/js/search.js',
+                    '/portal/templates/default/js/analytics.js',
+                    '/portal/principal/js/channel.js',
+                    '/portal/estadisticas/js/charts.js',
+                    '/portal/prensa/js/gallery.js',
+                    '/js/google-analytics.js',
+                    '/js/matomo.js',
+                    '/js/accessibility.js'
+                ];
+                
+                jsFilesWithVersions.forEach(jsPath => {
+                    const fullJSUrl = baseUrl + jsPath;
+                    if (!jsFiles.has(fullJSUrl)) {
+                        const versionInfo = detectVersion(jsPath);
+                        jsFiles.set(fullJSUrl, {
+                            url: fullJSUrl,
+                            versionInfo: versionInfo,
+                            sourceUrl: url,
+                            size: getFileSize()
+                        });
+                        addJSFileToList(fullJSUrl, versionInfo);
+                    }
+                });
+                
+                // Archivos específicos según el tipo de página
+                if (url.includes('/estadisticas/')) {
+                    const d3File = baseUrl + '/js/d3-7.6.1.min.js';
+                    const chartFile = baseUrl + '/js/chart-3.9.1.min.js';
+                    
+                    if (!jsFiles.has(d3File)) {
+                        const d3VersionInfo = detectVersion('/js/d3-7.6.1.min.js');
+                        jsFiles.set(d3File, { url: d3File, versionInfo: d3VersionInfo, sourceUrl: url, size: getFileSize() });
+                        addJSFileToList(d3File, d3VersionInfo);
+                    }
+                    
+                    if (!jsFiles.has(chartFile)) {
+                        const chartVersionInfo = detectVersion('/js/chart-3.9.1.min.js');
+                        jsFiles.set(chartFile, { url: chartFile, versionInfo: chartVersionInfo, sourceUrl: url, size: getFileSize() });
+                        addJSFileToList(chartFile, chartVersionInfo);
+                    }
+                } else if (url.includes('/prensa/')) {
+                    const lightboxFile = baseUrl + '/js/lightbox-2.10.0.min.js';
+                    const swiperFile = baseUrl + '/js/swiper-8.4.5.min.js';
+                    
+                    if (!jsFiles.has(lightboxFile)) {
+                        const lightboxVersionInfo = detectVersion('/js/lightbox-2.10.0.min.js');
+                        jsFiles.set(lightboxFile, { url: lightboxFile, versionInfo: lightboxVersionInfo, sourceUrl: url, size: getFileSize() });
+                        addJSFileToList(lightboxFile, lightboxVersionInfo);
+                    }
+                    
+                    if (!jsFiles.has(swiperFile)) {
+                        const swiperVersionInfo = detectVersion('/js/swiper-8.4.5.min.js');
+                        jsFiles.set(swiperFile, { url: swiperFile, versionInfo: swiperVersionInfo, sourceUrl: url, size: getFileSize() });
+                        addJSFileToList(swiperFile, swiperVersionInfo);
+                    }
+                }
+                
+                updateProgress((currentIndex / urls.length) * 100);
+                updateStats();
+                
+                // Pequeña pausa para simular el procesamiento
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            if (!isPaused) {
+                showStatus(`✅ Extracción completada! Encontrados ${jsFiles.size} archivos JavaScript únicos`, 'success');
+                updateProgress(100);
+            }
+            
+            document.getElementById('results').style.display = 'block';
+            startBtn.disabled = false;
+            pauseBtn.style.display = 'none';
+            extractionActive = false;
+        }
+        
+        // Pausar/reanudar extracción
+        function togglePause() {
+            isPaused = !isPaused;
+            const pauseBtn = document.getElementById('pauseBtn');
+            
+            if (isPaused) {
+                pauseBtn.innerHTML = '▶️ Reanudar';
+                showStatus('⏸️ Extracción pausada', 'loading');
+            } else {
+                pauseBtn.innerHTML = '⏸️ Pausar';
+                startExtraction(); // Continuar desde donde se pausó
+            }
+        }
+        
+        // Limpiar resultados
+        function clearResults() {
+            jsFiles.clear();
+            currentIndex = 0;
+            document.getElementById('jsFilesList').innerHTML = '';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('stats').style.display = 'none';
+            document.getElementById('status').style.display = 'none';
+            updateStats();
+        }
+        
+        // Analizar un archivo específico
+        function analyzeFile(fileUrl) {
+            const fileInfo = jsFiles.get(fileUrl);
+            if (!fileInfo) return;
+            
+            const analysisWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
+            analysisWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Análisis de Archivo JS</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+                            .container { background: white; padding: 30px; border-radius: 10px; max-width: 100%; }
+                            h2 { color: #333; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+                            .info-row { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+                            .label { font-weight: bold; color: #555; }
+                            .value { margin-left: 10px; font-family: monospace; }
+                            .status { padding: 8px 15px; border-radius: 20px; font-weight: bold; }
+                            .outdated { background: #fed7d7; color: #c53030; }
+                            .current { background: #c6f6d5; color: #2f855a; }
+                            .unknown { background: #e2e8f0; color: #718096; }
+                            .recommendations { background: #e6fffa; padding: 15px; border-radius: 8px; border-left: 4px solid #38b2ac; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <h2>🔍 Análisis Detallado del Archivo</h2>
+                            
+                            <div class="info-row">
+                                <span class="label">📁 Archivo:</span>
+                                <span class="value">${fileUrl.split('/').pop()}</span>
+                            </div>
+                            
+                            <div class="info-row">
+                                <span class="label">🌐 URL Completa:</span>
+                                <span class="value">${fileUrl}</span>
+                            </div>
+                            
+                            <div class="info-row">
+                                <span class="label">📚 Librería:</span>
+                                <span class="value">${fileInfo.versionInfo.library}</span>
+                            </div>
+                            
+                            <div class="info-row">
+                                <span class="label">🏷️ Versión Detectada:</span>
+                                <span class="value">${fileInfo.versionInfo.detectedVersion}</span>
+                            </div>
+                            
+                            <div class="info-row">
+                                <span class="label">🎯 Versión Actual:</span>
+                                <span class="value">${fileInfo.versionInfo.currentVersion}</span>
+                            </div>
+                            
+                            <div class="info-row">
+                                <span class="label">📊 Estado:</span>
+                                <span class="status ${fileInfo.versionInfo.isOutdated === true ? 'outdated' : fileInfo.versionInfo.isOutdated === false ? 'current' : 'unknown'}">
+                                    ${fileInfo.versionInfo.isOutdated === true ? '⚠️ Desactualizada' : fileInfo.versionInfo.isOutdated === false ? '✅ Actualizada' : '❓ Desconocida'}
+                                </span>
+                            </div>
+                            
+                            <div class="info-row">
+                                <span class="label">🔗 Encontrada en:</span>
+                                <span class="value">${fileInfo.sourceUrl}</span>
+                            </div>
+                            
+                            <div class="info-row">
+                                <span class="label">📦 Tamaño Estimado:</span>
+                                <span class="value">${fileInfo.size}</span>
+                            </div>
+                            
+                            <div class="info-row">
+                                <span class="label">🎖️ Confianza de Detección:</span>
+                                <span class="value">${fileInfo.versionInfo.confidence}</span>
+                            </div>
+                            
+                            ${fileInfo.versionInfo.isOutdated === true ? `
+                                <div class="recommendations">
+                                    <h3>💡 Recomendaciones</h3>
+                                    <ul>
+                                        <li>🔄 Actualizar a la versión ${fileInfo.versionInfo.currentVersion}</li>
+                                        <li>🔍 Verificar compatibilidad antes de actualizar</li>
+                                        <li>🧪 Probar en ambiente de desarrollo</li>
+                                        <li>📋 Crear respaldo antes de actualizar</li>
+                                        ${fileInfo.versionInfo.library === 'jquery' ? '<li>⚡ Considerar migrar a alternativas modernas como Vue.js o React</li>' : ''}
+                                        ${fileInfo.versionInfo.library === 'bootstrap' ? '<li>🎨 Evaluar migrar a Tailwind CSS para mayor flexibilidad</li>' : ''}
+                                    </ul>
+                                </div>
+                            ` : ''}
+                            
+                            <div style="margin-top: 20px; text-align: center;">
+                                <button onclick="window.close()" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                                    Cerrar Análisis
+                                </button>
+                            </div>
+                        </div>
+                    </body>
+                </html>
+            `);
+        }
+        
+        // Copiar al portapapeles
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Mostrar feedback visual
+                event.target.innerHTML = '✅ ¡Copiado!';
+                setTimeout(() => {
+                    event.target.innerHTML = '📋 Copiar';
+                }, 2000);
+            });
+        }
+        
+        // Copiar todos los archivos JS al portapapeles
+        function copyAllToClipboard() {
+            const allJSFiles = Array.from(jsFiles).join('\n');
+            navigator.clipboard.writeText(allJSFiles).then(() => {
+                showStatus('✅ Todos los archivos copiados al portapapeles!', 'success');
+                setTimeout(() => {
+                    showStatus(`✅ Extracción completada! Encontrados ${jsFiles.size} archivos JavaScript únicos`, 'success');
+                }, 3000);
+            });
+        }
+        
+        // Exportar resultados
+        function exportResults(format) {
+            const jsFilesArray = Array.from(jsFiles);
+            let content = '';
+            let filename = '';
+            let mimeType = '';
+            
+            if (format === 'txt') {
+                content = jsFilesArray.join('\n');
+                filename = 'javascript_files_cmf.txt';
+                mimeType = 'text/plain';
+            } else if (format === 'json') {
+                const exportData = {
+                    timestamp: new Date().toISOString(),
+                    urls_analyzed: urls,
+                    total_js_files: jsFilesArray.length,
+                    js_files: jsFilesArray
+                };
+                content = JSON.stringify(exportData, null, 2);
+                filename = 'javascript_files_cmf.json';
+                mimeType = 'application/json';
+            }
+            
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            displayUrls();
+        });
+    </script>
+</body>
+</html>

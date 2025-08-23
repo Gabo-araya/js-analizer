@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Asociar Bibliotecas Manuales{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Asociar Bibliotecas Manuales</h1>
+
+    <div class="card">
+        <div class="card-header">
+            <i class="bi bi-link-45deg"></i> Bibliotecas Manuales sin Asociación Global
+        </div>
+        <div class="card-body">
+            <p>
+                Aquí se listan todas las bibliotecas que fueron agregadas manualmente a un escaneo pero que no han sido vinculadas a una entrada en el <a href="{{ url_for('global_libraries') }}">Catálogo Global de Bibliotecas</a>.
+                Asociar estas bibliotecas permite una mejor gestión y análisis de vulnerabilidades.
+            </p>
+            {% if unassociated_libs %}
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Biblioteca Manual</th>
+                        <th>Versión</th>
+                        <th>Escaneo</th>
+                        <th style="width: 40%;">Asociar con Biblioteca Global</th>
+                        <th style="width: 10%;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lib in unassociated_libs %}
+                    <tr>
+                        <td>{{ lib.library_name }}</td>
+                        <td>{{ lib.version or 'N/A' }}</td>
+                        <td><a href="{{ url_for('scan_detail', scan_id=lib.scan_id) }}" target="_blank">{{ lib.url | truncate(40) }}</a></td>
+                        <td>
+                            <form action="{{ url_for('associate_library', library_id=lib.id) }}" method="POST" class="d-flex">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <select name="global_library_id" class="form-select form-select-sm me-2" required>
+                                    <option value="">Seleccionar biblioteca global...</option>
+                                    {% for global_lib in global_libraries %}
+                                        <option value="{{ global_lib.id }}">{{ global_lib.library_name }} ({{ global_lib.type }})</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn btn-primary btn-sm">Asociar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="alert alert-success">
+                ¡Excelente! Todas las bibliotecas manuales están asociadas a una biblioteca global.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

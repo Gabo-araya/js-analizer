@@ -1,0 +1,24 @@
+# Byte-code files
+*.pyc
+__pycache__/
+
+# Environments
+env/
+venv/
+.env
+
+
+# Database
+db.sqlite3
+
+# Playwright
+.cache/
+ 
+# Personal
+bkup/
+.bkup/
+nfo.ignore/
+nfo_ignore/
+.nfo.ignore/
+.claude/
+.crush/

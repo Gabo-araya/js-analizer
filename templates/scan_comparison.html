@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+{% set current_page = 'dashboard' %}
+
+{% block title %}Comparación de Escaneos - {{ scan1.url }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Panel de Control</a></li>
+                <li class="breadcrumb-item"><a href="/url-history/{{ scan1.id }}">Historial de URL</a></li>
+                <li class="breadcrumb-item active">Comparación de Escaneos</li>
+            </ol>
+        </nav>
+        
+        <h2 class="mb-3">
+            <i class="bi bi-arrow-left-right"></i> Comparación de Escaneos
+        </h2>
+        
+        <div class="row mb-4">
+            <div class="col-md-5">
+                <div class="card border-secondary">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-clock"></i> Escaneo Anterior
+                        </h5>
+                        <p class="mb-1"><strong>Fecha:</strong> {{ scan1.scan_date[:16] }}</p>
+                        <p class="mb-1"><strong>Cliente:</strong> {{ scan1.client_name or 'Sin asignar' }}</p>
+                        <p class="mb-0"><strong>Estado:</strong> 
+                            <span class="badge bg-{{ 'success' if scan1.status_code == 200 else 'danger' }}">
+                                {{ scan1.status_code or 'Error' }}
+                            </span>
+                        </p>
+                        <a href="/scan/{{ scan1.id }}" class="btn btn-sm btn-outline-primary mt-2">
+                            <i class="bi bi-eye"></i> Ver detalles
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-2 text-center align-self-center">
+                <h3 class="text-muted">VS</h3>
+            </div>
+            
+            <div class="col-md-5">
+                <div class="card border-primary">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-clock-fill"></i> Escaneo Actual
+                        </h5>
+                        <p class="mb-1"><strong>Fecha:</strong> {{ scan2.scan_date[:16] }}</p>
+                        <p class="mb-1"><strong>Cliente:</strong> {{ scan2.client_name or 'Sin asignar' }}</p>
+                        <p class="mb-0"><strong>Estado:</strong> 
+                            <span class="badge bg-{{ 'success' if scan2.status_code == 200 else 'danger' }}">
+                                {{ scan2.status_code or 'Error' }}
+                            </span>
+                        </p>
+                        <a href="/scan/{{ scan2.id }}" class="btn btn-sm btn-outline-primary mt-2">
+                            <i class="bi bi-eye"></i> Ver detalles
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Cambios Totales</h6>
+                    <h3 class="mb-0">{{ total_changes }}</h3>
+                    <small class="text-muted">modificaciones detectadas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Score de Mejora</h6>
+                    <h3 class="mb-0">
+                        <span class="badge bg-{{ 'success' if improvement_score >= 60 else 'warning' if improvement_score >= 40 else 'danger' }}">
+                            {{ improvement_score }}%
+                        </span>
+                    </h3>
+                    <small class="text-muted">índice general</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Seguridad</h6>
+                    <h3 class="mb-0">
+                        {% if metrics_diff.security > 0 %}
+                            <span class="text-success">+{{ metrics_diff.security }}% <i class="bi bi-arrow-up"></i></span>
+                        {% elif metrics_diff.security < 0 %}
+                            <span class="text-danger">{{ metrics_diff.security }}% <i class="bi bi-arrow-down"></i></span>
+                        {% else %}
+                            <span class="text-muted">Sin cambios</span>
+                        {% endif %}
+                    </h3>
+                    <small class="text-muted">{{ security1_score }}% → {{ security2_score }}%</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Bibliotecas</h6>
+                    <div class="d-flex justify-content-around">
+                        <div>
+                            <span class="badge bg-success">+{{ libraries_comparison.added|length }}</span>
+                            <small class="d-block text-muted">Nuevas</small>
+                        </div>
+                        <div>
+                            <span class="badge bg-warning">{{ libraries_comparison.updated|length }}</span>
+                            <small class="d-block text-muted">Actualizadas</small>
+                        </div>
+                        <div>
+                            <span class="badge bg-danger">-{{ libraries_comparison.removed|length }}</span>
+                            <small class="d-block text-muted">Eliminadas</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Changes Summary Alert -->
+    {% if total_changes > 0 %}
+    <div class="alert alert-info mb-4">
+        <h5 class="alert-heading"><i class="bi bi-info-circle"></i> Resumen de Cambios</h5>
+        <hr>
+        <div class="row">
+            <div class="col-md-6">
+                <ul class="mb-0">
+                    {% if libraries_comparison.added %}
+                    <li>{{ libraries_comparison.added|length }} librería(s) agregada(s) ✅</li>
+                    {% endif %}
+                    {% if libraries_comparison.removed %}
+                    <li>{{ libraries_comparison.removed|length }} librería(s) eliminada(s) ❌</li>
+                    {% endif %}
+                    {% if libraries_comparison.updated %}
+                    <li>{{ libraries_comparison.updated|length }} actualización(es) de versión 🔄</li>
+                    {% endif %}
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <ul class="mb-0">
+                    {% if metrics_diff.files != 0 %}
+                    <li>Archivos: {{ files1_count }} → {{ files2_count }} 
+                        ({% if metrics_diff.files > 0 %}+{% endif %}{{ metrics_diff.files }})
+                    </li>
+                    {% endif %}
+                    {% if metrics_diff.versions != 0 %}
+                    <li>Versiones detectadas: {{ versions1_count }} → {{ versions2_count }}
+                        ({% if metrics_diff.versions > 0 %}+{% endif %}{{ metrics_diff.versions }})
+                    </li>
+                    {% endif %}
+                    {% if metrics_diff.security != 0 %}
+                    <li>Score de seguridad: 
+                        {% if metrics_diff.security > 0 %}
+                            <span class="text-success">+{{ metrics_diff.security }}% ⬆️</span>
+                        {% else %}
+                            <span class="text-danger">{{ metrics_diff.security }}% ⬇️</span>
+                        {% endif %}
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-secondary">
+        <i class="bi bi-check-circle"></i> No se detectaron cambios significativos entre los escaneos.
+    </div>
+    {% endif %}
+    
+    <!-- Libraries Comparison Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-collection"></i> Comparación de Bibliotecas</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="50">Estado</th>
+                            <th>Biblioteca</th>
+                            <th>Tipo</th>
+                            <th>Versión Anterior</th>
+                            <th>Versión Actual</th>
+                            <th>Cambio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Added Libraries -->
+                        {% for item in libraries_comparison.added %}
+                        <tr class="table-success">
+                            <td class="text-center">
+                                <span class="badge bg-success">Nuevo</span>
+                            </td>
+                            <td><strong>{{ item.library.library_name }}</strong></td>
+                            <td>
+                                <span class="badge library-badge {{ 'js-badge' if item.library.type == 'js' else 'css-badge' }}">
+                                    {{ item.library.type.upper() }}
+                                </span>
+                            </td>
+                            <td class="text-muted">—</td>
+                            <td>{{ item.library.version or 'Desconocida' }}</td>
+                            <td><span class="text-success">➕ Agregada</span></td>
+                        </tr>
+                        {% endfor %}
+                        
+                        <!-- Updated Libraries -->
+                        {% for item in libraries_comparison.updated %}
+                        <tr class="table-warning">
+                            <td class="text-center">
+                                <span class="badge bg-warning">Actualizado</span>
+                            </td>
+                            <td><strong>{{ item.library_name }}</strong></td>
+                            <td>
+                                <span class="badge library-badge {{ 'js-badge' if item.type == 'js' else 'css-badge' }}">
+                                    {{ item.type.upper() }}
+                                </span>
+                            </td>
+                            <td>{{ item.old_version or 'Desconocida' }}</td>
+                            <td>{{ item.new_version or 'Desconocida' }}</td>
+                            <td><span class="text-warning">🔄 Versión cambiada</span></td>
+                        </tr>
+                        {% endfor %}
+                        
+                        <!-- Removed Libraries -->
+                        {% for item in libraries_comparison.removed %}
+                        <tr class="table-danger">
+                            <td class="text-center">
+                                <span class="badge bg-danger">Eliminado</span>
+                            </td>
+                            <td><strong>{{ item.library.library_name }}</strong></td>
+                            <td>
+                                <span class="badge library-badge {{ 'js-badge' if item.library.type == 'js' else 'css-badge' }}">
+                                    {{ item.library.type.upper() }}
+                                </span>
+                            </td>
+                            <td>{{ item.library.version or 'Desconocida' }}</td>
+                            <td class="text-muted">—</td>
+                            <td><span class="text-danger">➖ Eliminada</span></td>
+                        </tr>
+                        {% endfor %}
+                        
+                        <!-- Unchanged Libraries (collapsed by default) -->
+                        {% if libraries_comparison.unchanged %}
+                        <tr>
+                            <td colspan="6" class="text-center bg-light">
+                                <button class="btn btn-sm btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#unchangedLibraries">
+                                    <i class="bi bi-chevron-down"></i> Mostrar {{ libraries_comparison.unchanged|length }} librería(s) sin cambios
+                                </button>
+                            </td>
+                        </tr>
+                        <tbody id="unchangedLibraries" class="collapse">
+                            {% for item in libraries_comparison.unchanged %}
+                            <tr class="text-muted">
+                                <td class="text-center">
+                                    <span class="badge bg-secondary">Sin cambios</span>
+                                </td>
+                                <td>{{ item.library.library_name }}</td>
+                                <td>
+                                    <span class="badge library-badge {{ 'js-badge' if item.library.type == 'js' else 'css-badge' }}">
+                                        {{ item.library.type.upper() }}
+                                    </span>
+                                </td>
+                                <td>{{ item.library.version or 'Desconocida' }}</td>
+                                <td>{{ item.library.version or 'Desconocida' }}</td>
+                                <td>Sin cambios</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Metrics Comparison -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-bar-chart"></i> Métricas Comparativas</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Métrica</th>
+                                <th>Anterior</th>
+                                <th>Actual</th>
+                                <th>Diferencia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Bibliotecas</td>
+                                <td>{{ libraries1|length }}</td>
+                                <td>{{ libraries2|length }}</td>
+                                <td>
+                                    {% if metrics_diff.libraries > 0 %}
+                                        <span class="text-success">+{{ metrics_diff.libraries }}</span>
+                                    {% elif metrics_diff.libraries < 0 %}
+                                        <span class="text-danger">{{ metrics_diff.libraries }}</span>
+                                    {% else %}
+                                        <span class="text-muted">0</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Archivos</td>
+                                <td>{{ files1_count }}</td>
+                                <td>{{ files2_count }}</td>
+                                <td>
+                                    {% if metrics_diff.files > 0 %}
+                                        <span class="text-success">+{{ metrics_diff.files }}</span>
+                                    {% elif metrics_diff.files < 0 %}
+                                        <span class="text-danger">{{ metrics_diff.files }}</span>
+                                    {% else %}
+                                        <span class="text-muted">0</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Versiones detectadas</td>
+                                <td>{{ versions1_count }}</td>
+                                <td>{{ versions2_count }}</td>
+                                <td>
+                                    {% if metrics_diff.versions > 0 %}
+                                        <span class="text-success">+{{ metrics_diff.versions }}</span>
+                                    {% elif metrics_diff.versions < 0 %}
+                                        <span class="text-danger">{{ metrics_diff.versions }}</span>
+                                    {% else %}
+                                        <span class="text-muted">0</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Score de Seguridad</td>
+                                <td>{{ security1_score }}%</td>
+                                <td>{{ security2_score }}%</td>
+                                <td>
+                                    {% if metrics_diff.security > 0 %}
+                                        <span class="text-success">+{{ metrics_diff.security }}%</span>
+                                    {% elif metrics_diff.security < 0 %}
+                                        <span class="text-danger">{{ metrics_diff.security }}%</span>
+                                    {% else %}
+                                        <span class="text-muted">0%</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-shield-check"></i> Análisis de Seguridad</h6>
+                </div>
+                <div class="card-body">
+                    {% if metrics_diff.security != 0 %}
+                        {% if metrics_diff.security > 0 %}
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> 
+                            <strong>Mejora detectada:</strong> El score de seguridad aumentó un {{ metrics_diff.security }}%
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Degradación detectada:</strong> El score de seguridad disminuyó un {{ metrics_diff.security|abs }}%
+                        </div>
+                        {% endif %}
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        El score de seguridad se mantiene igual en ambos escaneos
+                    </div>
+                    {% endif %}
+                    
+                    <div class="progress mb-3" style="height: 30px;">
+                        <div class="progress-bar bg-secondary" role="progressbar" 
+                             style="width: {{ security1_score }}%"
+                             aria-valuenow="{{ security1_score }}" aria-valuemin="0" aria-valuemax="100">
+                            Anterior: {{ security1_score }}%
+                        </div>
+                    </div>
+                    
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar bg-{{ 'success' if security2_score >= 70 else 'warning' if security2_score >= 40 else 'danger' }}" 
+                             role="progressbar" style="width: {{ security2_score }}%"
+                             aria-valuenow="{{ security2_score }}" aria-valuemin="0" aria-valuemax="100">
+                            Actual: {{ security2_score }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="mt-4">
+        <a href="/url-history/{{ scan1.id }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver al Historial
+        </a>
+        <button type="button" class="btn btn-primary" onclick="window.print()">
+            <i class="bi bi-printer"></i> Imprimir Comparación
+        </button>
+    </div>
+</div>
+
+<style>
+.library-badge {
+    font-size: 0.75em;
+    padding: 0.4em 0.6em;
+}
+.js-badge {
+    background-color: #f0ad4e !important;
+    color: white;
+}
+.css-badge {
+    background-color: #5bc0de !important;
+    color: white;
+}
+</style>
+{% endblock %}

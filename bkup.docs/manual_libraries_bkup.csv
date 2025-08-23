@@ -1,0 +1,32 @@
+6,50,jQuery,1.11.2,js,https://www.sernac.cl/app/nuevo-proveedor/vendor/jquery/jquery-1.11.2.min.js,,,,0
+12,110,jQuery,3.5.1,js,https://code.jquery.com/jquery-3.5.1.js,,,,0
+13,17,jQuery UI - v1.13.0 - 2021-10-07,1.13.0,js,https://engine.dt.gob.cl/jquery/jquery-ui.min.js,https://security.snyk.io/package/npm/jquery-ui,1.13.2,1.14.1,1
+14,17,jQuery v3.6.0,3.6.0,js,https://engine.dt.gob.cl/jquery/jquery.min.js,https://security.snyk.io/package/npm/jquery,3.5.0,4.0.0,1
+15,17,CodeMirror,5.62.3,js,https://engine.dt.gob.cl/js/codemirror/lib/codemirror.js,"No tiene versión segura actualmente.
+https://security.snyk.io/package/npm/codemirror",6.65.7,6.65.7,1
+16,18,JSZip 2.5.0,2.5.0,js,https://www.dt.gob.cl/legislacion/1624/boxes-16946_js_file.js,"https://security.snyk.io/package/npm/jszip
+https://www.cvedetails.com/version-list/0/98772/1/",3.8.0,3.10.1,1
+17,18,pdfmake 0.1.18,0.1.18,js,https://www.dt.gob.cl/legislacion/1624/boxes-16946_js_file.js,"https://www.npmjs.com/package/pdfmake
+https://www.cvedetails.com/version/1327350/Pdfmake-Project-Pdfmake-0.1.18.html
+https://www.cvedetails.com/vulnerability-list/vendor_id-28847/product_id-124867/version_id-1327350/Pdfmake-Project-Pdfmake-0.1.18.html",0.1.18,0.2.20,1
+18,18,DataTables 1.10.9,1.10.9,js,https://www.dt.gob.cl/legislacion/1624/boxes-16946_js_file.js,"https://security.snyk.io/package/npm/datatables
+https://www.cvedetails.com/version-list/0/90705/1/",1.11.3,1.12.1,1
+19,18,Buttons 1.0.3,1.0.3,js,https://www.dt.gob.cl/legislacion/1624/boxes-16946_js_file.js,No se encuentra información en Snyk ni CVE-details.,,,1
+20,18,Flash export 1.0.3,1.0.3,js,https://www.dt.gob.cl/legislacion/1624/boxes-16946_js_file.js,No se encuentra información en Snyk ni CVE-details.,,,1
+21,18,HTML5 export 1.0.3,1.0.3,js,https://www.dt.gob.cl/legislacion/1624/boxes-16946_js_file.js,No se encuentra información en Snyk ni CVE-details.,,,1
+22,18,Print view 1.0.3,1.0.3,js,https://www.dt.gob.cl/legislacion/1624/boxes-16946_js_file.js,No se encuentra información en Snyk ni CVE-details.,,,1
+23,18,FixedHeader 3.0.0,3.0.0,js,https://www.dt.gob.cl/legislacion/1624/boxes-16946_js_file.js,No se encuentra información en Snyk ni CVE-details.,,,1
+24,18,KeyTable 2.0.0,2.0.0,js,https://www.dt.gob.cl/legislacion/1624/boxes-16946_js_file.js,No se encuentra información en Snyk ni CVE-details.,,,1
+25,18,jQuery Migrate v3.4.0,3.4.0,js,https://www.dt.gob.cl/legislacion/1624/channels-911_js_jquerymigration_3_4_0.js,"No se encuentra información en Snyk o CVE-Details.
+https://jquery.com/download/",,3.5.0,1
+26,18,jQuery v3.6.0,3.6.0,js,https://www.dt.gob.cl/legislacion/1624/channels-911_js_jquery_3_6_0.js,"https://security.snyk.io/package/npm/jquery
+https://www.cvedetails.com/version-list/6538/11031/1/Jquery-Jquery.html",3.5.0,4.0.0,1
+27,18,moment.js,2.10.6,js,https://www.dt.gob.cl/legislacion/1624/boxes-16958_js_file.js,"https://www.cvedetails.com/version-list/21614/66035/1/Momentjs-Moment.html
+https://momentjs.com/",2.30.1,2.30.1,1
+28,119,Bootstrap v3.3.5,3.3.5,js,https://www.subpesca.cl/portal/616/boxes-2620_js_file.js,"https://www.cvedetails.com/version-list/0/51406/1/
+https://security.snyk.io/package/npm/bootstrap",4.3.1,5.3.7,1
+29,120,Bootstrap JS,5.2.2,js,https://meli.testing.newtenberg.com/js/bootstrap-5.2.2/dist/js/bootstrap.bundle.min.js,,,,0
+30,118,asda,,js,,,,,1
+31,19,Mustache,2.2.1,js,https://www.dt.gob.cl/portal/1626/boxes-17248_js_file.js,https://security.snyk.io/package/npm/mustache,2.2.1,4.2.0,1
+32,124,Bootstrap JS,5.2.2,js,https://meli.testing.newtenberg.com/js/bootstrap-5.2.2/dist/js/bootstrap.bundle.min.js,,,,0
+33,124,Mustache,0.8.1,js,https://meli.testing.newtenberg.com/js/mustache.js,,2.2.1,4.2.0,1

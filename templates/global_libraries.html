@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+{% set current_page = 'global_libraries' %}
+
+{% block title %}Catálogo de Bibliotecas Globales{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-collection"></i> Catálogo de Bibliotecas Globales</h2>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGlobalLibraryModal">
+                        <i class="bi bi-plus-lg"></i> Nueva Biblioteca
+                    </button>
+                    <a href="{{ url_for('asociar_bibliotecas') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-link-45deg"></i> Gestionar Asociaciones
+                    </a>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-cloud-upload"></i> Importar
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#importLibrariesModal">
+                                <i class="bi bi-cloud-upload"></i> Importar Catálogo
+                            </a></li>
+                        </ul>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-cloud-download"></i> Exportar
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/export-global-libraries/csv">
+                                <i class="bi bi-filetype-csv"></i> Exportar CSV
+                            </a></li>
+                            <li><a class="dropdown-item" href="/export-global-libraries/json">
+                                <i class="bi bi-filetype-json"></i> Exportar JSON
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card border-primary">
+                        <div class="card-body text-center">
+                            <i class="bi bi-collection display-6 text-primary"></i>
+                            <h4 class="mt-2">{{ libraries|length }}</h4>
+                            <small class="text-muted">Total Bibliotecas</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-warning">
+                        <div class="card-body text-center">
+                            <i class="bi bi-code-square display-6 text-warning"></i>
+                            <h4 class="mt-2">{{ libraries|selectattr('type', 'equalto', 'js')|list|length }}</h4>
+                            <small class="text-muted">JavaScript</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-info">
+                        <div class="card-body text-center">
+                            <i class="bi bi-palette display-6 text-info"></i>
+                            <h4 class="mt-2">{{ libraries|selectattr('type', 'equalto', 'css')|list|length }}</h4>
+                            <small class="text-muted">CSS</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-danger">
+                        <div class="card-body text-center">
+                            <i class="bi bi-shield-exclamation display-6 text-danger"></i>
+                            <h4 class="mt-2">{{ libraries|selectattr('vulnerability_info')|list|length }}</h4>
+                            <small class="text-muted">Con Vulnerabilidades</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Section -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" name="search"
+                                       value="{{ request.args.get('search', '') }}"
+                                       placeholder="Buscar por nombre o descripción de librería...">
+                                <button type="submit" class="btn btn-outline-primary">Buscar</button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            {% if request.args.get('search') %}
+                                <a href="{{ url_for('global_libraries') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> Limpiar Búsqueda
+                                </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Libraries Table -->
+            <div class="card">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        Lista de Bibliotecas
+                        {% if request.args.get('search') %}
+                            <small class="text-muted">({{ libraries|length }} resultado{{ 's' if libraries|length != 1 else '' }} para "{{ request.args.get('search') }}")</small>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if libraries %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Biblioteca</th>
+                                    <th>Bibliotecas Manuales</th>
+                                    <th>Tipo</th>
+                                    <th>Versión Segura</th>
+                                    <th>Última Versión</th>
+                                    <th>Vulnerabilidades</th>
+                                    <th>Actualizada</th>
+                                    <th width="120">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for library in libraries %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">
+                                            <a href="{{ url_for('global_library_manual_libraries', global_lib_id=library.id) }}" 
+                                               class="text-decoration-none">
+                                                {{ library.library_name }}
+                                                <i class="bi bi-box-arrow-up-right small ms-1"></i>
+                                            </a>
+                                        </div>
+                                        {% if library.description %}
+                                            <small class="text-muted">{{ library.description }}</small>
+                                        {% endif %}
+                                        {% if library.source_url %}
+                                            <div><a href="{{ library.source_url }}" target="_blank" class="text-decoration-none small">
+                                                <i class="bi bi-link-45deg"></i> Fuente
+                                            </a></div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if library.manual_count > 0 %}
+                                            <a href="{{ url_for('global_library_manual_libraries', global_lib_id=library.id) }}" 
+                                               class="badge bg-primary text-decoration-none">
+                                                {{ library.manual_count }}
+                                            </a>
+                                        {% else %}
+                                            <span class="badge bg-secondary">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge library-badge {{ 'js-badge' if library.type == 'js' else 'css-badge' }}">
+                                            {{ library.type.upper() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if library.latest_safe_version %}
+                                            <span class="badge bg-success">{{ library.latest_safe_version }}</span>
+                                        {% else %}
+                                            <span class="text-muted">No definida</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if library.latest_version %}
+                                            <span class="badge bg-info">{{ library.latest_version }}</span>
+                                        {% else %}
+                                            <span class="text-muted">No definida</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if library.vulnerability_info %}
+                                            <span class="badge bg-danger" title="{{ library.vulnerability_info }}">
+                                                <i class="bi bi-shield-exclamation"></i> Sí
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">Ninguna</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% if library.updated_date %}
+                                                {{ library.updated_date[:10] }}
+                                            {% else %}
+                                                {{ library.created_date[:10] }}
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-primary"
+                                                    data-bs-toggle="modal" data-bs-target="#editGlobalLibraryModal"
+                                                    data-lib-id="{{ library.id }}"
+                                                    data-lib-name="{{ library.library_name }}"
+                                                    data-lib-type="{{ library.type }}"
+                                                    data-lib-safe-version="{{ library.latest_safe_version or '' }}"
+                                                    data-lib-latest-version="{{ library.latest_version or '' }}"
+                                                    data-lib-description="{{ library.description or '' }}"
+                                                    data-lib-vulnerability-info="{{ library.vulnerability_info or '' }}"
+                                                    data-lib-source-url="{{ library.source_url or '' }}">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger"
+                                                    data-bs-toggle="modal" data-bs-target="#deleteGlobalLibraryModal"
+                                                    data-lib-id="{{ library.id }}"
+                                                    data-lib-name="{{ library.library_name }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center p-5">
+                        {% if request.args.get('search') %}
+                            <i class="bi bi-search display-4 text-muted"></i>
+                            <h5 class="mt-3">Sin Resultados</h5>
+                            <p class="text-muted">No se encontraron librerías que coincidan con "{{ request.args.get('search') }}"</p>
+                            <a href="{{ url_for('global_libraries') }}" class="btn btn-outline-primary">
+                                <i class="bi bi-arrow-left"></i> Ver Todas las Bibliotecas
+                            </a>
+                        {% else %}
+                            <i class="bi bi-collection display-4 text-muted"></i>
+                            <h5 class="mt-3">Sin Bibliotecas en el Catálogo</h5>
+                            <p class="text-muted">Comienza agregando librerías al catálogo global</p>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGlobalLibraryModal">
+                                <i class="bi bi-plus-lg"></i> Agregar Primera Biblioteca
+                            </button>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Global Library Modal -->
+<div class="modal fade" id="addGlobalLibraryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-plus-lg"></i> Agregar Biblioteca al Catálogo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/add-global-library">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="add_library_name" class="form-label">Nombre de la Biblioteca *</label>
+                            <input type="text" class="form-control" id="add_library_name" name="library_name" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="add_library_type" class="form-label">Tipo *</label>
+                            <select class="form-select" id="add_library_type" name="library_type" required>
+                                <option value="js">JavaScript (JS)</option>
+                                <option value="css">CSS</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="add_latest_safe_version" class="form-label">Versión Segura Más Reciente</label>
+                            <input type="text" class="form-control" id="add_latest_safe_version" name="latest_safe_version" placeholder="e.g., 3.6.4">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="add_latest_version" class="form-label">Versión Más Reciente</label>
+                            <input type="text" class="form-control" id="add_latest_version" name="latest_version" placeholder="e.g., 3.7.0">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_source_url" class="form-label">URL de Fuente</label>
+                        <input type="url" class="form-control" id="add_source_url" name="source_url" placeholder="https://...">
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_description" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="add_description" name="description" rows="2" placeholder="Descripción de la librería..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_vulnerability_info" class="form-label">Información de Vulnerabilidades</label>
+                        <textarea class="form-control" id="add_vulnerability_info" name="vulnerability_info" rows="2" placeholder="Descripción de vulnerabilidades conocidas..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar Biblioteca</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Global Library Modal -->
+<div class="modal fade" id="editGlobalLibraryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Biblioteca</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="editGlobalLibraryForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="edit_library_name" class="form-label">Nombre de la Biblioteca *</label>
+                            <input type="text" class="form-control" id="edit_library_name" name="library_name" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="edit_library_type" class="form-label">Tipo *</label>
+                            <select class="form-select" id="edit_library_type" name="library_type" required>
+                                <option value="js">JavaScript (JS)</option>
+                                <option value="css">CSS</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_latest_safe_version" class="form-label">Versión Segura Más Reciente</label>
+                            <input type="text" class="form-control" id="edit_latest_safe_version" name="latest_safe_version">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_latest_version" class="form-label">Versión Más Reciente</label>
+                            <input type="text" class="form-control" id="edit_latest_version" name="latest_version">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_source_url" class="form-label">URL de Fuente</label>
+                        <input type="url" class="form-control" id="edit_source_url" name="source_url">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_vulnerability_info" class="form-label">Información de Vulnerabilidades</label>
+                        <textarea class="form-control" id="edit_vulnerability_info" name="vulnerability_info" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Actualizar Biblioteca</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Global Library Modal -->
+<div class="modal fade" id="deleteGlobalLibraryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger"></i> Eliminar Biblioteca</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que quieres eliminar la librería <strong id="deleteLibraryName"></strong> del catálogo global?</p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Esta acción no afectará las librerías ya agregadas a escaneos específicos.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" id="deleteGlobalLibraryForm" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput) {
+        // Auto-focus on search input if there's a search term
+        if (searchInput.value) {
+            searchInput.focus();
+            searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+        }
+
+        // Submit search on Enter key
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.form.submit();
+            }
+        });
+    }
+
+    // Edit library modal
+    const editModal = document.getElementById('editGlobalLibraryModal');
+    editModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const libId = button.getAttribute('data-lib-id');
+        const form = document.getElementById('editGlobalLibraryForm');
+        form.action = '/edit-global-library/' + libId;
+
+        document.getElementById('edit_library_name').value = button.getAttribute('data-lib-name');
+        document.getElementById('edit_library_type').value = button.getAttribute('data-lib-type');
+        document.getElementById('edit_latest_safe_version').value = button.getAttribute('data-lib-safe-version');
+        document.getElementById('edit_latest_version').value = button.getAttribute('data-lib-latest-version');
+        document.getElementById('edit_description').value = button.getAttribute('data-lib-description');
+        document.getElementById('edit_vulnerability_info').value = button.getAttribute('data-lib-vulnerability-info');
+        document.getElementById('edit_source_url').value = button.getAttribute('data-lib-source-url');
+    });
+
+    // Delete library modal
+    const deleteModal = document.getElementById('deleteGlobalLibraryModal');
+    deleteModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const libId = button.getAttribute('data-lib-id');
+        const libName = button.getAttribute('data-lib-name');
+        const form = document.getElementById('deleteGlobalLibraryForm');
+        form.action = '/delete-global-library/' + libId;
+        document.getElementById('deleteLibraryName').textContent = libName;
+    });
+});
+</script>
+
+<!-- Import Libraries Modal -->
+<div class="modal fade" id="importLibrariesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-upload"></i> Importar Catálogo de Bibliotecas</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/import-global-libraries" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="import_file" class="form-label">Seleccionar Archivo</label>
+                        <input type="file" class="form-control" id="import_file" name="file" accept=".csv,.json" required>
+                        <div class="form-text">
+                            Formatos soportados: CSV y JSON
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle"></i> Formato CSV</h6>
+                        <p class="mb-1">Columnas requeridas:</p>
+                        <code>Nombre,Tipo,Versión Segura,Última Versión,Descripción,Vulnerabilidades,URL Fuente</code>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Las librerías que ya existen en el catálogo serán omitidas.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Importar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

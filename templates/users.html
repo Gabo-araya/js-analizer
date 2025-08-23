@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Usuarios{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-people-fill"></i> Gestión de Usuarios</h1>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                <i class="bi bi-plus-lg"></i> Agregar Usuario
+            </button>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Usuario</th>
+                                <th>Rol</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.id }}</td>
+                                <td>
+                                    <i class="bi bi-person-circle me-2"></i>
+                                    {{ user.username|e }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'primary' if user.role == 'admin' else 'secondary' }}">
+                                        <i class="bi bi-shield-{{ 'fill' if user.role == 'admin' else 'check' }}"></i>
+                                        {{ 'Administrador' if user.role == 'admin' else 'Analista' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#changePasswordModal" data-user-id="{{ user.id }}" data-username="{{ user.username|e }}">
+                                            <i class="bi bi-key"></i> Cambiar Contraseña
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#changeRoleModal" data-user-id="{{ user.id }}" data-username="{{ user.username|e }}" data-current-role="{{ user.role }}">
+                                            <i class="bi bi-shield-gear"></i> Cambiar Rol
+                                        </button>
+                                        <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" id="delete_user_{{ user.id }}_csrf" value="{{ csrf_token() }}"/>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" data-confirm-message="¿Estás seguro de que quieres eliminar este usuario?">
+                                                <i class="bi bi-trash"></i> Eliminar
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addUserModalLabel"><i class="bi bi-person-plus"></i> Agregar Nuevo Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_user') }}">
+                <input type="hidden" name="csrf_token" id="add_user_csrf" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Nombre de Usuario</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Rol</label>
+                        <select class="form-select" id="role" name="role" required>
+                            <option value="analyst">Analista</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                        <div class="form-text">
+                            <strong>Analista:</strong> Acceso completo excepto gestión de usuarios<br>
+                            <strong>Administrador:</strong> Acceso completo incluyendo gestión de usuarios
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changePasswordModalLabel"><i class="bi bi-key"></i> Cambiar Contraseña para <span id="changePasswordUsername"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form method="POST" action="" id="changePasswordForm">
+                <input type="hidden" name="csrf_token" id="change_password_csrf" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">Nueva Contraseña</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Cambiar Contraseña</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Change Role Modal -->
+<div class="modal fade" id="changeRoleModal" tabindex="-1" aria-labelledby="changeRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changeRoleModalLabel"><i class="bi bi-shield-gear"></i> Cambiar Rol para <span id="changeRoleUsername"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form method="POST" action="" id="changeRoleForm">
+                <input type="hidden" name="csrf_token" id="change_role_csrf" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="new_role" class="form-label">Nuevo Rol</label>
+                        <select class="form-select" id="new_role" name="new_role" required>
+                            <option value="analyst">Analista</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                        <div class="form-text">
+                            <strong>Analista:</strong> Acceso completo excepto gestión de usuarios<br>
+                            <strong>Administrador:</strong> Acceso completo incluyendo gestión de usuarios
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-info">Cambiar Rol</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Change Password Modal
+    var changePasswordModal = document.getElementById('changePasswordModal');
+    changePasswordModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var userId = button.getAttribute('data-user-id');
+        var username = button.getAttribute('data-username');
+        var form = document.getElementById('changePasswordForm');
+        form.action = '/change_password/' + userId;
+        var usernameSpan = document.getElementById('changePasswordUsername');
+        usernameSpan.textContent = username;
+    });
+
+    // Change Role Modal
+    var changeRoleModal = document.getElementById('changeRoleModal');
+    changeRoleModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var userId = button.getAttribute('data-user-id');
+        var username = button.getAttribute('data-username');
+        var currentRole = button.getAttribute('data-current-role');
+        var form = document.getElementById('changeRoleForm');
+        form.action = '/change_role/' + userId;
+        var usernameSpan = document.getElementById('changeRoleUsername');
+        usernameSpan.textContent = username;
+        var roleSelect = document.getElementById('new_role');
+        roleSelect.value = currentRole;
+    });
+});
+</script>
+{% endblock %}

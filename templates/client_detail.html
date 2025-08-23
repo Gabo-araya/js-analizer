@@ -1,0 +1,676 @@
+{% extends "base.html" %}
+{% set current_page = 'clients' %}
+
+{% block title %}{{ client.name|e }} - Detalle del Proyecto{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="bi bi-person-badge"></i> {{ client.name|e }}</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="/projects">Proyectos</a></li>
+                            <li class="breadcrumb-item active">{{ client.name|e }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="d-flex gap-2">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#analyzeUrlModal">
+                            <i class="bi bi-plus-lg"></i> Analizar URL
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#batchAnalyzeModal">
+                            <i class="bi bi-card-list"></i> Análisis Masivo
+                        </button>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-cloud-upload"></i> Importar
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#importClientDataModal">
+                                <i class="bi bi-cloud-upload"></i> Importar Datos
+                            </a></li>
+                        </ul>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-cloud-download"></i> Exportar
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/export-project-data/{{ client.id }}/csv">
+                                <i class="bi bi-filetype-csv"></i> Exportar CSV
+                            </a></li>
+                            <li><a class="dropdown-item" href="/export-project-data/{{ client.id }}/json">
+                                <i class="bi bi-filetype-json"></i> Exportar JSON
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client Info Card -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Información del Proyecto</h5>
+                            <button type="button" class="btn btn-outline-primary" 
+                                    data-bs-toggle="modal" data-bs-target="#editClientModal"
+                                    data-client-id="{{ client.id }}"
+                                    data-client-name="{{ client.name|e }}"
+                                    data-client-description="{{ client.description|e }}"
+                                    data-client-email="{{ client.contact_email|e }}"
+                                    data-client-phone="{{ client.contact_phone|e }}"
+                                    data-client-website="{{ client.website|e }}">
+                                <i class="bi bi-pencil"></i> Editar Proyecto
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Nombre:</strong> {{ client.name|e }}</p>
+                                    {% if client.description %}
+                                    <p><strong>Descripción:</strong> {{ client.description }}</p>
+                                    {% endif %}
+                                    {% if client.website %}
+                                    <p><strong>Sitio Web:</strong> <a href="{{ client.website }}" target="_blank">{{ client.website }}</a></p>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {% if client.contact_email %}
+                                    <p><strong>Email:</strong> {{ client.contact_email }}</p>
+                                    {% endif %}
+                                    {% if client.contact_phone %}
+                                    <p><strong>Teléfono:</strong> {{ client.contact_phone }}</p>
+                                    {% endif %}
+                                    <p><strong>Proyecto desde:</strong> {{ client.created_date[:10] }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Cards - Horizontal Layout -->
+            <div class="row mb-4">
+                <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div class="card border-primary stat-card">
+                        <div class="card-body text-center">
+                            <i class="bi bi-search display-6 text-primary"></i>
+                            <h4 class="mt-2">{{ stats.total_scans or 0 }}</h4>
+                            <small class="text-muted">Análisis Total</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div class="card border-success stat-card">
+                        <div class="card-body text-center">
+                            <i class="bi bi-collection display-6 text-success"></i>
+                            <h4 class="mt-2">{{ stats.total_libraries or 0 }}</h4>
+                            <small class="text-muted">Bibliotecas</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div class="card border-info stat-card">
+                        <div class="card-body text-center">
+                            <i class="bi bi-file-earmark-code display-6 text-info"></i>
+                            <h4 class="mt-2">{{ stats.total_files or 0 }}</h4>
+                            <small class="text-muted">Archivos JavaScript</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div class="card border-warning stat-card">
+                        <div class="card-body text-center">
+                            <i class="bi bi-hash display-6 text-warning"></i>
+                            <h4 class="mt-2">{{ stats.total_version_strings or 0 }}</h4>
+                            <small class="text-muted">Versiones</small>
+                        </div>
+                    </div>
+                </div>
+                {% if stats.total_vulnerabilities > 0 %}
+                <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div class="card border-danger stat-card">
+                        <div class="card-body text-center">
+                            <i class="bi bi-shield-exclamation display-6 text-danger"></i>
+                            <h4 class="mt-2">{{ stats.total_vulnerabilities }}</h4>
+                            <small class="text-muted">Vulnerabilidades</small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% if stats.total_errors > 0 %}
+                <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div class="card border-danger stat-card">
+                        <div class="card-body text-center">
+                            <i class="bi bi-exclamation-triangle display-6 text-danger"></i>
+                            <h4 class="mt-2">{{ stats.total_errors }}</h4>
+                            <small class="text-muted">Errores</small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Search Section -->
+            {% if scans or request.args.get('search') or request.args.get('status') %}
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-search"></i> Buscar en Escaneos del Proyecto
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('project_detail', project_id=client.id) }}" id="searchForm">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <input type="text" name="search" class="form-control"
+                                           placeholder="Buscar en títulos, URLs, bibliotecas..."
+                                           value="{{ request.args.get('search', '') }}" />
+                                    <button type="submit" class="btn btn-outline-success">
+                                        <i class="bi bi-search"></i> Buscar
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <select name="status" class="form-select" onchange="this.form.submit()">
+                                    <option value="">Todos los estados</option>
+                                    <option value="pendiente" {% if request.args.get('status') == 'pendiente' %}selected{% endif %}>
+                                        <i class="bi bi-clock"></i> Pendientes
+                                    </option>
+                                    <option value="revisado" {% if request.args.get('status') == 'revisado' %}selected{% endif %}>
+                                        <i class="bi bi-check-circle"></i> Revisados
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-1">
+                                {% if request.args.get('search') or request.args.get('status') %}
+                                <a href="{{ url_for('project_detail', project_id=client.id) }}" class="btn btn-outline-secondary w-100">
+                                    <i class="bi bi-x-circle"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if request.args.get('search') or request.args.get('status') %}
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                Mostrando {{ scans|length }} resultado{{ 's' if scans|length != 1 else '' }}
+                                {% if request.args.get('search') %}para "{{ request.args.get('search') }}"{% endif %}
+                                {% if request.args.get('status') %}
+                                    {% if request.args.get('search') %} y {% endif %}
+                                    estado: {{ 'Pendiente' if request.args.get('status') == 'pendiente' else 'Revisado' if request.args.get('status') == 'revisado' else '' }}
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Scans List -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        Historial de Análisis
+                        {% if request.args.get('search') or request.args.get('status') %}
+                        <small class="text-muted">({{ scans|length }} resultado{{ 's' if scans|length != 1 else '' }} filtrado{{ 's' if scans|length != 1 else '' }})</small>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if scans %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>URL</th>
+                                    <th>Estado</th>
+                                    <th>Conteos</th>
+                                    <th>Fecha</th>
+                                    <th width="100">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for scan in scans %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">
+                                            <a href="/scan/{{ scan.id }}#libraries" class="" title="Ver detalles">{{ (scan.title or 'Sin título')|e }}
+                                            </a>
+                                        </div>
+                                        <small class="text-muted">{{ scan.url|e }} |
+                                            <a href="{{ scan.url|e }}" class="" title="Visitar URL">
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                            </a>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if scan.status_code == 200 %}
+                                            <span class="badge bg-success">{{ scan.status_code }}</span>
+                                        {% elif scan.status_code %}
+                                            <span class="badge bg-danger">{{ scan.status_code }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Error</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge bg-secondary-light text-secondary me-1"
+                                            title="Bibliotecas"
+                                        ><i class="bi bi-bookshelf"></i> {{ scan.library_count or 0 }}</span>
+                                        <span
+                                            class="badge bg-info-light text-info me-1"
+                                            title="Archivos"
+                                        ><i class="bi bi-file-earmark-code"></i> {{ scan.file_count or 0 }}</span>
+                                        <span
+                                            class="badge bg-warning-light text-warning me-1"
+                                            title="Versiones"
+                                        ><i class="bi bi-hash"></i> {{ scan.version_string_count or 0 }}</span>
+                                        {% if scan.vulnerability_count > 0 %}
+                                        <span
+                                            class="badge bg-danger text-white me-1"
+                                            title="Vulnerabilidades"
+                                        ><i class="bi bi-shield-exclamation"></i> {{ scan.vulnerability_count }}</span>
+                                        {% endif %}
+                                        {% if scan.error_count > 0 %}
+                                        <span
+                                            class="badge bg-danger-light text-danger"
+                                            title="Errores"
+                                        ><i class="bi bi-exclamation-triangle"></i> {{ scan.error_count }}</span>
+                                        {% endif %}
+                                        <!-- Reviewed Status Badge -->
+                                        {% if scan.reviewed %}
+                                        <span
+                                            class="badge bg-success text-white me-1"
+                                            title="Revisado por usuario"
+                                        ><i class="bi bi-check-circle-fill"></i> Revisado</span>
+                                        {% else %}
+                                        <span
+                                            class="badge bg-secondary text-white me-1"
+                                            title="Pendiente de revisión"
+                                        ><i class="bi bi-clock"></i> Pendiente</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ scan.scan_date[:16].replace('T', ' ') }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="/scan/{{ scan.id }}#libraries" class="btn btn-outline-primary" title="Ver detalles">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <button
+                                                type="button"
+                                                class="btn btn-outline-secondary btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editScanClientModal"
+                                                data-scan-id="{{ scan.id }}"
+                                                data-scan-title="{{ (scan.title or scan.url)|e|truncate(30) }}"
+                                                data-current-client-id="{{ scan.client_id or '' }}"
+                                                title="Editar cliente del escaneo"
+                                            >
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <form method="POST" action="{{ url_for('toggle_reviewed', scan_id=scan.id) }}" style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                <button
+                                                    type="submit"
+                                                    class="btn {{ 'btn-outline-success' if scan.reviewed else 'btn-outline-warning' }}"
+                                                    title="{{ 'Marcar como no revisado' if scan.reviewed else 'Marcar como revisado' }}"
+                                                >
+                                                    <i class="bi {{ 'bi-check-circle' if not scan.reviewed else 'bi-clock' }}"></i>
+                                                </button>
+                                            </form>
+                                            <button
+                                                type="button"
+                                                class="btn btn-outline-danger delete-scan-btn"
+                                                data-scan-id="{{ scan.id }}" 
+                                                data-scan-title="{{ (scan.title or scan.url)|e }}"
+                                                title="Eliminar escaneo"
+                                            >
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center p-5">
+                        {% if request.args.get('search') or request.args.get('status') %}
+                            <i class="bi bi-search display-4 text-muted"></i>
+                            <h5 class="mt-3">Sin Resultados</h5>
+                            <p class="text-muted">
+                                No se encontraron escaneos que coincidan con los filtros aplicados
+                                {% if request.args.get('search') %}
+                                    <br><strong>Búsqueda:</strong> "{{ request.args.get('search') }}"
+                                {% endif %}
+                                {% if request.args.get('status') %}
+                                    <br><strong>Estado:</strong> {{ 'Pendiente' if request.args.get('status') == 'pendiente' else 'Revisado' }}
+                                {% endif %}
+                            </p>
+                            <a href="{{ url_for('project_detail', project_id=client.id) }}" class="btn btn-outline-primary">
+                                <i class="bi bi-arrow-left"></i> Ver Todos los Análisis
+                            </a>
+                        {% else %}
+                            <i class="bi bi-search display-4 text-muted"></i>
+                            <h5 class="mt-3">Sin Análisis Realizados</h5>
+                            <p class="text-muted">Comienza analizando la primera URL de este cliente</p>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#analyzeUrlModal">
+                                <i class="bi bi-plus-lg"></i> Primer Análisis
+                            </button>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analyze URL Modal -->
+<div class="modal fade" id="analyzeUrlModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-plus-lg"></i> Analizar URL para {{ client.name|e }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/analyze-url">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="client_id" value="{{ client.id }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="url" class="form-label">URL a Analizar *</label>
+                        <input type="url" class="form-control" id="url" name="url" required placeholder="https://ejemplo.com">
+                        <div class="form-text">Ingresa la URL completa que deseas analizar</div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Este análisis será asociado al cliente <strong>{{ client.name|e }}</strong>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Analizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Batch Analyze Modal -->
+<div class="modal fade" id="batchAnalyzeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-card-list"></i> Análisis Masivo para {{ client.name|e }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/batch-analyze">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="client_id" value="{{ client.id }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="urls" class="form-label">URLs a Analizar (una por línea) *</label>
+                        <textarea class="form-control" id="urls" name="urls" rows="8" required placeholder="https://ejemplo1.com&#10;https://ejemplo2.com&#10;https://ejemplo3.com"></textarea>
+                        <div class="form-text">Ingresa una URL por línea. Se analizarán todas secuencialmente.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="delay" class="form-label">Retraso entre análisis (segundos)</label>
+                        <input type="number" class="form-control" id="delay" name="delay" value="1" min="0" max="10">
+                        <div class="form-text">Tiempo de espera entre cada análisis para evitar sobrecargar el servidor</div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Todos los análisis serán asociados al cliente <strong>{{ client.name|e }}</strong>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Analizar Todo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Scan Modal -->
+<div class="modal fade" id="deleteScanModal" tabindex="-1" aria-labelledby="deleteScanModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteScanModalLabel">Confirmar Eliminación de Escaneo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form id="deleteScanForm" method="POST" action="">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que quieres eliminar el escaneo para <strong id="deleteScanName">loading...</strong>?</p>
+                    <p class="text-danger">Esta acción no se puede deshacer y eliminará todos los datos asociados.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Eliminar Escaneo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Scan Client Modal -->
+<div class="modal fade" id="editScanClientModal" tabindex="-1" aria-labelledby="editScanClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editScanClientModalLabel">
+                    <i class="bi bi-pencil"></i> Editar Proyecto del Escaneo
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form method="POST" action="" id="editScanClientForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="scanClientSelect" class="form-label">Proyecto</label>
+                        <select class="form-select" id="scanClientSelect" name="client_id">
+                            <option value="">Sin cliente específico</option>
+                            {% for client_option in clients %}
+                            <option value="{{ client_option.id }}">{{ client_option.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            Selecciona el cliente al que deseas asociar este escaneo, o deja en blanco para no asociarlo a ningún cliente.
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Escaneo:</strong>
+                        <span id="editScanName">Loading...</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Aplicar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Import Client Data Modal -->
+<div class="modal fade" id="importClientDataModal" tabindex="-1" aria-labelledby="importClientDataModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importClientDataModalLabel">
+                    <i class="bi bi-upload"></i> Importar Datos del Proyecto
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form method="POST" action="/import-project-data/{{ client.id }}" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Importante:</strong> Los datos importados se agregarán a los escaneos existentes del cliente <strong>{{ client.name|e }}</strong>.
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="import_file" class="form-label">Archivo a Importar *</label>
+                        <input type="file" class="form-control" id="import_file" name="file" accept=".csv,.json" required>
+                        <div class="form-text">
+                            Formatos aceptados: CSV o JSON. El archivo debe contener escaneos y bibliotecas asociadas.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="skip_duplicates" name="skip_duplicates" checked>
+                            <label class="form-check-label" for="skip_duplicates">
+                                Omitir URLs duplicadas (no volver a escanear URLs ya analizadas)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="accordion" id="importHelp">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                    <i class="bi bi-question-circle me-2"></i> Formato esperado del archivo
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#importHelp">
+                                <div class="accordion-body">
+                                    <h6>Formato CSV:</h6>
+                                    <pre class="bg-light p-2">URL,Título,Fecha,Estado HTTP,Revisado,Bibliotecas Detectadas
+https://ejemplo.com,Mi Sitio,2025-01-01 10:00,200,Sí,jQuery (3.6.0); Bootstrap (5.1.3)</pre>
+
+                                    <h6 class="mt-3">Formato JSON:</h6>
+                                    <pre class="bg-light p-2">{
+  "scans": [
+    {
+      "url": "https://ejemplo.com",
+      "title": "Mi Sitio",
+      "libraries": [
+        {"name": "jQuery", "version": "3.6.0", "type": "js"}
+      ]
+    }
+  ]
+}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> Importar Datos
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput) {
+        // Auto-focus on search input if there's a search term
+        if (searchInput.value) {
+            searchInput.focus();
+            searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+        }
+
+        // Submit search on Enter key
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.form.submit();
+            }
+        });
+    }
+});
+
+// Funciones inline removidas - ahora se usan handlers externos seguros en secure_event_handlers.js
+</script>
+
+<!-- Edit Client Modal -->
+<div class="modal fade" id="editClientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Proyecto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="editClientForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Nombre del Cliente *</label>
+                        <input type="text" class="form-control" id="edit_name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_contact_email" class="form-label">Email de Contacto</label>
+                        <input type="email" class="form-control" id="edit_contact_email" name="contact_email">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_contact_phone" class="form-label">Teléfono de Contacto</label>
+                        <input type="tel" class="form-control" id="edit_contact_phone" name="contact_phone">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_website" class="form-label">Sitio Web</label>
+                        <input type="url" class="form-control" id="edit_website" name="website">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Actualizar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Handle edit scan client modal
+document.addEventListener('DOMContentLoaded', function() {
+    const editScanClientModal = document.getElementById('editScanClientModal');
+    editScanClientModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const scanId = button.getAttribute('data-scan-id');
+        const scanTitle = button.getAttribute('data-scan-title');
+        const currentClientId = button.getAttribute('data-current-client-id');
+        
+        // Update form action
+        const form = document.getElementById('editScanClientForm');
+        form.action = '/update-scan-project-dashboard/' + scanId;
+        
+        // Update scan name
+        const scanNameSpan = document.getElementById('editScanName');
+        scanNameSpan.textContent = scanTitle;
+        
+        // Set current client selection
+        const clientSelect = document.getElementById('scanClientSelect');
+        clientSelect.value = currentClientId || '';
+    });
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,14 @@
+# Dependencias para producción
+-r base.txt
+
+# Servidor WSGI para producción
+gunicorn==21.2.0
+
+# Logging avanzado
+structlog==23.2.0
+
+# Monitoreo y métricas
+prometheus-client==0.19.0
+
+# Compresión de respuestas
+flask-compress==1.14

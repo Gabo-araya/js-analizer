@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% set current_page = 'dashboard' %}
+
+{% block title %}Historial de Escaneos - {{ url }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Panel de Control</a></li>
+                <li class="breadcrumb-item"><a href="/scan/{{ current_scan_id }}">Detalle del Escaneo</a></li>
+                <li class="breadcrumb-item active">Historial de URL</li>
+            </ol>
+        </nav>
+        <h1 class="h2">Historial de Escaneos</h1>
+        <p class="text-muted">
+            <i class="bi bi-link-45deg"></i> 
+            <a href="{{ url }}" target="_blank" class="text-decoration-none">{{ url|truncate(80) }}</a>
+        </p>
+        <div class="badge bg-info">{{ total_scans }} escaneos realizados</div>
+    </div>
+    <div class="btn-group">
+        <a href="/scan/{{ current_scan_id }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver al Escaneo
+        </a>
+        <button type="button" class="btn btn-success" onclick="rescanFromHistory()">
+            <i class="bi bi-arrow-clockwise"></i> Nuevo Re-escaneo
+        </button>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <i class="bi bi-clock-history display-6 text-primary"></i>
+                <h4 class="mt-2">{{ total_scans }}</h4>
+                <small class="text-muted">Total Escaneos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <i class="bi bi-collection display-6 text-success"></i>
+                <h4 class="mt-2">{{ library_summary|length }}</h4>
+                <small class="text-muted">Bibliotecas Detectadas</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar-check display-6 text-info"></i>
+                <h4 class="mt-2">{{ scans[0].scan_date[:10] if scans }}</h4>
+                <small class="text-muted">Último Escaneo</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar-plus display-6 text-warning"></i>
+                <h4 class="mt-2">{{ scans[-1].scan_date[:10] if scans }}</h4>
+                <small class="text-muted">Primer Escaneo</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="row">
+    <!-- Scans Timeline -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-timeline"></i> Línea de Tiempo de Escaneos
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if scans %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="50">#</th>
+                                <th>Fecha y Hora</th>
+                                <th>Cliente</th>
+                                <th>Estado</th>
+                                <th>Conteos</th>
+                                <th width="120">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for scan in scans %}
+                            <tr {% if scan.id == current_scan_id %}class="table-warning"{% endif %}>
+                                <td>
+                                    <span class="badge bg-secondary">{{ loop.revindex }}</span>
+                                    {% if loop.first %}
+                                    <span class="badge bg-success ms-1">Más Reciente</span>
+                                    {% endif %}
+                                    {% if scan.id == current_scan_id %}
+                                    <span class="badge bg-warning ms-1">Viendo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="fw-bold">{{ scan.scan_date[:10] }}</div>
+                                    <small class="text-muted">{{ scan.scan_date[11:19] }}</small>
+                                </td>
+                                <td>
+                                    {% if scan.client_name %}
+                                        <span class="badge bg-primary">{{ scan.client_name }}</span>
+                                    {% else %}
+                                        <span class="text-muted">Sin cliente</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if scan.status_code == 200 %}
+                                        <span class="badge bg-success">{{ scan.status_code }}</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">{{ scan.status_code or 'Error' }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary me-1" title="Bibliotecas">
+                                        <i class="bi bi-bookshelf"></i> {{ scan.library_count }}
+                                    </span>
+                                    <span class="badge bg-info me-1" title="Archivos">
+                                        <i class="bi bi-file-earmark-code"></i> {{ scan.file_count }}
+                                    </span>
+                                    <span class="badge bg-warning" title="Versiones">
+                                        <i class="bi bi-hash"></i> {{ scan.version_string_count }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="/scan/{{ scan.id }}" class="btn btn-outline-primary" title="Ver detalles">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        {% if scan.id != current_scan_id %}
+                                        <button type="button" class="btn btn-outline-secondary" 
+                                                onclick="compareScan({{ current_scan_id }}, {{ scan.id }})" 
+                                                title="Comparar con actual">
+                                            <i class="bi bi-arrow-left-right"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center p-5">
+                    <i class="bi bi-clock-history display-4 text-muted"></i>
+                    <h5 class="mt-3">Sin Historial</h5>
+                    <p class="text-muted">No se encontraron escaneos para esta URL.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Library Summary -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-collection"></i> Resumen de Bibliotecas
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if library_summary %}
+                <div class="list-group list-group-flush">
+                    {% for library in library_summary %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge library-badge {{ 'js-badge' if library.type == 'js' else 'css-badge' }}">
+                                        {{ library.type.upper() }}
+                                    </span>
+                                    <span class="fw-bold">{{ library.library_name }}</span>
+                                </div>
+                                <small class="text-muted">
+                                    Detectada en {{ library.scan_count }} escaneo{{ 's' if library.scan_count > 1 else '' }}
+                                </small>
+                                <div class="mt-1">
+                                    <small class="text-muted">Versiones: </small>
+                                    {% if library.versions_found %}
+                                        {% for version in library.versions_found.split(',')[:3] %}
+                                        <span class="badge bg-light text-dark">{{ version }}</span>
+                                        {% endfor %}
+                                        {% if library.versions_found.split(',')|length > 3 %}
+                                        <span class="text-muted">+{{ library.versions_found.split(',')|length - 3 }} más</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">No detectada</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center p-4">
+                    <i class="bi bi-collection display-4 text-muted"></i>
+                    <h6 class="mt-3">Sin Bibliotecas</h6>
+                    <p class="text-muted small">No se detectaron librerías en los escaneos.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function rescanFromHistory() {
+    if (confirm('¿Quieres realizar un nuevo escaneo de esta URL?')) {
+        // Create form for re-scan using current scan ID
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/re-scan/{{ current_scan_id }}';
+        
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrf_token';
+        csrfToken.value = '{{ csrf_token() }}';
+        form.appendChild(csrfToken);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function compareScan(scanId1, scanId2) {
+    // Redirect to comparison view
+    window.location.href = `/compare-scans/${scanId1}/${scanId2}`;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,22 @@
+# Dependencias para desarrollo
+-r base.txt
+
+# Testing
+pytest==7.4.3
+pytest-flask==1.3.0
+pytest-cov==4.1.0
+
+# Desarrollo y debugging
+flask-debugtoolbar==0.13.1
+
+# Linting y formateo
+flake8==6.1.0
+black==23.12.1
+isort==5.13.2
+
+# CLI mejorado
+click==8.1.7
+
+# Documentación
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0

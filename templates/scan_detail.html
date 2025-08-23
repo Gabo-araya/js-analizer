@@ -1,0 +1,1804 @@
+{% extends "base.html" %} {% block title %}Detalles del Escaneo - {{ scan.url
+}}{% endblock %} {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="/">Panel de Control</a>
+                </li>
+                <li class="breadcrumb-item active">Detalles del Escaneo</li>
+            </ol>
+        </nav>
+        <h1 class="h2">{{ (scan.title or scan.url)|e }}</h1>
+        <a href="{{ scan.url|e }}" target="_blank" class="text-muted"
+            >{{ scan.url|e }}</a
+        >
+        <div class="mt-2">
+            {% if scan_navigation.total_scans > 1 %}
+            <span class="badge bg-info me-2">
+                Escaneo {{ scan_navigation.current_position }} de {{
+                scan_navigation.total_scans }} para esta URL
+            </span>
+            {% endif %}
+            <!-- Review Status Badge -->
+            {% if scan.reviewed %}
+            <span class="badge bg-success fs-6">
+                <i class="bi bi-check-circle-fill"></i> Estado: Revisado
+            </span>
+            {% else %}
+            <span class="badge bg-warning fs-6">
+                <i class="bi bi-clock"></i> Estado: Pendiente de Revisión
+            </span>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Action Buttons - Improved Layout -->
+    <div class="d-flex flex-wrap gap-2 align-items-center scan-actions">
+        <!-- Primary Actions Group -->
+        <div class="btn-group" role="group">
+            <button
+                type="button"
+                class="btn btn-primary dropdown-toggle"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+            >
+                <i class="bi bi-download"></i>
+                <span class="d-none d-md-inline"> Exportar</span>
+            </button>
+            <ul class="dropdown-menu">
+                <li>
+                    <h6 class="dropdown-header">
+                        <i class="bi bi-file-earmark"></i> Reportes
+                    </h6>
+                </li>
+                <li>
+                    <a
+                        class="dropdown-item"
+                        href="/report/enhanced/{{ scan.id }}"
+                        target="_blank"
+                    >
+                        <i class="bi bi-file-earmark-text text-info"></i>
+                        Reporte HTML Mejorado
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                    <h6 class="dropdown-header">
+                        <i class="bi bi-download"></i> Descargas
+                    </h6>
+                </li>
+                <li>
+                    <a
+                        class="dropdown-item"
+                        href="/export/pdf/{{ scan.id }}"
+                        target="_blank"
+                    >
+                        <i class="bi bi-file-earmark-pdf text-danger"></i>
+                        Exportar como PDF
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="/export/csv/{{ scan.id }}">
+                        <i
+                            class="bi bi-file-earmark-spreadsheet text-success"
+                        ></i>
+                        Exportar como CSV
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="/export/excel/{{ scan.id }}">
+                        <i class="bi bi-file-earmark-excel text-success"></i>
+                        Exportar como Excel
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Scan Actions Group -->
+        <div class="btn-group" role="group">
+            <button
+                type="button"
+                class="btn btn-success"
+                onclick="rescanUrl({{ scan.id }})"
+                title="Re-escanear esta URL"
+            >
+                <i class="bi bi-arrow-clockwise"></i>
+                <span class="d-none d-lg-inline"> Re-escanear</span>
+            </button>
+            <a
+                href="/url-history/{{ scan.id }}"
+                class="btn btn-outline-info"
+                title="Ver historial de escaneos de esta URL"
+            >
+                <i class="bi bi-clock-history"></i>
+                <span class="d-none d-lg-inline"> Historial</span>
+            </a>
+        </div>
+        <!-- Review Status Toggle -->
+        <form
+            method="POST"
+            action="{{ url_for('toggle_reviewed', scan_id=scan.id) }}"
+            class="d-inline-block"
+        >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button
+                type="submit"
+                class="btn {{ 'btn-outline-success' if scan.reviewed else 'btn-warning btn-review-pending' }} position-relative"
+                title="{{ 'Marcar como no revisado' if scan.reviewed else 'Marcar como revisado' }}"
+            >
+                <i
+                    class="bi {{ 'bi-check-circle-fill' if scan.reviewed else 'bi-clock' }}"
+                ></i>
+                <span class="d-none d-md-inline">
+                    {{ ' Revisado' if scan.reviewed else ' Marcar Revisado' }}
+                </span>
+                {% if not scan.reviewed %}
+                <span
+                    class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning"
+                >
+                    <span class="visually-hidden">Pendiente</span>
+                </span>
+                {% endif %}
+            </button>
+        </form>
+        {% if scan_navigation.total_scans > 1 %}
+        <!-- Navigation Group -->
+        <div class="btn-group ms-auto" role="group">
+            <small class="text-muted align-self-center me-2 d-none d-md-inline">
+                {{ scan_navigation.current_position }}/{{
+                scan_navigation.total_scans }}
+            </small>
+            {% if scan_navigation.previous_scan_id %}
+            <a
+                href="/scan/{{ scan_navigation.previous_scan_id }}"
+                class="btn btn-outline-secondary"
+                title="Escaneo anterior"
+            >
+                <i class="bi bi-chevron-left"></i>
+                <span class="d-none d-lg-inline"> Anterior</span>
+            </a>
+            {% else %}
+            <button
+                class="btn btn-outline-secondary"
+                disabled
+                title="No hay escaneo anterior"
+            >
+                <i class="bi bi-chevron-left"></i>
+                <span class="d-none d-lg-inline"> Anterior</span>
+            </button>
+            {% endif %} {% if scan_navigation.next_scan_id %}
+            <a
+                href="/scan/{{ scan_navigation.next_scan_id }}"
+                class="btn btn-outline-secondary"
+                title="Escaneo siguiente"
+            >
+                <span class="d-none d-lg-inline">Siguiente </span>
+                <i class="bi bi-chevron-right"></i>
+            </a>
+            {% else %}
+            <button
+                class="btn btn-outline-secondary"
+                disabled
+                title="No hay escaneo siguiente"
+            >
+                <span class="d-none d-lg-inline">Siguiente </span>
+                <i class="bi bi-chevron-right"></i>
+            </button>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Danger Actions -->
+        <div class="ms-auto">
+            <button
+                type="button"
+                class="btn btn-outline-danger"
+                data-bs-toggle="modal"
+                data-bs-target="#deleteScanModal"
+            >
+                <i class="bi bi-trash"></i>
+                <span class="d-none d-md-inline"> Eliminar</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div
+                class="card-header bg-white d-flex justify-content-between align-items-center"
+            >
+                <h5 class="mb-0">
+                    <i class="bi bi-person-badge"></i> Información del Proyecto
+                </h5>
+                <button
+                    type="button"
+                    class="btn btn-outline-primary btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#editScanClientModal"
+                    data-scan-id="{{ scan.id }}"
+                    data-scan-title="{{ (scan.title or scan.url)|e|truncate(30) }}"
+                    data-current-client-id="{{ scan.client_id or '' }}"
+                    title="Editar cliente del escaneo"
+                >
+                    <i class="bi bi-pencil"></i> Editar Proyecto
+                </button>
+            </div>
+            <div class="card-body">
+                {% if scan.client_name %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <p>
+                            <strong>Proyecto:</strong>
+                            <a
+                                href="/project/{{ scan.client_id }}"
+                                class="text-decoration-none"
+                                >{{ scan.client_name }}</a
+                            >
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p>
+                            <strong>Análisis del cliente:</strong>
+                            <a
+                                href="/?client_id={{ scan.client_id }}"
+                                class="text-decoration-none"
+                                >Ver todos los análisis</a
+                            >
+                        </p>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-muted">
+                    <i class="bi bi-info-circle"></i> Este escaneo no está
+                    asociado a ningún cliente específico.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Nav tabs -->
+<ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button
+            class="nav-link active"
+            id="summary-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#summary"
+            type="button"
+            role="tab"
+            aria-controls="summary"
+            aria-selected="true"
+        >
+            <i class="bi bi-heart-pulse"></i> Resumen de Seguridad
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button
+            class="nav-link"
+            id="libraries-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#libraries"
+            type="button"
+            role="tab"
+            aria-controls="libraries"
+            aria-selected="false"
+        >
+            <i class="bi bi-bookshelf"></i> Bibliotecas
+            <span class="badge rounded-pill bg-secondary"
+                >{{ libraries|length }}</span
+            >
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button
+            class="nav-link"
+            id="files-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#files"
+            type="button"
+            role="tab"
+            aria-controls="files"
+            aria-selected="false"
+        >
+            <i class="bi bi-file-earmark-code"></i> Archivos JavaScript
+            <span class="badge rounded-pill bg-secondary"
+                >{{ file_urls|selectattr('file_type', 'equalto', 'js')|list|length }}</span
+            >
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button
+            class="nav-link"
+            id="versions-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#versions"
+            type="button"
+            role="tab"
+            aria-controls="versions"
+            aria-selected="false"
+        >
+            <i class="bi bi-hash"></i> Cadenas de Versión
+            <span class="badge rounded-pill bg-secondary"
+                >{{ version_strings|length }}</span
+            >
+        </button>
+    </li>
+</ul>
+
+<!-- Tab content -->
+<div class="tab-content" id="myTabContent">
+    <!-- Security Overview Tab -->
+    <div
+        class="tab-pane fade show active"
+        id="summary"
+        role="tabpanel"
+        aria-labelledby="summary-tab"
+    >
+        <!-- Client Information Card -->
+
+        <div class="card">
+            <div
+                class="card-header bg-white d-flex justify-content-between align-items-center"
+            >
+                <h5 class="mb-0">
+                    <i class="bi bi-shield-shaded"></i> Análisis de Encabezados
+                    de Seguridad
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-4 text-center">
+                        <div class="progress" style="height: 20px">
+                            <div
+                                class="progress-bar"
+                                role="progressbar"
+                                style="width: {{ security_analysis.security_score }}%"
+                                aria-valuenow="{{ security_analysis.security_score }}"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                            >
+                                {{ security_analysis.security_score|default(0)
+                                }}%
+                            </div>
+                        </div>
+                        <h6 class="mt-2">Puntaje de Seguridad</h6>
+                    </div>
+                    <div class="col-md-8">
+                        {% if security_analysis.warnings %}
+                        <div class="alert alert-warning" role="alert">
+                            <h6 class="alert-heading">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                Advertencias de Seguridad
+                            </h6>
+                            <ul class="mb-0">
+                                {% for warning in security_analysis.warnings %}
+                                <li>{{ warning }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <hr />
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-success">
+                            <i class="bi bi-check-circle-fill"></i>
+                            Encabezados Presentes ({{
+                            security_analysis.present|length }})
+                        </h6>
+                        <ul class="list-group list-group-flush">
+                            {% for header in security_analysis.present %}
+                            <li class="list-group-item">
+                                <strong>{{ header.name|e }}:</strong>
+                                <code class="text-muted"
+                                    >{{ header.value|e | truncate(60) }}</code
+                                >
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-danger">
+                            <i class="bi bi-x-circle-fill"></i> Encabezados
+                            Faltantes ({{ security_analysis.missing|length }})
+                        </h6>
+                        <ul class="list-group list-group-flush">
+                            {% for header in security_analysis.missing %}
+                            <li class="list-group-item">
+                                <strong>{{ header.name|e }}:</strong>
+                                <span class="text-muted"
+                                    >{{ header.recommendation|e }}</span
+                                >
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+
+                <h5 class="mt-4 mb-3">
+                    <i class="bi bi-braces"></i> Encabezados HTTP de Respuesta
+                </h5>
+                {% if headers %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 scan-detail-table">
+                        <thead>
+                            <tr>
+                                <th>Encabezado</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for header, value in headers.items() %}
+                            <tr>
+                                <td><code>{{ header }}</code></td>
+                                <td>
+                                    <code class="text-muted">{{ value }}</code>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center p-5">
+                    <i class="bi bi-braces display-4 text-muted"></i>
+                    <h5 class="mt-3">No hay Encabezados Disponibles</h5>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Libraries Tab -->
+    <div
+        class="tab-pane fade"
+        id="libraries"
+        role="tabpanel"
+        aria-labelledby="libraries-tab"
+    >
+        <div class="card">
+            <div
+                class="card-header bg-white d-flex justify-content-between align-items-center"
+            >
+                <h5 class="mb-0">Bibliotecas Detectadas</h5>
+                <button
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addManualLibraryModal"
+                >
+                    <i class="bi bi-plus-lg"></i> Agregar Biblioteca Manual
+                </button>
+            </div>
+            <div class="card-body p-0">
+                {% if libraries %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 scan-detail-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 15%">Biblioteca</th>
+                                <th style="white-space: normal">
+                                    Versión Actual
+                                </th>
+                                <th style="white-space: normal">
+                                    Versión Segura
+                                </th>
+                                <th style="white-space: normal">
+                                    Versión Segura Global
+                                </th>
+                                <th style="white-space: normal">
+                                    Última Versión
+                                </th>
+                                <th style="white-space: normal">
+                                    Última Versión Global
+                                </th>
+                                <th style="width: 5%">Tipo</th>
+                                <th style="width: 25%">Fuente</th>
+                                <th style="width: 5%">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for library in libraries %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">
+                                        {{ library.library_name }} {% if
+                                        library.global_library_id %}
+                                        <a
+                                            href="{{ url_for('global_library_manual_libraries', global_lib_id=library.global_library_id) }}"
+                                            title="Asociado a biblioteca global - Ver bibliotecas relacionadas"
+                                            class="text-decoration-none ms-2"
+                                        >
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-globe"></i>
+                                                Global
+                                            </span>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                    {% if library.description %}<small
+                                        class="text-muted"
+                                        >{{ library.description }}</small
+                                    >{% endif %}
+                                </td>
+                                <td>
+                                    {% if library.version %} {% set
+                                    effective_safe_version =
+                                    get_effective_safe_version(library.latest_safe_version,
+                                    library.gl_latest_safe_version) %} {% if
+                                    check_vulnerability_with_global(library.version,
+                                    library.latest_safe_version,
+                                    library.gl_latest_safe_version) %}
+                                    <span
+                                        class="badge bg-danger"
+                                        title="⚠️ Versión vulnerable detectada. Se recomienda actualizar a la versión segura: {{ effective_safe_version }}{% if not library.latest_safe_version %} (versión global){% endif %}"
+                                    >
+                                        <i class="bi bi-shield-exclamation"></i>
+                                        {{ library.version }}
+                                    </span>
+                                    {% else %}
+                                    <span
+                                        class="badge bg-success"
+                                        title="✅ Versión segura{% if effective_safe_version %} ({{ effective_safe_version }}){% endif %}"
+                                    >
+                                        <i class="bi bi-shield-check"></i>
+                                        {{ library.version }}
+                                    </span>
+                                    {% endif %} {% else %}
+                                    <span class="text-muted">Desconocida</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if library.latest_safe_version %}
+                                    <span class="badge bg-info-light text-info"
+                                        >{{ library.latest_safe_version }}</span
+                                    >
+                                    {% if library.latest_safe_version and
+                                    library.latest_safe_version ==
+                                    library.gl_latest_safe_version %}
+                                    <i
+                                        class="bi bi-check-circle-fill text-success"
+                                    ></i>
+                                    {% endif %} {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if library.gl_latest_safe_version %}
+                                    <span class="badge bg-info"
+                                        >{{ library.gl_latest_safe_version
+                                        }}</span
+                                    >
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if library.latest_version %}
+                                    <span
+                                        class="badge bg-secondary-light text-secondary"
+                                        >{{ library.latest_version }}</span
+                                    >
+                                    {% if library.latest_version and
+                                    library.latest_version ==
+                                    library.gl_latest_version %}
+                                    <i
+                                        class="bi bi-check-circle-fill text-success"
+                                        title="Coincide con la última versión global"
+                                    ></i>
+                                    {% endif %} {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if library.gl_latest_version %}
+                                    <span class="badge bg-secondary"
+                                        >{{ library.gl_latest_version }}</span
+                                    >
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span
+                                        class="badge library-badge {{ 'js-badge' if library.type == 'js' else 'css-badge' }}"
+                                        >{{ library.type.upper() }}</span
+                                    >
+                                </td>
+                                <td style="max-width: 200px">
+                                    {% if library.source_url %}
+                                    <small class="text-muted">
+                                        <a
+                                            href="{{ library.source_url|e }}"
+                                            target="_blank"
+                                            class="text-decoration-none"
+                                            title="{{ library.source_url|e }}"
+                                            style="
+                                                display: inline-block;
+                                                max-width: 100%;
+                                                overflow: hidden;
+                                                text-overflow: ellipsis;
+                                                white-space: nowrap;
+                                            "
+                                            >{{
+                                            library.source_url|e|truncate_left(50)|e
+                                            }}</a
+                                        >
+                                    </small>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div
+                                        class="btn-group btn-group-sm"
+                                        role="group"
+                                    >
+                                        <button
+                                            type="button"
+                                            class="btn btn-outline-secondary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#editLibraryModal"
+                                            data-lib-id="{{ library.id }}"
+                                            data-lib-name="{{ library.library_name }}"
+                                            data-lib-version="{{ library.version or '' }}"
+                                            data-lib-type="{{ library.type }}"
+                                            data-lib-source="{{ library.source_url or '' }}"
+                                            data-lib-description="{{ library.description or '' }}"
+                                            data-lib-safe-version="{{ library.latest_safe_version or '' }}"
+                                            data-lib-latest-version="{{ library.latest_version or '' }}"
+                                            data-lib-global-id="{{ library.global_library_id or '' }}"
+                                        >
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="btn btn-outline-danger"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#deleteLibraryModal"
+                                            data-lib-id="{{ library.id }}"
+                                            data-lib-name="{{ library.library_name }}"
+                                        >
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center p-5">
+                    <i class="bi bi-bookshelf display-4 text-muted"></i>
+                    <h5 class="mt-3">No se Detectaron Bibliotecas</h5>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Files Tab -->
+    <div
+        class="tab-pane fade"
+        id="files"
+        role="tabpanel"
+        aria-labelledby="files-tab"
+    >
+        <div class="card">
+            <div
+                class="card-header bg-white d-flex justify-content-between align-items-center"
+            >
+                <h5 class="mb-0">Archivos JavaScript y CSS Encontrados</h5>
+                <button
+                    type="button"
+                    class="btn btn-outline-danger btn-sm d-none"
+                    id="batchDeleteFileUrlsBtn"
+                    data-bs-toggle="modal"
+                    data-bs-target="#batchDeleteFileUrlsModal"
+                >
+                    <i class="bi bi-trash"></i> Eliminar Seleccionados (<span
+                        id="selectedFileUrlsCount"
+                        >0</span
+                    >)
+                </button>
+            </div>
+            <div class="card-body p-0">
+                {% if file_urls %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 scan-detail-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input
+                                        type="checkbox"
+                                        class="form-check-input"
+                                        id="selectAllFileUrls"
+                                        name="selectAllFileUrls"
+                                    />
+                                </th>
+                                <th>URL del Archivo</th>
+                                <th>Tipo</th>
+                                <th>Tamaño</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for file in file_urls %}
+                            {% if file.file_type == 'js' %}
+                            <tr>
+                                <td>
+                                    <input
+                                        type="checkbox"
+                                        class="form-check-input file-url-checkbox"
+                                        name="file_url_checkbox_{{ file.id }}"
+                                        id="file_url_checkbox_{{ file.id }}"
+                                        value="{{ file.id }}"
+                                        data-file-url="{{ file.file_url }}"
+                                        data-file-type="{{ file.file_type }}"
+                                    />
+                                </td>
+                                <td>
+                                    <a
+                                        href="{{ file.file_url }}"
+                                        target="_blank"
+                                        class="text-decoration-none"
+                                        >{{ file.file_url | e |
+                                        truncate_left(50) |e }}</a
+                                    >
+                                </td>
+                                <td>
+                                    <span
+                                        class="badge library-badge {{ 'js-badge' if file.file_type == 'js' else 'css-badge' }}"
+                                        >{{ file.file_type.upper() }}</span
+                                    >
+                                </td>
+                                <td>
+                                    {% if file.file_size %} {% set size_kb =
+                                    (file.file_size / 1024) | round(1) %} {{
+                                    size_kb }} KB {% else %}
+                                    <span class="text-muted">Desconocida</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if file.status_code == 200 %}
+                                    <span
+                                        class="badge bg-success-light text-success"
+                                        >{{ file.status_code }}</span
+                                    >
+                                    {% else %}
+                                    <span
+                                        class="badge bg-danger-light text-danger"
+                                        >{{ file.status_code or 'Error' }}</span
+                                    >
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-danger btn-sm"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteIndividualFileUrlModal"
+                                        data-file-id="{{ file.id }}"
+                                        data-file-url="{{ file.file_url }}"
+                                        data-file-type="{{ file.file_type }}"
+                                    >
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center p-5">
+                    <i class="bi bi-file-earmark-code display-4 text-muted"></i>
+                    <h5 class="mt-3">No se Encontraron Archivos JavaScript</h5>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Version Strings Tab -->
+    <div
+        class="tab-pane fade"
+        id="versions"
+        role="tabpanel"
+        aria-labelledby="versions-tab"
+    >
+        <div class="card">
+            <div
+                class="card-header bg-white d-flex justify-content-between align-items-center"
+            >
+                <h5 class="mb-0">Cadenas de Versión en Archivos</h5>
+                <button
+                    type="button"
+                    class="btn btn-outline-danger btn-sm d-none"
+                    id="batchDeleteVersionStringsBtn"
+                    data-bs-toggle="modal"
+                    data-bs-target="#batchDeleteVersionStringsModal"
+                >
+                    <i class="bi bi-trash"></i> Eliminar Seleccionados (<span
+                        id="selectedVersionStringsCount"
+                        >0</span
+                    >)
+                </button>
+            </div>
+            <div class="card-body p-0">
+                {% if version_strings %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 scan-detail-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input
+                                        type="checkbox"
+                                        class="form-check-input"
+                                        id="selectAllVersionStrings"
+                                        name="selectAllVersionStrings"
+                                    />
+                                </th>
+                                <th>Archivo</th>
+                                <th>Línea</th>
+                                <th>Contenido</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vs in version_strings %}
+                            <tr>
+                                <td>
+                                    <input
+                                        type="checkbox"
+                                        class="form-check-input version-string-checkbox"
+                                        name="version_string_checkbox_{{ vs.id }}"
+                                        id="version_string_checkbox_{{ vs.id }}"
+                                        value="{{ vs.all_ids|join(',') }}"
+                                        data-vs-file="{{ vs.file_url|e }}"
+                                        data-vs-lines="{{ vs.lines_count }}"
+                                        data-vs-content="{{ vs.lines[0].line_content|e|truncate(30)|e }}"
+                                    />
+                                </td>
+                                <td>
+                                    <a
+                                        href="{{ vs.file_url|e }}"
+                                        target="_blank"
+                                        class="text-decoration-none"
+                                        >{{ vs.file_url|e | truncate_left(40)
+                                        }}</a
+                                    >
+                                    {% if vs.lines_count > 1 %}
+                                    <span class="badge bg-info ms-2">{{ vs.lines_count }} líneas</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if vs.lines|length == 1 %}
+                                        <code>{{ vs.lines[0].line_number }}</code>
+                                    {% else %}
+                                        <button class="btn btn-link btn-sm p-0" type="button" 
+                                                data-bs-toggle="collapse" data-bs-target="#lines-{{ vs.id }}"
+                                                aria-expanded="false">
+                                            <i class="bi bi-list-ul"></i> {{ vs.lines|length }} líneas
+                                            <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                        <div id="lines-{{ vs.id }}" class="collapse mt-2">
+                                            {% for line in vs.lines %}
+                                            <div class="small text-muted mb-1">
+                                                <code>Línea {{ line.line_number }}</code>
+                                                <span class="badge bg-light text-dark ms-1">{{ line.version_keyword }}</span>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if vs.lines|length == 1 %}
+                                        <code class="text-muted small">{{ vs.lines[0].line_content|e | truncate(80) }}</code>
+                                    {% else %}
+                                        <button class="btn btn-link btn-sm p-0" type="button" 
+                                                data-bs-toggle="collapse" data-bs-target="#content-{{ vs.id }}"
+                                                aria-expanded="false">
+                                            <i class="bi bi-eye"></i> Ver contenido
+                                            <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                        <div id="content-{{ vs.id }}" class="collapse mt-2" style="max-height: 200px; overflow-y: auto;">
+                                            {% for line in vs.lines %}
+                                            <div class="mb-2 p-2 bg-light rounded">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <small class="text-muted fw-bold">Línea {{ line.line_number }}</small>
+                                                    <span class="badge bg-secondary">{{ line.version_keyword }}</span>
+                                                </div>
+                                                <code class="small d-block text-break">{{ line.line_content|e | truncate(120) }}</code>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-danger btn-sm"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteVersionStringModal"
+                                        data-vs-id="{{ vs.all_ids|join(',') }}"
+                                        data-vs-file="{{ vs.file_url|e }}"
+                                        data-vs-lines="{{ vs.lines_count }}"
+                                        data-vs-content="{% if vs.lines_count == 1 %}{{ vs.lines[0].line_content|e|truncate(30)|e }}{% else %}{{ vs.lines_count }} líneas de versión{% endif %}"
+                                    >
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center p-5">
+                    <i class="bi bi-hash display-4 text-muted"></i>
+                    <h5 class="mt-3">No se Encontraron Cadenas de Versión</h5>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <!-- Add Manual Library Modal -->
+    <div
+        class="modal fade"
+        id="addManualLibraryModal"
+        tabindex="-1"
+        aria-labelledby="addManualLibraryModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addManualLibraryModalLabel">
+                        <i class="bi bi-plus-lg"></i> Agregar Biblioteca Manual
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"
+                    ></button>
+                </div>
+                <form method="POST" action="/add-manual-library">
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        id="add_library_csrf"
+                        value="{{ csrf_token() }}"
+                    />
+                    <div class="modal-body">
+                        <input
+                            type="hidden"
+                            name="scan_id"
+                            id="add_scan_id"
+                            value="{{ scan.id }}"
+                        />
+
+                        <div class="mb-3">
+                            <label
+                                for="add_global_library_id"
+                                class="form-label"
+                                >Asociar con Biblioteca Global (Opcional)</label
+                            >
+                            <select
+                                class="form-select"
+                                id="add_global_library_id"
+                                name="global_library_id"
+                            >
+                                <option value="">No asociar</option>
+                                {% for global_lib in global_libraries %}
+                                <option
+                                    value="{{ global_lib.id }}"
+                                    data-name="{{ global_lib.library_name }}"
+                                    data-type="{{ global_lib.type }}"
+                                    data-safe-version="{{ global_lib.latest_safe_version or '' }}"
+                                    data-latest-version="{{ global_lib.latest_version or '' }}"
+                                >
+                                    {{ global_lib.library_name }} ({{
+                                    global_lib.type|upper }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Asocia esta entrada manual con una biblioteca
+                                del catálogo global para heredar sus metadatos.
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="add_library_name" class="form-label"
+                                    >Nombre de la Biblioteca *</label
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="add_library_name"
+                                    name="library_name"
+                                    required
+                                />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="add_library_type" class="form-label"
+                                    >Tipo *</label
+                                >
+                                <select
+                                    class="form-select"
+                                    id="add_library_type"
+                                    name="library_type"
+                                    required
+                                >
+                                    <option value="js">JavaScript (JS)</option>
+                                    <option value="css">CSS</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="add_version" class="form-label"
+                                    >Versión Actual</label
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="add_version"
+                                    name="version"
+                                    placeholder="e.g., 3.6.0"
+                                />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label
+                                    for="add_latest_safe_version"
+                                    class="form-label"
+                                    >Versión Segura Más Reciente</label
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="add_latest_safe_version"
+                                    name="latest_safe_version"
+                                    placeholder="e.g., 3.6.4"
+                                />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label
+                                    for="add_latest_version"
+                                    class="form-label"
+                                    >Versión Más Reciente</label
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="add_latest_version"
+                                    name="latest_version"
+                                    placeholder="e.g., 3.7.1"
+                                />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="add_source_url" class="form-label"
+                                >URL de Origen</label
+                            >
+                            <input
+                                type="url"
+                                class="form-control"
+                                id="add_source_url"
+                                name="source_url"
+                                placeholder="https://..."
+                            />
+                        </div>
+                        <div class="mb-3">
+                            <label for="add_description" class="form-label"
+                                >Descripción</label
+                            >
+                            <textarea
+                                class="form-control"
+                                id="add_description"
+                                name="description"
+                                rows="2"
+                                placeholder="Notas opcionales"
+                            ></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            Agregar Biblioteca
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Version String Modal -->
+    <div
+        class="modal fade"
+        id="deleteVersionStringModal"
+        tabindex="-1"
+        aria-labelledby="deleteVersionStringModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteVersionStringModalLabel">
+                        Confirmar Eliminación
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"
+                    ></button>
+                </div>
+                <form id="deleteVersionStringForm" method="POST">
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        id="delete_version_string_csrf"
+                        value="{{ csrf_token() }}"
+                    />
+                    <div class="modal-body">
+                        <p id="modal-vs-description">
+                            ¿Estás seguro de que quieres eliminar las siguientes
+                            cadenas de versión?
+                        </p>
+                        <ul class="list-group list-group-flush mb-3">
+                            <li class="list-group-item">
+                                <strong>Archivo:</strong>
+                                <span id="modal-vs-file"></span>
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Líneas:</strong>
+                                <span id="modal-vs-lines"></span>
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Contenido:</strong>
+                                <code id="modal-vs-content"></code>
+                            </li>
+                        </ul>
+                        <p class="text-danger">
+                            Esta acción no se puede deshacer.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            Eliminar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Delete Version Strings Modal -->
+    <div
+        class="modal fade"
+        id="batchDeleteVersionStringsModal"
+        tabindex="-1"
+        aria-labelledby="batchDeleteVersionStringsModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5
+                        class="modal-title"
+                        id="batchDeleteVersionStringsModalLabel"
+                    >
+                        Confirmar Eliminación Masiva
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"
+                    ></button>
+                </div>
+                <form
+                    id="batchDeleteVersionStringsForm"
+                    method="POST"
+                    action="/batch-delete-version-strings"
+                >
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        id="batch_delete_version_strings_csrf"
+                        value="{{ csrf_token() }}"
+                    />
+                    <div class="modal-body">
+                        <p>
+                            ¿Estás seguro de que quieres eliminar
+                            <span id="batchVsCount" class="fw-bold">0</span>
+                            cadenas de versión seleccionadas?
+                        </p>
+                        <div
+                            id="batchVsPreview"
+                            class="mb-3 small text-muted"
+                        ></div>
+                        <p class="text-danger">
+                            Esta acción no se puede deshacer.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            Eliminar Seleccionados
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Delete File URLs Modal -->
+    <div
+        class="modal fade"
+        id="batchDeleteFileUrlsModal"
+        tabindex="-1"
+        aria-labelledby="batchDeleteFileUrlsModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="batchDeleteFileUrlsModalLabel">
+                        Confirmar Eliminación Masiva
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"
+                    ></button>
+                </div>
+                <form
+                    id="batchDeleteFileUrlsForm"
+                    method="POST"
+                    action="/batch-delete-file-urls"
+                >
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        id="batch_delete_file_urls_csrf"
+                        value="{{ csrf_token() }}"
+                    />
+                    <div class="modal-body">
+                        <p>
+                            ¿Estás seguro de que quieres eliminar
+                            <span id="batchFileCount" class="fw-bold">0</span>
+                            URLs de archivos seleccionados?
+                        </p>
+                        <div
+                            id="batchFilePreview"
+                            class="mb-3 small text-muted"
+                        ></div>
+                        <p class="text-danger">
+                            Esta acción no se puede deshacer.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            Eliminar Seleccionados
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Library Modal -->
+    <div
+        class="modal fade"
+        id="editLibraryModal"
+        tabindex="-1"
+        aria-labelledby="editLibraryModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editLibraryModalLabel">
+                        <i class="bi bi-pencil"></i> Editar Biblioteca
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"
+                    ></button>
+                </div>
+                <form id="editLibraryForm" method="POST">
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        id="edit_library_csrf"
+                        value="{{ csrf_token() }}"
+                    />
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label
+                                    for="edit_library_name"
+                                    class="form-label"
+                                    >Library Name *</label
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="edit_library_name"
+                                    name="library_name"
+                                    required
+                                />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label
+                                    for="edit_library_type"
+                                    class="form-label"
+                                    >Tipo *</label
+                                >
+                                <select
+                                    class="form-select"
+                                    id="edit_library_type"
+                                    name="library_type"
+                                    required
+                                >
+                                    <option value="js">JavaScript (JS)</option>
+                                    <option value="css">CSS</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="edit_version" class="form-label"
+                                    >Versión Actual</label
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="edit_version"
+                                    name="version"
+                                    placeholder="e.g., 3.6.0"
+                                />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label
+                                    for="edit_latest_safe_version"
+                                    class="form-label"
+                                    >Versión Segura Más Reciente</label
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="edit_latest_safe_version"
+                                    name="latest_safe_version"
+                                    placeholder="e.g., 3.6.4"
+                                />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label
+                                    for="edit_latest_version"
+                                    class="form-label"
+                                    >Última Versión</label
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="edit_latest_version"
+                                    name="latest_version"
+                                    placeholder="e.g., 3.7.1"
+                                />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_source_url" class="form-label"
+                                >Source URL</label
+                            >
+                            <input
+                                type="url"
+                                class="form-control"
+                                id="edit_source_url"
+                                name="source_url"
+                                placeholder="https://..."
+                            />
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_description" class="form-label"
+                                >Description</label
+                            >
+                            <textarea
+                                class="form-control"
+                                id="edit_description"
+                                name="description"
+                                rows="2"
+                                placeholder="Notas opcionales"
+                            ></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label
+                                for="edit_global_library_id"
+                                class="form-label"
+                                >Asociar con Biblioteca Global (Opcional)</label
+                            >
+                            <select
+                                class="form-select"
+                                id="edit_global_library_id"
+                                name="global_library_id"
+                            >
+                                <option value="">No asociar</option>
+                                {% for global_lib in global_libraries %}
+                                <option value="{{ global_lib.id }}">
+                                    {{ global_lib.library_name }} ({{
+                                    global_lib.type }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Library Modal -->
+    <div
+        class="modal fade"
+        id="deleteLibraryModal"
+        tabindex="-1"
+        aria-labelledby="deleteLibraryModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteLibraryModalLabel">
+                        Confirm Deletion
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"
+                    ></button>
+                </div>
+                <form id="deleteLibraryForm" method="POST">
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        id="delete_library_csrf"
+                        value="{{ csrf_token() }}"
+                    />
+                    <div class="modal-body">
+                        <p>
+                            ¿Estás seguro de que quieres eliminar la librería
+                            "<span
+                                id="delete-library-name"
+                                class="fw-bold"
+                            ></span
+                            >"?
+                        </p>
+                        <p class="text-danger">
+                            Esta acción no se puede deshacer.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            Eliminar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Individual File URL Modal -->
+    <div
+        class="modal fade"
+        id="deleteIndividualFileUrlModal"
+        tabindex="-1"
+        aria-labelledby="deleteIndividualFileUrlModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5
+                        class="modal-title"
+                        id="deleteIndividualFileUrlModalLabel"
+                    >
+                        Confirmar Eliminación de URL de Archivo
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"
+                    ></button>
+                </div>
+                <form id="deleteIndividualFileUrlForm" method="POST">
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        id="delete_individual_file_url_csrf"
+                        value="{{ csrf_token() }}"
+                    />
+                    <div class="modal-body">
+                        <p>
+                            ¿Estás seguro de que quieres eliminar la URL del
+                            archivo: <br /><strong id="modal-file-url"></strong>
+                            (<span id="modal-file-type" class="badge"></span>)?
+                        </p>
+                        <p class="text-danger">
+                            Esta acción no se puede deshacer.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            Eliminar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Scan Modal -->
+    <div
+        class="modal fade"
+        id="deleteScanModal"
+        tabindex="-1"
+        aria-labelledby="deleteScanModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteScanModalLabel">
+                        Confirmar Eliminación de Escaneo
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"
+                    ></button>
+                </div>
+                <form
+                    id="deleteScanForm"
+                    method="POST"
+                    action="/delete-scan/{{ scan.id }}"
+                >
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        id="delete_scan_csrf"
+                        value="{{ csrf_token() }}"
+                    />
+                    <div class="modal-body">
+                        <p>
+                            ¿Estás seguro de que quieres eliminar el escaneo
+                            para <strong>{{ scan.url }}</strong>?
+                        </p>
+                        <p class="text-danger">
+                            Esta acción no se puede deshacer y eliminará todos
+                            los datos asociados.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            Eliminar Escaneo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Scan Client Modal -->
+    <div
+        class="modal fade"
+        id="editScanClientModal"
+        tabindex="-1"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-pencil"></i> Editar Proyecto del Escaneo
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                    ></button>
+                </div>
+                <form method="POST" action="" id="editScanClientForm">
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="{{ csrf_token() }}"
+                    />
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="client_id" class="form-label"
+                                >Proyecto</label
+                            >
+                            <select
+                                class="form-select"
+                                id="scanClientSelect"
+                                name="client_id"
+                            >
+                                <option value="">Sin cliente específico</option>
+                                {% for client in clients %}
+                                <option
+                                    value="{{ client.id }}"
+                                    {% if scan.client_id == client.id %}selected{% endif %}
+                                >
+                                    {{ client.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Cambiando el cliente se actualizará:
+                                <strong id="editScanName">Loading...</strong>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>URL del escaneo:</strong> {{ scan.url }}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            Aplicar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/scan_detail.js') }}"></script>
+    <script>
+        function rescanUrl(scanId) {
+            if (
+                confirm(
+                    "¿Estás seguro de que quieres re-escanear esta URL? Esto creará un nuevo análisis.",
+                )
+            ) {
+                // Show loading state
+                const button = event.target.closest("button");
+                const originalText = button.innerHTML;
+                button.innerHTML =
+                    '<span class="spinner-border spinner-border-sm me-2"></span>Re-escaneando...';
+                button.disabled = true;
+
+                // Create form and submit
+                const form = document.createElement("form");
+                form.method = "POST";
+                form.action = "/re-scan/" + scanId;
+
+                // Add CSRF token
+                const csrfToken = document.createElement("input");
+                csrfToken.type = "hidden";
+                csrfToken.name = "csrf_token";
+                csrfToken.value = "{{ csrf_token() }}";
+                form.appendChild(csrfToken);
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        // Handle edit scan client modal
+        const editScanClientModal = document.getElementById(
+            "editScanClientModal",
+        );
+        editScanClientModal.addEventListener("show.bs.modal", function (event) {
+            const button = event.relatedTarget;
+            const scanId = button.getAttribute("data-scan-id");
+            const scanTitle = button.getAttribute("data-scan-title");
+            const currentClientId = button.getAttribute(
+                "data-current-client-id",
+            );
+
+            // Update form action
+            const form = document.getElementById("editScanClientForm");
+            form.action = "/update-scan-project-dashboard/" + scanId;
+
+            // Update scan name
+            const scanNameSpan = document.getElementById("editScanName");
+            scanNameSpan.textContent = scanTitle;
+
+            // Set current client selection
+            const clientSelect = document.getElementById("scanClientSelect");
+            clientSelect.value = currentClientId || "";
+        });
+    </script>
+    {% endblock %}
+</div>

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Ayuda y Documentación{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-3">
+            <div class="sticky-top" style="top: 20px;">
+                <h4>Navegación</h4>
+                <div class="list-group">
+                    <a href="#introduccion" class="list-group-item list-group-item-action">Introducción</a>
+                    <a href="#escanear" class="list-group-item list-group-item-action">Escanear URLs</a>
+                    <a href="#reportes" class="list-group-item list-group-item-action">Reportes</a>
+                    <a href="#proyectos" class="list-group-item list-group-item-action">Gestión de Proyectos</a>
+                    <a href="#global-libs" class="list-group-item list-group-item-action">Bibliotecas Globales</a>
+                    <a href="#historial" class="list-group-item list-group-item-action">Historial de Acciones</a>
+                    <a href="#faq" class="list-group-item list-group-item-action">FAQ</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-9">
+            <main>
+                <section id="introduccion">
+                    <h2><i class="bi bi-book-half"></i> Introducción</h2>
+                    <p>Bienvenido a la herramienta de análisis de seguridad de librerías JavaScript. Esta aplicación te permite escanear sitios web para identificar las librerías que utilizan, detectar vulnerabilidades conocidas y gestionar los resultados de forma centralizada.</p>
+                </section>
+
+                <section id="escanear" class="mt-5">
+                    <h3><i class="bi bi-search"></i> Escanear URLs</h3>
+                    <p>Puedes escanear una URL individual o múltiples URLs en lote desde el dashboard principal.</p>
+                    <ul>
+                        <li><strong>Análisis Individual:</strong> Ingresa una URL en el campo principal y haz clic en "Analizar".</li>
+                        <li><strong>Análisis en Lote:</strong> Haz clic en "Análisis en Lote", pega una lista de URLs (una por línea) y haz clic en "Iniciar Análisis".</li>
+                    </ul>
+                </section>
+
+                <section id="reportes" class="mt-5">
+                    <h3><i class="bi bi-file-earmark-text"></i> Reportes y Detalles</h3>
+                    <p>Cada escaneo genera un reporte detallado que incluye:</p>
+                    <ul>
+                        <li><strong>Librerías Detectadas:</strong> Lista de librerías JavaScript encontradas, con su versión.</li>
+                        <li><strong>Cadenas de Versión:</strong> Líneas de código específicas donde se encontró la palabra "version", útil para investigación manual.</li>
+                        <li><strong>Archivos Encontrados:</strong> Todas las URLs de archivos JavaScript vinculados en la página.</li>
+                        <li><strong>Análisis de Cabeceras:</strong> Revisión de las cabeceras de seguridad HTTP.</li>
+                    </ul>
+                    <p>Puedes exportar los reportes en formato PDF, CSV y Excel.</p>
+                </section>
+
+                <section id="proyectos" class="mt-5">
+                    <h3><i class="bi bi-people-fill"></i> Gestión de Proyectos</h3>
+                    <p>La sección "Proyectos" te permite agrupar escaneos por proyecto. Puedes crear, editar y asignar escaneos a proyectos específicos para una mejor organización.</p>
+                </section>
+
+                <section id="global-libs" class="mt-5">
+                    <h3><i class="bi bi-globe"></i> Bibliotecas Globales</h3>
+                    <p>El catálogo de bibliotecas globales es una base de datos centralizada de librerías conocidas. Aquí puedes:</p>
+                    <ul>
+                        <li>Definir la <strong>última versión segura</strong> y la <strong>última versión disponible</strong> de una librería.</li>
+                        <li>Esta información se usa en los reportes para determinar si una librería detectada es vulnerable.</li>
+                        <li>Puedes importar y exportar este catálogo en formato CSV o JSON.</li>
+                    </ul>
+                </section>
+
+                <section id="historial" class="mt-5">
+                    <h3><i class="bi bi-clock-history"></i> Historial de Acciones</h3>
+                    <p>El sistema registra acciones importantes como inicios de sesión, escaneos, y modificaciones de datos. Puedes consultar este historial para auditoría y seguimiento.</p>
+                </section>
+
+                <section id="faq" class="mt-5">
+                    <h2><i class="bi bi-question-circle-fill"></i> Preguntas Frecuentes (FAQ)</h2>
+                    <div class="accordion" id="faqAccordion">
+                      <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOne">
+                          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                            ¿Cómo funciona la relación entre las bibliotecas de un escaneo y las bibliotecas globales?
+                          </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
+                          <div class="accordion-body">
+                            <p><strong>Respuesta corta: Mediante una asociación opcional.</strong></p>
+                            <ul>
+                                <li><strong>Asociación:</strong> Al añadir o editar una biblioteca manual en un escaneo, puedes <strong>asociarla opcionalmente</strong> a una biblioteca del Catálogo Global.</li>
+                                <li><strong>Vista de Detalle del Escaneo:</strong>
+                                    <ul>
+                                        <li>Si una biblioteca está asociada, la tabla mostrará las versiones ("Segura" y "Última") de la biblioteca global junto a las versiones detectadas en el escaneo.</li>
+                                        <li>Aparecerá un icono de enlace <i class="bi bi-link-45deg"></i> junto al nombre de la biblioteca para indicar que está asociada.</li>
+                                        <li>Se mostrará un checkmark verde (✅) si la versión segura o la última versión de la biblioteca del escaneo coincide con la versión correspondiente de la biblioteca global.</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Independencia de los datos:</strong> Aunque estén asociadas, los datos de la biblioteca del escaneo (versión, versión segura, etc.) siguen siendo independientes. Cambiar la biblioteca global <strong>no</strong> alterará los datos ya guardados en escaneos anteriores. La asociación simplemente permite visualizar y comparar los datos globales en la vista de detalle.</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingTwo">
+                          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            Si cambio la versión en una biblioteca global, ¿cambia en las bibliotecas de un escaneo existente?
+                          </button>
+                        </h2>
+                        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
+                          <div class="accordion-body">
+                            <p><strong>Respuesta corta: No.</strong></p>
+                            <p>Los datos de las bibliotecas dentro de un escaneo (tanto las detectadas automáticamente como las manuales) son <strong>independientes</strong> del catálogo global una vez que se han guardado.</p>
+                            <p>Si actualizas la "última versión" o la "última versión segura" en el catálogo global, estos cambios <strong>no se propagarán</strong> a las bibliotecas que ya existen en los resultados de escaneos anteriores. Sin embargo, gracias a la nueva funcionalidad de asociación, podrás ver la nueva información global directamente en la tabla de detalles del escaneo para una comparación más fácil.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+</div>
+{% endblock %}

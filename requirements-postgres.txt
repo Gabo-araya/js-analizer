@@ -1,0 +1,22 @@
+# Dependencias base del proyecto (mantener las existentes)
+Flask==2.3.3
+Flask-WTF==1.2.1
+beautifulsoup4==4.12.2
+requests==2.32.4
+reportlab==4.0.4
+openpyxl==3.1.2
+pandas==2.3.1
+lxml==4.9.3
+pillow>=10.3.0
+urllib3>=2.5.0
+Werkzeug>=2.3.0
+
+# Nuevas dependencias para PostgreSQL
+psycopg2-binary>=2.9.7
+SQLAlchemy>=2.0.0
+Flask-SQLAlchemy>=3.0.0
+Flask-Migrate>=4.0.0
+alembic>=1.12.0
+
+# Opcional: Pool de conexiones avanzado
+psycopg2-pool>=1.1

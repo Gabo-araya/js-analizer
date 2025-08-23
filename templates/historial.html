@@ -1,0 +1,494 @@
+{% extends "base.html" %}
+
+{% block title %}Historial de Acciones - Analizador de Bibliotecas JavaScript{% endblock %}
+
+{% block content %}
+<!-- Hidden CSRF token for JavaScript -->
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-clock-history"></i> Historial de Acciones</h1>
+            <div>
+                <button class="btn btn-outline-success btn-sm" class="export-history-btn">
+                    <i class="bi bi-download"></i> Exportar
+                </button>
+            </div>
+        </div>
+
+        <!-- Filtros de búsqueda -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros de Búsqueda</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="/historial">
+                    <div class="row g-3">
+                        <div class="col-md-2">
+                            <label class="form-label">Usuario</label>
+                            <select name="user" class="form-select">
+                                <option value="">Todos los usuarios</option>
+                                {% for user in users %}
+                                <option value="{{ user.username }}" 
+                                        {% if filters.user == user.username %}selected{% endif %}>
+                                    {{ user.username }} ({{ user.user_role }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Acción</label>
+                            <select name="action" class="form-select">
+                                <option value="">Todas las acciones</option>
+                                {% for action in action_types %}
+                                <option value="{{ action }}" 
+                                        {% if filters.action == action %}selected{% endif %}>
+                                    {{ action }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Tabla</label>
+                            <select name="table" class="form-select">
+                                <option value="">Todas las tablas</option>
+                                {% for table in table_names %}
+                                <option value="{{ table }}" 
+                                        {% if filters.table == table %}selected{% endif %}>
+                                    {{ table }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Desde</label>
+                            <input type="date" name="date_from" class="form-control" 
+                                   value="{{ filters.date_from }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Hasta</label>
+                            <input type="date" name="date_to" class="form-control" 
+                                   value="{{ filters.date_to }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Búsqueda</label>
+                            <div class="input-group">
+                                <input type="text" name="search" class="form-control" 
+                                       placeholder="Buscar..." value="{{ filters.search }}">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="bi bi-funnel"></i> Filtrar
+                            </button>
+                            <a href="/historial" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Limpiar Filtros
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Estadísticas rápidas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ pagination.total }}</h5>
+                        <p class="card-text text-muted">Total Acciones</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ users|length }}</h5>
+                        <p class="card-text text-muted">Usuarios Activos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ action_types|length }}</h5>
+                        <p class="card-text text-muted">Tipos de Acción</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ table_names|length }}</h5>
+                        <p class="card-text text-muted">Tablas Monitoreadas</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de historial -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between">
+                <h5 class="mb-0"><i class="bi bi-list-task"></i> Registro de Acciones</h5>
+                <small class="text-muted">
+                    Mostrando {{ records|length }} de {{ pagination.total }} registros
+                </small>
+            </div>
+            <div class="card-body p-0">
+                {% if records %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Fecha/Hora</th>
+                                <th>Usuario</th>
+                                <th>Acción</th>
+                                <th>Objetivo</th>
+                                <th>Descripción</th>
+                                <th>IP</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in records %}
+                            <tr class="{% if not record.success %}table-warning{% endif %}">
+                                <td>
+                                    <small>{{ record.timestamp.split('.')[0].replace('T', ' ') if 'T' in record.timestamp else record.timestamp }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'primary' if record.user_role == 'admin' else 'secondary' }}">
+                                        {{ record.username }}
+                                    </span>
+                                    <br><small class="text-muted">{{ record.user_role }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if record.action_type == 'CREATE' else 'info' if record.action_type == 'UPDATE' else 'danger' if record.action_type == 'DELETE' else 'warning' if record.action_type in ['LOGIN', 'LOGOUT'] else 'secondary' }}">
+                                        {{ record.action_type }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small><strong>{{ record.target_table }}</strong>
+                                    {% if record.target_id %}<br>#{{ record.target_id }}{% endif %}</small>
+                                </td>
+                                <td>
+                                    <div class="description-cell" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis;">
+                                        {{ record.target_description or '-' }}
+                                    </div>
+                                    {% if record.notes %}
+                                    <small class="text-muted"><br><i class="bi bi-sticky"></i> {{ record.notes }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ record.ip_address or '-' }}</small>
+                                </td>
+                                <td>
+                                    {% if record.success %}
+                                        <i class="bi bi-check-circle text-success" title="Exitoso"></i>
+                                    {% else %}
+                                        <i class="bi bi-x-circle text-danger" 
+                                           title="{{ record.error_message or 'Error' }}"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-info" 
+                                                data-record-id="{{ record.id }}" class="view-details-btn" 
+                                                title="Ver detalles">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        {% if record.action_type in ['UPDATE', 'DELETE'] and record.data_before %}
+                                        <button class="btn btn-outline-warning" 
+                                                data-record-id="{{ record.id }}" class="undo-action-btn"
+                                                title="Deshacer acción">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h4 class="text-muted mt-3">No hay registros de historial</h4>
+                    <p class="text-muted">No se encontraron acciones que coincidan con los filtros aplicados.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Paginación -->
+        {% if pagination.total_pages > 1 %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ pagination.prev_num }}{% if filters.user %}&user={{ filters.user }}{% endif %}{% if filters.action %}&action={{ filters.action }}{% endif %}{% if filters.table %}&table={{ filters.table }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}">
+                        <i class="bi bi-chevron-left"></i> Anterior
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for page_num in range(1, pagination.total_pages + 1) %}
+                    {% if page_num == pagination.page %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% elif page_num == 1 or page_num == pagination.total_pages or (page_num >= pagination.page - 2 and page_num <= pagination.page + 2) %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_num }}{% if filters.user %}&user={{ filters.user }}{% endif %}{% if filters.action %}&action={{ filters.action }}{% endif %}{% if filters.table %}&table={{ filters.table }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}">{{ page_num }}</a>
+                    </li>
+                    {% elif page_num == pagination.page - 3 or page_num == pagination.page + 3 %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ pagination.next_num }}{% if filters.user %}&user={{ filters.user }}{% endif %}{% if filters.action %}&action={{ filters.action }}{% endif %}{% if filters.table %}&table={{ filters.table }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}">
+                        Siguiente <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal para ver detalles -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailsModalLabel">
+                    <i class="bi bi-info-circle"></i> Detalles de la Acción
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="detailsModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación para deshacer -->
+<div class="modal fade" id="undoModal" tabindex="-1" aria-labelledby="undoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="undoModalLabel">
+                    <i class="bi bi-exclamation-triangle text-warning"></i> Confirmar Deshacer Acción
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que quieres deshacer esta acción?</p>
+                <p class="text-muted">Esta operación no se puede deshacer posteriormente.</p>
+                <div id="undoActionDetails"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" id="confirmUndoBtn">
+                    <i class="bi bi-arrow-counterclockwise"></i> Deshacer Acción
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewDetails(actionId) {
+    // TODO: Implementar vista de detalles
+    fetch(`/historial/details/${actionId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('detailsModalBody').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Información General</h6>
+                        <p><strong>ID:</strong> ${data.id}</p>
+                        <p><strong>Usuario:</strong> ${data.username} (${data.user_role})</p>
+                        <p><strong>Fecha:</strong> ${data.timestamp}</p>
+                        <p><strong>IP:</strong> ${data.ip_address || 'N/A'}</p>
+                        <p><strong>User Agent:</strong> ${data.user_agent || 'N/A'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Detalles de la Acción</h6>
+                        <p><strong>Tipo:</strong> ${data.action_type}</p>
+                        <p><strong>Tabla:</strong> ${data.target_table}</p>
+                        <p><strong>ID Objetivo:</strong> ${data.target_id || 'N/A'}</p>
+                        <p><strong>Descripción:</strong> ${data.target_description || 'N/A'}</p>
+                        <p><strong>Estado:</strong> ${data.success ? 'Exitoso' : 'Fallido'}</p>
+                    </div>
+                </div>
+                ${data.data_before ? `
+                <div class="mt-3">
+                    <h6>Datos Anteriores</h6>
+                    <pre class="bg-light p-2 rounded">${JSON.stringify(JSON.parse(data.data_before), null, 2)}</pre>
+                </div>
+                ` : ''}
+                ${data.data_after ? `
+                <div class="mt-3">
+                    <h6>Datos Posteriores</h6>
+                    <pre class="bg-light p-2 rounded">${JSON.stringify(JSON.parse(data.data_after), null, 2)}</pre>
+                </div>
+                ` : ''}
+                ${data.error_message ? `
+                <div class="mt-3">
+                    <h6>Error</h6>
+                    <div class="alert alert-danger">${data.error_message}</div>
+                </div>
+                ` : ''}
+                ${data.notes ? `
+                <div class="mt-3">
+                    <h6>Notas</h6>
+                    <p>${data.notes}</p>
+                </div>
+                ` : ''}
+            `;
+            new bootstrap.Modal(document.getElementById('detailsModal')).show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al cargar los detalles de la acción');
+        });
+}
+
+function undoAction(actionId) {
+    // Cargar detalles de la acción a deshacer
+    fetch(`/historial/details/${actionId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('undoActionDetails').innerHTML = `
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">Detalles de la Acción a Deshacer</h6>
+                        <p><strong>Tipo:</strong> ${data.action_type}</p>
+                        <p><strong>Tabla:</strong> ${data.target_table}</p>
+                        <p><strong>Descripción:</strong> ${data.target_description || 'N/A'}</p>
+                        <p><strong>Fecha:</strong> ${data.timestamp}</p>
+                        <p><strong>Usuario:</strong> ${data.username}</p>
+                    </div>
+                </div>
+            `;
+        })
+        .catch(error => {
+            console.error('Error loading action details:', error);
+            document.getElementById('undoActionDetails').innerHTML = 
+                '<div class="alert alert-warning">No se pudieron cargar los detalles de la acción</div>';
+        });
+    
+    // Configurar el botón de confirmación
+    document.getElementById('confirmUndoBtn').onclick = function() {
+        // Mostrar loading
+        this.disabled = true;
+        this.innerHTML = '<i class="bi bi-hourglass-split"></i> Deshaciendo...';
+        
+        fetch(`/historial/undo/${actionId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Cerrar modal
+                bootstrap.Modal.getInstance(document.getElementById('undoModal')).hide();
+                
+                // Mostrar mensaje de éxito
+                showAlert('success', data.message);
+                
+                // Recargar página después de un momento
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showAlert('danger', 'Error: ' + data.message);
+                // Restaurar botón
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> Deshacer Acción';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('danger', 'Error al deshacer la acción: ' + error.message);
+            // Restaurar botón
+            this.disabled = false;
+            this.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> Deshacer Acción';
+        });
+    };
+    
+    new bootstrap.Modal(document.getElementById('undoModal')).show();
+}
+
+function showAlert(type, message) {
+    // Crear y mostrar alerta temporal
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    // Auto-remover después de 5 segundos
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+function exportHistory() {
+    // TODO: Implementar exportación
+    const params = new URLSearchParams(window.location.search);
+    const exportUrl = '/historial/export?' + params.toString();
+    window.open(exportUrl, '_blank');
+}
+</script>
+
+<style>
+.description-cell {
+    white-space: nowrap;
+}
+
+.description-cell:hover {
+    white-space: normal;
+    overflow: visible;
+}
+
+.table-responsive {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+</style>
+{% endblock %}
