@@ -1067,7 +1067,7 @@ def index():
         FROM scans s
         {where_clause}
     '''
-    all_scans = conn.execute(all_scans_query, stats_query_params).fetchall()
+    all_scans = conn.execute(all_scans_query, query_params).fetchall()
 
     # Count vulnerable scans using Python logic
     vulnerable_scans_count = 0
@@ -1923,17 +1923,17 @@ def url_history(scan_id):
         # Get all scans for this URL with additional details
         scans = conn.execute('''
             SELECT s.id, s.url, s.scan_date, s.status_code, s.title, s.project_id,
-                   c.name as project_name,
+                   p.name as project_name,
                    COUNT(DISTINCT l.id) as library_count,
                    COUNT(DISTINCT vs.id) as version_string_count,
                    COUNT(DISTINCT fu.id) as file_count
             FROM scans s
-            LEFT JOIN projects c ON s.project_id = c.id
+            LEFT JOIN projects p ON s.project_id = p.id AND p.is_active = 1
             LEFT JOIN libraries l ON s.id = l.scan_id
             LEFT JOIN version_strings vs ON s.id = vs.scan_id
             LEFT JOIN file_urls fu ON s.id = fu.scan_id
             WHERE s.url = ?
-            GROUP BY s.id
+            GROUP BY s.id, s.url, s.scan_date, s.status_code, s.title, s.project_id, p.name
             ORDER BY s.scan_date DESC
         ''', (url,)).fetchall()
 

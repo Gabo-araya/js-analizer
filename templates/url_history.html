@@ -105,14 +105,7 @@
                         <tbody>
                             {% for scan in scans %}
                             <tr
-                                {%
-                                if
-                                scan.id=""
-                                ="current_scan_id"
-                                %}class="table-warning"
-                                {%
-                                endif
-                                %}
+                                {% if scan.id == current_scan_id %}class="table-warning"{% endif %}
                             >
                                 <td>
                                     <span class="badge bg-secondary"
