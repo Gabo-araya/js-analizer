@@ -1,0 +1,707 @@
+{% extends "base.html" %} {% set current_page = 'projects' %} {% block title
+%}Gestión de Proyectos{% endblock %} {% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-people"></i> Gestión de Proyectos</h2>
+                <div class="btn-group">
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#addProjectModal"
+                    >
+                        <i class="bi bi-plus-lg"></i> Nuevo Proyecto
+                    </button>
+                    <div class="btn-group" role="group">
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary dropdown-toggle"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+                            <i class="bi bi-download"></i> Importar
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a
+                                    class="dropdown-item"
+                                    href="#"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#importProjectsModal"
+                                >
+                                    <i class="bi bi-upload"></i> Importar
+                                    Proyectos
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary dropdown-toggle"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+                            <i class="bi bi-upload"></i> Exportar
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a
+                                    class="dropdown-item"
+                                    href="/export-projects/csv"
+                                >
+                                    <i class="bi bi-filetype-csv"></i> Exportar
+                                    CSV
+                                </a>
+                            </li>
+                            <li>
+                                <a
+                                    class="dropdown-item"
+                                    href="/export-projects/json"
+                                >
+                                    <i class="bi bi-filetype-json"></i> Exportar
+                                    JSON
+                                </a>
+                            </li>
+                            <li>
+                                <a
+                                    class="dropdown-item"
+                                    href="/export-projects/xlsx"
+                                >
+                                    <i
+                                        class="bi bi-file-earmark-spreadsheet"
+                                    ></i>
+                                    Exportar Excel
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card border-primary">
+                        <div class="card-body text-center">
+                            <i class="bi bi-people display-6 text-primary"></i>
+                            <h4 class="mt-2">{{ projects|length }}</h4>
+                            <small class="text-muted">Proyectos Activos</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-success">
+                        <div class="card-body text-center">
+                            <i
+                                class="bi bi-check-circle display-6 text-success"
+                            ></i>
+                            <h4 class="mt-2">
+                                {{ projects|sum(attribute='completed_scans') }}
+                            </h4>
+                            <small class="text-muted"
+                                >Análisis Completados</small
+                            >
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-warning">
+                        <div class="card-body text-center">
+                            <i class="bi bi-clock display-6 text-warning"></i>
+                            <h4 class="mt-2">
+                                {{ projects|sum(attribute='pending_scans') }}
+                            </h4>
+                            <small class="text-muted"
+                                >Análisis Pendientes</small
+                            >
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-info">
+                        <div class="card-body text-center">
+                            <i class="bi bi-search display-6 text-info"></i>
+                            <h4 class="mt-2">
+                                {{ projects|sum(attribute='scan_count') }}
+                            </h4>
+                            <small class="text-muted">Total Análisis</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Projects Table -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Lista de Proyectos</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if projects %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Proyecto</th>
+                                    <th>Contacto</th>
+                                    <th>Análisis</th>
+                                    <th>Último Análisis</th>
+                                    <th>Creado</th>
+                                    <th width="150">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for project in projects %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">
+                                            <a
+                                                href="/project/{{ project.id }}#libraries"
+                                                class="text-decoration-none"
+                                                >{{ project.name }}</a
+                                            >
+                                        </div>
+                                        {% if project.description %}
+                                        <small class="text-muted"
+                                            >{{ project.description }}</small
+                                        >
+                                        {% endif %} {% if project.website %}
+                                        <div>
+                                            <a
+                                                href="{{ project.website }}"
+                                                target="_blank"
+                                                class="text-decoration-none small"
+                                            >
+                                                <i class="bi bi-globe"></i> {{
+                                                project.website }}
+                                            </a>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if project.contact_email %}
+                                        <div>
+                                            <i class="bi bi-envelope"></i> {{
+                                            project.contact_email }}
+                                        </div>
+                                        {% endif %} {% if project.contact_phone
+                                        %}
+                                        <div>
+                                            <i class="bi bi-telephone"></i> {{
+                                            project.contact_phone }}
+                                        </div>
+                                        {% endif %} {% if not
+                                        project.contact_email and not
+                                        project.contact_phone %}
+                                        <span class="text-muted"
+                                            >Sin información</span
+                                        >
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if project.scan_count and
+                                        project.scan_count > 0 %}
+                                        <div class="d-flex gap-1 flex-wrap">
+                                            {% if project.pending_scans and
+                                            project.pending_scans > 0 %}
+                                            <span
+                                                class="badge bg-warning text-dark"
+                                                title="Análisis pendientes de revisión"
+                                            >
+                                                <i class="bi bi-clock"></i> {{
+                                                project.pending_scans }}
+                                            </span>
+                                            {% endif %} {% if
+                                            project.completed_scans and
+                                            project.completed_scans > 0 %}
+                                            <span
+                                                class="badge bg-success"
+                                                title="Análisis completados/revisados"
+                                            >
+                                                <i
+                                                    class="bi bi-check-circle"
+                                                ></i>
+                                                {{ project.completed_scans }}
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted"
+                                            >Sin análisis</span
+                                        >
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if project.last_scan %}
+                                        <small
+                                            >{{ project.last_scan[:10] }}</small
+                                        >
+                                        {% else %}
+                                        <span class="text-muted">Nunca</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted"
+                                            >{{ project.created_date[:10]
+                                            }}</small
+                                        >
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a
+                                                href="/project/{{ project.id }}#libraries"
+                                                class="btn btn-outline-info"
+                                                title="Ver detalles"
+                                            >
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <button
+                                                type="button"
+                                                class="btn btn-outline-primary"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editProjectModal"
+                                                data-project-id="{{ project.id }}"
+                                                data-project-name="{{ project.name }}"
+                                                data-project-description="{{ project.description or '' }}"
+                                                data-project-email="{{ project.contact_email or '' }}"
+                                                data-project-phone="{{ project.contact_phone or '' }}"
+                                                data-project-website="{{ project.website or '' }}"
+                                                title="Editar"
+                                            >
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="btn btn-outline-danger"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#deleteProjectModal"
+                                                data-project-id="{{ project.id }}"
+                                                data-project-name="{{ project.name }}"
+                                                title="Eliminar"
+                                            >
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center p-5">
+                        <i class="bi bi-people display-4 text-muted"></i>
+                        <h5 class="mt-3">Sin Proyectos Registrados</h5>
+                        <p class="text-muted">
+                            Comienza agregando tu primer proyecto
+                        </p>
+                        <button
+                            type="button"
+                            class="btn btn-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#addProjectModal"
+                        >
+                            <i class="bi bi-plus-lg"></i> Agregar Primer
+                            Proyecto
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Project Modal -->
+<div class="modal fade" id="addProjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-lg"></i> Agregar Nuevo Proyecto
+                </h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                ></button>
+            </div>
+            <form method="POST" action="/add-project">
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}"
+                />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="add_name" class="form-label"
+                            >Nombre del Proyecto *</label
+                        >
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="add_name"
+                            name="name"
+                            required
+                        />
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_description" class="form-label"
+                            >Descripción</label
+                        >
+                        <textarea
+                            class="form-control"
+                            id="add_description"
+                            name="description"
+                            rows="2"
+                            placeholder="Breve descripción del proyecto..."
+                        ></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_contact_email" class="form-label"
+                            >Email de Contacto</label
+                        >
+                        <input
+                            type="email"
+                            class="form-control"
+                            id="add_contact_email"
+                            name="contact_email"
+                            placeholder="contacto@proyecto.com"
+                        />
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_contact_phone" class="form-label"
+                            >Teléfono de Contacto</label
+                        >
+                        <input
+                            type="tel"
+                            class="form-control"
+                            id="add_contact_phone"
+                            name="contact_phone"
+                            placeholder="+56 9 1234 5678"
+                        />
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_website" class="form-label"
+                            >Sitio Web</label
+                        >
+                        <input
+                            type="url"
+                            class="form-control"
+                            id="add_website"
+                            name="website"
+                            placeholder="https://www.proyecto.com"
+                        />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Agregar Proyecto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Project Modal -->
+<div class="modal fade" id="editProjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil"></i> Editar Proyecto
+                </h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                ></button>
+            </div>
+            <form method="POST" id="editProjectForm">
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}"
+                />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label"
+                            >Nombre del Proyecto *</label
+                        >
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="edit_name"
+                            name="name"
+                            required
+                        />
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label"
+                            >Descripción</label
+                        >
+                        <textarea
+                            class="form-control"
+                            id="edit_description"
+                            name="description"
+                            rows="2"
+                        ></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_contact_email" class="form-label"
+                            >Email de Contacto</label
+                        >
+                        <input
+                            type="email"
+                            class="form-control"
+                            id="edit_contact_email"
+                            name="contact_email"
+                        />
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_contact_phone" class="form-label"
+                            >Teléfono de Contacto</label
+                        >
+                        <input
+                            type="tel"
+                            class="form-control"
+                            id="edit_contact_phone"
+                            name="contact_phone"
+                        />
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_website" class="form-label"
+                            >Sitio Web</label
+                        >
+                        <input
+                            type="url"
+                            class="form-control"
+                            id="edit_website"
+                            name="website"
+                        />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Actualizar Proyecto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Project Modal -->
+<div
+    class="modal fade"
+    id="deleteProjectModal"
+    tabindex="-1"
+    aria-hidden="true"
+>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle text-danger"></i>
+                    Eliminar Proyecto
+                </h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                ></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    ¿Estás seguro de que quieres eliminar el proyecto
+                    <strong id="deleteProjectName"></strong>?
+                </p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    El proyecto será desactivado pero sus análisis se mantendrán
+                    en el sistema.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                >
+                    Cancelar
+                </button>
+                <form
+                    method="POST"
+                    id="deleteProjectForm"
+                    style="display: inline"
+                >
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="{{ csrf_token() }}"
+                    />
+                    <button type="submit" class="btn btn-danger">
+                        Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Import Projects Modal -->
+<div
+    class="modal fade"
+    id="importProjectsModal"
+    tabindex="-1"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-upload"></i> Importar Proyectos
+                </h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                ></button>
+            </div>
+            <form
+                method="POST"
+                action="/import-projects"
+                enctype="multipart/form-data"
+            >
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}"
+                />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="import_file" class="form-label"
+                            >Seleccionar archivo (CSV o JSON) *</label
+                        >
+                        <input
+                            type="file"
+                            class="form-control"
+                            id="import_file"
+                            name="file"
+                            accept=".csv,.json"
+                            required
+                        />
+                        <div class="form-text">
+                            Formatos soportados: CSV, JSON
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <h6>
+                            <i class="bi bi-info-circle"></i> Formato esperado:
+                        </h6>
+
+                        <div class="mt-3">
+                            <strong>CSV:</strong>
+                            <pre class="bg-light p-2"><code># PROYECTOS
+Nombre,Descripción,Email,Teléfono,Sitio Web,Fecha Creación,Total URLs
+Proyecto A,Descripción,email@example.com,123456789,https://example.com,2025-01-01,3
+
+# URLS ASOCIADAS
+Proyecto,URL,Título,Fecha Escaneo,Estado,Bibliotecas
+Proyecto A,https://example.com,Título,2025-01-10,200,5</code></pre>
+                        </div>
+
+                        <div class="mt-3">
+                            <strong>JSON:</strong>
+                            <pre class="bg-light p-2"><code>{
+  "projects": [
+    {
+      "name": "Proyecto A",
+      "description": "Descripción",
+      "contact_email": "email@example.com",
+      "contact_phone": "123456789",
+      "website": "https://example.com"
+    }
+  ]
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Nota:</strong> Los proyectos duplicados (con el
+                        mismo nombre) serán ignorados.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> Importar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Edit project modal
+        const editModal = document.getElementById("editProjectModal");
+        editModal.addEventListener("show.bs.modal", function (event) {
+            const button = event.relatedTarget;
+            const projectId = button.getAttribute("data-project-id");
+            const form = document.getElementById("editProjectForm");
+            form.action = "/edit-project/" + projectId;
+
+            document.getElementById("edit_name").value =
+                button.getAttribute("data-project-name");
+            document.getElementById("edit_description").value =
+                button.getAttribute("data-project-description");
+            document.getElementById("edit_contact_email").value =
+                button.getAttribute("data-project-email");
+            document.getElementById("edit_contact_phone").value =
+                button.getAttribute("data-project-phone");
+            document.getElementById("edit_website").value = button.getAttribute(
+                "data-project-website",
+            );
+        });
+
+        // Delete project modal
+        const deleteModal = document.getElementById("deleteProjectModal");
+        deleteModal.addEventListener("show.bs.modal", function (event) {
+            const button = event.relatedTarget;
+            const projectId = button.getAttribute("data-project-id");
+            const projectName = button.getAttribute("data-project-name");
+            const form = document.getElementById("deleteProjectForm");
+            form.action = "/delete-project/" + projectId;
+            document.getElementById("deleteProjectName").textContent =
+                projectName;
+        });
+    });
+</script>
+{% endblock %}

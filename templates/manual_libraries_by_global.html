@@ -1,8 +1,5 @@
-{% extends "base.html" %}
-
-{% block title %}Bibliotecas Manuales - {{ global_library.library_name }}{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Bibliotecas Manuales - {{
+global_library.library_name }}{% endblock %} {% block content %}
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
@@ -14,9 +11,7 @@
                             <i class="bi bi-collection"></i> Catálogo Global
                         </a>
                     </li>
-                    <li class="breadcrumb-item active">
-                        Bibliotecas Manuales
-                    </li>
+                    <li class="breadcrumb-item active">Bibliotecas Manuales</li>
                 </ol>
             </nav>
 
@@ -24,49 +19,63 @@
             <div class="d-flex justify-content-between align-items-start mb-4">
                 <div>
                     <h2>
-                        <i class="bi bi-link-45deg"></i> 
+                        <i class="bi bi-link-45deg"></i>
                         Bibliotecas Manuales Asociadas
                     </h2>
                     <div class="card bg-light">
                         <div class="card-body">
                             <h5 class="card-title mb-2">
-                                <span class="badge library-badge {{ 'js-badge' if global_library.type == 'js' else 'css-badge' }}">
+                                <span
+                                    class="badge library-badge {{ 'js-badge' if global_library.type == 'js' else 'css-badge' }}"
+                                >
                                     {{ global_library.type.upper() }}
                                 </span>
                                 {{ global_library.library_name }}
                             </h5>
                             {% if global_library.description %}
-                                <p class="card-text">{{ global_library.description }}</p>
+                            <p class="card-text">
+                                {{ global_library.description }}
+                            </p>
                             {% endif %}
                             <div class="row text-muted small">
                                 <div class="col-md-6">
                                     {% if global_library.latest_safe_version %}
-                                        <strong>Versión Segura:</strong> 
-                                        <span class="badge bg-success">{{ global_library.latest_safe_version }}</span>
+                                    <strong>Versión Segura:</strong>
+                                    <span class="badge bg-success"
+                                        >{{ global_library.latest_safe_version
+                                        }}</span
+                                    >
                                     {% endif %}
                                 </div>
                                 <div class="col-md-6">
                                     {% if global_library.latest_version %}
-                                        <strong>Última Versión:</strong> 
-                                        <span class="badge bg-info">{{ global_library.latest_version }}</span>
+                                    <strong>Última Versión:</strong>
+                                    <span class="badge bg-info"
+                                        >{{ global_library.latest_version
+                                        }}</span
+                                    >
                                     {% endif %}
                                 </div>
                             </div>
                             {% if global_library.vulnerability_info %}
-                                <div class="mt-2">
-                                    <span class="badge bg-warning text-dark">
-                                        <i class="bi bi-shield-exclamation"></i> Vulnerabilidades Conocidas
-                                    </span>
-                                    <div class="mt-1 small">
-                                        {{ global_library.vulnerability_info }}
-                                    </div>
+                            <div class="mt-2">
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-shield-exclamation"></i>
+                                    Vulnerabilidades Conocidas
+                                </span>
+                                <div class="mt-1 small">
+                                    {{ global_library.vulnerability_info }}
                                 </div>
+                            </div>
                             {% endif %}
                         </div>
                     </div>
                 </div>
                 <div>
-                    <a href="{{ url_for('global_libraries') }}" class="btn btn-outline-secondary">
+                    <a
+                        href="{{ url_for('global_libraries') }}"
+                        class="btn btn-outline-secondary"
+                    >
                         <i class="bi bi-arrow-left"></i> Volver al Catálogo
                     </a>
                 </div>
@@ -79,25 +88,43 @@
                         <div class="card-body text-center">
                             <i class="bi bi-list-ul display-6 text-primary"></i>
                             <h4 class="mt-2">{{ manual_libraries|length }}</h4>
-                            <small class="text-muted">Total Bibliotecas Manuales</small>
+                            <small class="text-muted"
+                                >Total Bibliotecas Manuales</small
+                            >
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card border-danger">
                         <div class="card-body text-center">
-                            <i class="bi bi-shield-exclamation display-6 text-danger"></i>
-                            <h4 class="mt-2">{{ manual_libraries|selectattr('is_vulnerable')|list|length }}</h4>
-                            <small class="text-muted">Con Vulnerabilidades</small>
+                            <i
+                                class="bi bi-shield-exclamation display-6 text-danger"
+                            ></i>
+                            <h4 class="mt-2">
+                                {{
+                                manual_libraries|selectattr('is_vulnerable')|list|length
+                                }}
+                            </h4>
+                            <small class="text-muted"
+                                >Con Vulnerabilidades</small
+                            >
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card border-success">
                         <div class="card-body text-center">
-                            <i class="bi bi-shield-check display-6 text-success"></i>
-                            <h4 class="mt-2">{{ (manual_libraries|length) - (manual_libraries|selectattr('is_vulnerable')|list|length) }}</h4>
-                            <small class="text-muted">Sin Vulnerabilidades</small>
+                            <i
+                                class="bi bi-shield-check display-6 text-success"
+                            ></i>
+                            <h4 class="mt-2">
+                                {{ (manual_libraries|length) -
+                                (manual_libraries|selectattr('is_vulnerable')|list|length)
+                                }}
+                            </h4>
+                            <small class="text-muted"
+                                >Sin Vulnerabilidades</small
+                            >
                         </div>
                     </div>
                 </div>
@@ -105,8 +132,12 @@
                     <div class="card border-info">
                         <div class="card-body text-center">
                             <i class="bi bi-building display-6 text-info"></i>
-                            <h4 class="mt-2">{{ manual_libraries|map(attribute='client_name')|unique|list|length }}</h4>
-                            <small class="text-muted">Clientes Únicos</small>
+                            <h4 class="mt-2">
+                                {{
+                                manual_libraries|map(attribute='e_name')|unique|list|length
+                                }}
+                            </h4>
+                            <small class="text-muted">Proyectos Únicos</small>
                         </div>
                     </div>
                 </div>
@@ -116,9 +147,9 @@
             <div class="card">
                 <div class="card-header bg-white">
                     <h5 class="mb-0">
-                        <i class="bi bi-list-task"></i> 
-                        Lista de Bibliotecas Manuales
-                        ({{ manual_libraries|length }})
+                        <i class="bi bi-list-task"></i>
+                        Lista de Bibliotecas Manuales ({{
+                        manual_libraries|length }})
                     </h5>
                 </div>
                 <div class="card-body p-0">
@@ -131,7 +162,7 @@
                                     <th>Versión Actual</th>
                                     <th>Estado</th>
                                     <th>Escaneo</th>
-                                    <th>Cliente</th>
+                                    <th>Proyecto</th>
                                     <th>Fecha</th>
                                     <th width="120">Acciones</th>
                                 </tr>
@@ -140,74 +171,108 @@
                                 {% for lib in manual_libraries %}
                                 <tr>
                                     <td>
-                                        <div class="fw-bold">{{ lib.library_name }}</div>
+                                        <div class="fw-bold">
+                                            {{ lib.library_name }}
+                                        </div>
                                         {% if lib.description %}
-                                            <small class="text-muted">{{ lib.description|truncate(50) }}</small>
-                                        {% endif %}
-                                        {% if lib.source_url %}
-                                            <div><a href="{{ lib.source_url }}" target="_blank" class="text-decoration-none small">
-                                                <i class="bi bi-link-45deg"></i> URL Fuente
-                                            </a></div>
+                                        <small class="text-muted"
+                                            >{{ lib.description|truncate(50)
+                                            }}</small
+                                        >
+                                        {% endif %} {% if lib.source_url %}
+                                        <div>
+                                            <a
+                                                href="{{ lib.source_url }}"
+                                                target="_blank"
+                                                class="text-decoration-none small"
+                                            >
+                                                <i class="bi bi-link-45deg"></i>
+                                                URL Fuente
+                                            </a>
+                                        </div>
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if lib.version %}
-                                            <span class="badge bg-secondary">{{ lib.version }}</span>
+                                        <span class="badge bg-secondary"
+                                            >{{ lib.version }}</span
+                                        >
                                         {% else %}
-                                            <span class="text-muted">No especificada</span>
+                                        <span class="text-muted"
+                                            >No especificada</span
+                                        >
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if lib.is_vulnerable %}
-                                            <span class="badge bg-danger">
-                                                <i class="bi bi-shield-exclamation"></i> Vulnerable
-                                            </span>
+                                        <span class="badge bg-danger">
+                                            <i
+                                                class="bi bi-shield-exclamation"
+                                            ></i>
+                                            Vulnerable
+                                        </span>
                                         {% else %}
-                                            <span class="badge bg-success">
-                                                <i class="bi bi-shield-check"></i> Segura
-                                            </span>
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-shield-check"></i>
+                                            Segura
+                                        </span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <a href="{{ url_for('scan_detail', scan_id=lib.scan_id) }}" 
-                                           class="text-decoration-none" target="_blank">
-                                            {% if lib.title %}
-                                                {{ lib.title|truncate(30) }}
-                                            {% else %}
-                                                {{ lib.url|truncate(30) }}
-                                            {% endif %}
+                                        <a
+                                            href="{{ url_for('scan_detail', scan_id=lib.scan_id) }}"
+                                            class="text-decoration-none"
+                                            target="_blank"
+                                        >
+                                            {% if lib.title %} {{
+                                            lib.title|truncate(30) }} {% else %}
+                                            {{ lib.url|truncate(30) }} {% endif
+                                            %}
                                         </a>
-                                        <br>
-                                        <small class="text-muted">{{ lib.url|truncate(40) }}</small>
+                                        <br />
+                                        <small class="text-muted"
+                                            >{{ lib.url|truncate(40) }}</small
+                                        >
                                     </td>
                                     <td>
-                                        {% if lib.client_name %}
-                                            <a href="{{ url_for('index', client_id=lib.client_id) }}" 
-                                               class="badge bg-primary text-decoration-none">
-                                                {{ lib.client_name }}
-                                            </a>
+                                        {% if lib.project_name %}
+                                        <a
+                                            href="{{ url_for('index', project_id=lib.project_id) }}"
+                                            class="badge bg-primary text-decoration-none"
+                                        >
+                                            {{ lib.project_name }}
+                                        </a>
                                         {% else %}
-                                            <span class="text-muted">Sin cliente</span>
+                                        <span class="text-muted"
+                                            >Sin proyecto</span
+                                        >
                                         {% endif %}
                                     </td>
                                     <td>
                                         <small class="text-muted">
-                                            {{ lib.scan_date[:10] if lib.scan_date else 'N/A' }}
+                                            {{ lib.scan_date[:10] if
+                                            lib.scan_date else 'N/A' }}
                                         </small>
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('scan_detail', scan_id=lib.scan_id) }}#libraries" 
-                                               class="btn btn-outline-primary" 
-                                               target="_blank"
-                                               title="Ver en Detalle de Escaneo">
+                                            <a
+                                                href="{{ url_for('scan_detail', scan_id=lib.scan_id) }}#libraries"
+                                                class="btn btn-outline-primary"
+                                                target="_blank"
+                                                title="Ver en Detalle de Escaneo"
+                                            >
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="{{ url_for('scan_detail', scan_id=lib.scan_id) }}" 
-                                               class="btn btn-outline-secondary" 
-                                               target="_blank"
-                                               title="Ir a Escaneo">
-                                                <i class="bi bi-box-arrow-up-right"></i>
+                                            <a
+                                                href="{{ url_for('scan_detail', scan_id=lib.scan_id) }}"
+                                                class="btn btn-outline-secondary"
+                                                target="_blank"
+                                                title="Ir a Escaneo"
+                                            >
+                                                <i
+                                                    class="bi bi-box-arrow-up-right"
+                                                ></i>
                                             </a>
                                         </div>
                                     </td>
@@ -221,14 +286,22 @@
                         <i class="bi bi-link-45deg display-4 text-muted"></i>
                         <h5 class="mt-3">Sin Bibliotecas Manuales Asociadas</h5>
                         <p class="text-muted mb-4">
-                            No hay bibliotecas manuales asociadas a "{{ global_library.library_name }}" en este momento.
+                            No hay bibliotecas manuales asociadas a "{{
+                            global_library.library_name }}" en este momento.
                         </p>
-                        <div class="d-flex flex-column align-items-center gap-2">
-                            <a href="{{ url_for('asociar_bibliotecas') }}" class="btn btn-primary">
-                                <i class="bi bi-link-45deg"></i> Gestionar Asociaciones
+                        <div
+                            class="d-flex flex-column align-items-center gap-2"
+                        >
+                            <a
+                                href="{{ url_for('asociar_bibliotecas') }}"
+                                class="btn btn-primary"
+                            >
+                                <i class="bi bi-link-45deg"></i> Gestionar
+                                Asociaciones
                             </a>
                             <small class="text-muted">
-                                Las bibliotecas se pueden asociar desde escaneos individuales o desde el gestor de asociaciones
+                                Las bibliotecas se pueden asociar desde escaneos
+                                individuales o desde el gestor de asociaciones
                             </small>
                         </div>
                     </div>
@@ -240,20 +313,20 @@
 </div>
 
 <style>
-.library-badge {
-    font-size: 0.8rem;
-    padding: 0.4rem 0.7rem;
-    border-radius: 0.375rem;
-}
+    .library-badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.7rem;
+        border-radius: 0.375rem;
+    }
 
-.js-badge {
-    background-color: #ffc107;
-    color: #000;
-}
+    .js-badge {
+        background-color: #ffc107;
+        color: #000;
+    }
 
-.css-badge {
-    background-color: #17a2b8;
-    color: #fff;
-}
+    .css-badge {
+        background-color: #17a2b8;
+        color: #fff;
+    }
 </style>
 {% endblock %}

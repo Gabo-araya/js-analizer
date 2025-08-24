@@ -1,9 +1,5 @@
-{% extends "base.html" %}
-{% set current_page = 'statistics' %}
-
-{% block title %}Estadísticas de Vulnerabilidades{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% set current_page = 'statistics' %} {% block title
+%}Estadísticas de Vulnerabilidades{% endblock %} {% block content %}
 <!-- Header Section -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -17,16 +13,25 @@
     </div>
     <div class="btn-group">
         <div class="btn-group" role="group">
-            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <button
+                type="button"
+                class="btn btn-outline-secondary dropdown-toggle"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+            >
                 <i class="bi bi-cloud-download"></i> Exportar
             </button>
             <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="/export-statistics/csv">
-                    <i class="bi bi-filetype-csv"></i> Exportar CSV
-                </a></li>
-                <li><a class="dropdown-item" href="/export-statistics/json">
-                    <i class="bi bi-filetype-json"></i> Exportar JSON
-                </a></li>
+                <li>
+                    <a class="dropdown-item" href="/export-statistics/csv">
+                        <i class="bi bi-filetype-csv"></i> Exportar CSV
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="/export-statistics/json">
+                        <i class="bi bi-filetype-json"></i> Exportar JSON
+                    </a>
+                </li>
             </ul>
         </div>
     </div>
@@ -37,8 +42,12 @@
     <div class="col-6 col-md-3 mb-3">
         <div class="card border-left-danger h-100">
             <div class="card-body text-center">
-                <i class="bi bi-shield-exclamation display-6 text-danger mb-2"></i>
-                <h3 class="mb-1 text-danger">{{ summary_stats.total_vulnerable_scans }}</h3>
+                <i
+                    class="bi bi-shield-exclamation display-6 text-danger mb-2"
+                ></i>
+                <h3 class="mb-1 text-danger">
+                    {{ summary_stats.total_vulnerable_scans }}
+                </h3>
                 <small class="text-muted">Escaneos Vulnerables</small>
             </div>
         </div>
@@ -47,7 +56,9 @@
         <div class="card border-left-warning h-100">
             <div class="card-body text-center">
                 <i class="bi bi-bug display-6 text-warning mb-2"></i>
-                <h3 class="mb-1 text-warning">{{ summary_stats.total_vulnerabilities }}</h3>
+                <h3 class="mb-1 text-warning">
+                    {{ summary_stats.total_vulnerabilities }}
+                </h3>
                 <small class="text-muted">Total Vulnerabilidades</small>
             </div>
         </div>
@@ -56,7 +67,9 @@
         <div class="card border-left-info h-100">
             <div class="card-body text-center">
                 <i class="bi bi-files display-6 text-info mb-2"></i>
-                <h3 class="mb-1 text-info">{{ summary_stats.total_vulnerable_scans }}</h3>
+                <h3 class="mb-1 text-info">
+                    {{ summary_stats.total_vulnerable_scans }}
+                </h3>
                 <small class="text-muted">Sitios Afectados</small>
             </div>
         </div>
@@ -65,7 +78,10 @@
         <div class="card border-left-primary h-100">
             <div class="card-body text-center">
                 <i class="bi bi-shield-check display-6 text-primary mb-2"></i>
-                <h3 class="mb-1 text-primary">{{ (summary_stats.total_vulnerable_scans / (summary_stats.total_scans or 1) * 100) | round(1) }}%</h3>
+                <h3 class="mb-1 text-primary">
+                    {{ (summary_stats.total_vulnerable_scans /
+                    (summary_stats.total_scans or 1) * 100) | round(1) }}%
+                </h3>
                 <small class="text-muted">Porcentaje Vulnerable</small>
             </div>
         </div>
@@ -82,9 +98,13 @@
                 </h6>
                 <form method="GET" action="/statistics">
                     <div class="input-group">
-                        <input type="text" name="search" class="form-control"
-                               placeholder="Buscar en URLs, títulos, clientes..."
-                               value="{{ search }}" />
+                        <input
+                            type="text"
+                            name="search"
+                            class="form-control"
+                            placeholder="Buscar en URLs, títulos, proyectos..."
+                            value="{{ search }}"
+                        />
                         <button type="submit" class="btn btn-outline-danger">
                             <i class="bi bi-search"></i> Buscar
                         </button>
@@ -104,8 +124,14 @@
                 <h6 class="card-title mb-3">
                     <i class="bi bi-info-circle"></i> Información
                 </h6>
-                <p class="mb-1"><strong>Total encontrados:</strong> {{ pagination.total }} escaneos vulnerables</p>
-                <p class="mb-0"><strong>Página:</strong> {{ pagination.page }} de {{ pagination.total_pages }}</p>
+                <p class="mb-1">
+                    <strong>Total encontrados:</strong> {{ pagination.total }}
+                    escaneos vulnerables
+                </p>
+                <p class="mb-0">
+                    <strong>Página:</strong> {{ pagination.page }} de {{
+                    pagination.total_pages }}
+                </p>
             </div>
         </div>
     </div>
@@ -118,8 +144,9 @@
         <div class="alert alert-info d-flex align-items-center">
             <i class="bi bi-info-circle me-2"></i>
             <div>
-                <strong>Resultados de búsqueda:</strong> {{ pagination.total }} escaneo{{ 's' if pagination.total != 1 else '' }} encontrado{{ 's' if pagination.total != 1 else '' }}
-                para "{{ search }}"
+                <strong>Resultados de búsqueda:</strong> {{ pagination.total }}
+                escaneo{{ 's' if pagination.total != 1 else '' }} encontrado{{
+                's' if pagination.total != 1 else '' }} para "{{ search }}"
             </div>
         </div>
     </div>
@@ -134,19 +161,17 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-list-check"></i>
-                        {% if search %}
-                            Resultados de Búsqueda
-                        {% else %}
-                            Escaneos con Vulnerabilidades
-                        {% endif %}
-                        {% if search %}
+                        {% if search %} Resultados de Búsqueda {% else %}
+                        Escaneos con Vulnerabilidades {% endif %} {% if search
+                        %}
                         <small class="text-muted">- "{{ search }}"</small>
                         {% endif %}
                     </h5>
                     {% if pagination.total_pages > 1 %}
                     <small class="text-muted">
-                        Página {{ pagination.page }} de {{ pagination.total_pages }}
-                        ({{ pagination.total }} escaneos total)
+                        Página {{ pagination.page }} de {{
+                        pagination.total_pages }} ({{ pagination.total }}
+                        escaneos total)
                     </small>
                     {% endif %}
                 </div>
@@ -171,91 +196,150 @@
                             {% for scan in vulnerable_scans %}
                             <tr>
                                 <td>
-                                    <a href="{{ url_for('scan_detail', scan_id=scan.id) }}"
-                                       class="text-decoration-none fw-bold">
+                                    <a
+                                        href="{{ url_for('scan_detail', scan_id=scan.id) }}"
+                                        class="text-decoration-none fw-bold"
+                                    >
                                         {{ (scan.title or scan.url)|e }}
                                     </a>
-                                    <br>
-                                    <small class="text-muted">{{ scan.url|e }}</small>
+                                    <br />
+                                    <small class="text-muted"
+                                        >{{ scan.url|e }}</small
+                                    >
                                 </td>
                                 <td>
-                                    {% if scan.client_name %}
-                                    <a href="/?client_id={{ scan.client_id }}"
-                                       class="text-decoration-none">
-                                        <span class="badge bg-light text-dark border">
-                                            <i class="bi bi-building"></i> {{ scan.client_name }}
+                                    {% if scan.project_name %}
+                                    <a
+                                        href="/?project_id={{ scan.project_id }}"
+                                        class="text-decoration-none"
+                                    >
+                                        <span
+                                            class="badge bg-light text-dark border"
+                                        >
+                                            <i class="bi bi-building"></i> {{
+                                            scan.project_name }}
                                         </span>
                                     </a>
                                     {% else %}
                                     <span class="badge bg-secondary">
-                                        <i class="bi bi-dash"></i> Sin cliente
+                                        <i class="bi bi-dash"></i> Sin proyecto
                                     </span>
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if scan.status_code == 200 %}
                                     <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> {{ scan.status_code }}
+                                        <i class="bi bi-check-circle"></i> {{
+                                        scan.status_code }}
                                     </span>
                                     {% else %}
                                     <span class="badge bg-danger">
-                                        <i class="bi bi-x-circle"></i> {{ scan.status_code or 'Error' }}
+                                        <i class="bi bi-x-circle"></i> {{
+                                        scan.status_code or 'Error' }}
                                     </span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <span class="badge bg-danger text-white fs-6">
-                                        <i class="bi bi-shield-exclamation"></i> {{ scan.vulnerability_count }}
+                                    <span
+                                        class="badge bg-danger text-white fs-6"
+                                    >
+                                        <i class="bi bi-shield-exclamation"></i>
+                                        {{ scan.vulnerability_count }}
                                     </span>
                                 </td>
                                 <td>
                                     <div class="d-flex gap-1 flex-wrap">
-                                        <span class="badge bg-secondary-light text-secondary" title="Total Bibliotecas">
-                                            <i class="bi bi-bookshelf"></i> {{ scan.library_count }}
+                                        <span
+                                            class="badge bg-secondary-light text-secondary"
+                                            title="Total Bibliotecas"
+                                        >
+                                            <i class="bi bi-bookshelf"></i> {{
+                                            scan.library_count }}
                                         </span>
-                                        <span class="badge bg-info-light text-info" title="Archivos">
-                                            <i class="bi bi-file-earmark-code"></i> {{ scan.file_count }}
+                                        <span
+                                            class="badge bg-info-light text-info"
+                                            title="Archivos"
+                                        >
+                                            <i
+                                                class="bi bi-file-earmark-code"
+                                            ></i>
+                                            {{ scan.file_count }}
                                         </span>
                                         {% if scan.error_count > 0 %}
-                                        <span class="badge bg-warning-light text-warning" title="Errores">
-                                            <i class="bi bi-exclamation-triangle"></i> {{ scan.error_count }}
+                                        <span
+                                            class="badge bg-warning-light text-warning"
+                                            title="Errores"
+                                        >
+                                            <i
+                                                class="bi bi-exclamation-triangle"
+                                            ></i>
+                                            {{ scan.error_count }}
                                         </span>
                                         {% endif %}
                                         <!-- Reviewed Status -->
                                         {% if scan.reviewed %}
-                                        <span class="badge bg-success text-white" title="Revisado por usuario">
-                                            <i class="bi bi-check-circle-fill"></i> Revisado
+                                        <span
+                                            class="badge bg-success text-white"
+                                            title="Revisado por usuario"
+                                        >
+                                            <i
+                                                class="bi bi-check-circle-fill"
+                                            ></i>
+                                            Revisado
                                         </span>
                                         {% else %}
-                                        <span class="badge bg-secondary text-white" title="Pendiente de revisión">
-                                            <i class="bi bi-clock"></i> Pendiente
+                                        <span
+                                            class="badge bg-secondary text-white"
+                                            title="Pendiente de revisión"
+                                        >
+                                            <i class="bi bi-clock"></i>
+                                            Pendiente
                                         </span>
                                         {% endif %}
                                     </div>
                                 </td>
                                 <td>
-                                    <small class="text-muted">{{ scan.scan_date }}</small>
+                                    <small class="text-muted"
+                                        >{{ scan.scan_date }}</small
+                                    >
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
-                                        <a href="{{ url_for('scan_detail', scan_id=scan.id) }}"
-                                           class="btn btn-sm btn-outline-primary"
-                                           title="Ver detalles y vulnerabilidades">
+                                        <a
+                                            href="{{ url_for('scan_detail', scan_id=scan.id) }}"
+                                            class="btn btn-sm btn-outline-primary"
+                                            title="Ver detalles y vulnerabilidades"
+                                        >
                                             <i class="bi bi-eye"></i> Ver
                                         </a>
-                                        <a href="{{ url_for('scan_detail', scan_id=scan.id) }}#libraries"
-                                           class="btn btn-sm btn-outline-danger"
-                                           title="Ir directamente a vulnerabilidades">
-                                            <i class="bi bi-shield-exclamation"></i> Vulns
+                                        <a
+                                            href="{{ url_for('scan_detail', scan_id=scan.id) }}#libraries"
+                                            class="btn btn-sm btn-outline-danger"
+                                            title="Ir directamente a vulnerabilidades"
+                                        >
+                                            <i
+                                                class="bi bi-shield-exclamation"
+                                            ></i>
+                                            Vulns
                                         </a>
-                                        <form method="POST" action="{{ url_for('toggle_reviewed', scan_id=scan.id) }}" style="display: inline;">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for('toggle_reviewed', scan_id=scan.id) }}"
+                                            style="display: inline"
+                                        >
+                                            <input
+                                                type="hidden"
+                                                name="csrf_token"
+                                                value="{{ csrf_token() }}"
+                                            />
                                             <button
                                                 type="submit"
                                                 class="btn btn-sm {{ 'btn-outline-success' if scan.reviewed else 'btn-outline-warning' }}"
                                                 title="{{ 'Marcar como no revisado' if scan.reviewed else 'Marcar como revisado' }}"
                                             >
-                                                <i class="bi {{ 'bi-check-circle' if not scan.reviewed else 'bi-clock' }}"></i>
+                                                <i
+                                                    class="bi {{ 'bi-check-circle' if not scan.reviewed else 'bi-clock' }}"
+                                                ></i>
                                             </button>
                                         </form>
                                     </div>
@@ -274,7 +358,11 @@
                             <!-- Previous Page -->
                             {% if pagination.has_prev %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('statistics', page=pagination.prev_num, search=search) }}" aria-label="Anterior">
+                                <a
+                                    class="page-link"
+                                    href="{{ url_for('statistics', page=pagination.prev_num, search=search) }}"
+                                    aria-label="Anterior"
+                                >
                                     <span aria-hidden="true">&laquo;</span>
                                 </a>
                             </li>
@@ -287,50 +375,65 @@
                             {% endif %}
 
                             <!-- Page Numbers -->
-                            {% set start_page = [pagination.page - 2, 1] | max %}
-                            {% set end_page = [pagination.page + 2, pagination.total_pages] | min %}
+                            {% set start_page = [pagination.page - 2, 1] | max
+                            %} {% set end_page = [pagination.page + 2,
+                            pagination.total_pages] | min %}
 
                             <!-- First page if not in range -->
                             {% if start_page > 1 %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('statistics', page=1, search=search) }}">1</a>
+                                <a
+                                    class="page-link"
+                                    href="{{ url_for('statistics', page=1, search=search) }}"
+                                    >1</a
+                                >
                             </li>
                             {% if start_page > 2 %}
                             <li class="page-item disabled">
                                 <span class="page-link">...</span>
                             </li>
-                            {% endif %}
-                            {% endif %}
+                            {% endif %} {% endif %}
 
                             <!-- Page range -->
-                            {% for page_num in range(start_page, end_page + 1) %}
-                            {% if page_num == pagination.page %}
+                            {% for page_num in range(start_page, end_page + 1)
+                            %} {% if page_num == pagination.page %}
                             <li class="page-item active" aria-current="page">
                                 <span class="page-link">{{ page_num }}</span>
                             </li>
                             {% else %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('statistics', page=page_num, search=search) }}">{{ page_num }}</a>
+                                <a
+                                    class="page-link"
+                                    href="{{ url_for('statistics', page=page_num, search=search) }}"
+                                    >{{ page_num }}</a
+                                >
                             </li>
-                            {% endif %}
-                            {% endfor %}
+                            {% endif %} {% endfor %}
 
                             <!-- Last page if not in range -->
-                            {% if end_page < pagination.total_pages %}
-                            {% if end_page < pagination.total_pages - 1 %}
+                            {% if end_page < pagination.total_pages %} {% if
+                            end_page < pagination.total_pages - 1 %}
                             <li class="page-item disabled">
                                 <span class="page-link">...</span>
                             </li>
                             {% endif %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('statistics', page=pagination.total_pages, search=search) }}">{{ pagination.total_pages }}</a>
+                                <a
+                                    class="page-link"
+                                    href="{{ url_for('statistics', page=pagination.total_pages, search=search) }}"
+                                    >{{ pagination.total_pages }}</a
+                                >
                             </li>
                             {% endif %}
 
                             <!-- Next Page -->
                             {% if pagination.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('statistics', page=pagination.next_num, search=search) }}" aria-label="Siguiente">
+                                <a
+                                    class="page-link"
+                                    href="{{ url_for('statistics', page=pagination.next_num, search=search) }}"
+                                    aria-label="Siguiente"
+                                >
                                     <span aria-hidden="true">&raquo;</span>
                                 </a>
                             </li>
@@ -344,26 +447,31 @@
                         </ul>
                     </nav>
                 </div>
-                {% endif %}
-
-                {% else %}
+                {% endif %} {% else %}
                 <!-- No vulnerable scans found -->
                 <div class="text-center py-5">
                     <div class="mb-3">
-                        <i class="bi bi-shield-check display-1 text-success"></i>
+                        <i
+                            class="bi bi-shield-check display-1 text-success"
+                        ></i>
                     </div>
                     {% if search %}
-                    <h4 class="text-muted">No se encontraron vulnerabilidades</h4>
+                    <h4 class="text-muted">
+                        No se encontraron vulnerabilidades
+                    </h4>
                     <p class="text-muted">
-                        No hay escaneos con vulnerabilidades que coincidan con "{{ search }}"
+                        No hay escaneos con vulnerabilidades que coincidan con
+                        "{{ search }}"
                     </p>
                     <a href="/statistics" class="btn btn-outline-primary">
-                        <i class="bi bi-arrow-left"></i> Ver todas las vulnerabilidades
+                        <i class="bi bi-arrow-left"></i> Ver todas las
+                        vulnerabilidades
                     </a>
                     {% else %}
                     <h4 class="text-success">¡Excelente!</h4>
                     <p class="text-muted">
-                        No se encontraron escaneos con vulnerabilidades conocidas.
+                        No se encontraron escaneos con vulnerabilidades
+                        conocidas.
                     </p>
                     <a href="/" class="btn btn-primary">
                         <i class="bi bi-arrow-left"></i> Volver al Dashboard
@@ -377,35 +485,76 @@
 </div>
 
 <!-- Import Statistics Modal -->
-<div class="modal fade" id="importStatisticsModal" tabindex="-1" aria-hidden="true">
+<div
+    class="modal fade"
+    id="importStatisticsModal"
+    tabindex="-1"
+    aria-hidden="true"
+>
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-upload"></i> Importar Estadísticas de Vulnerabilidades</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title">
+                    <i class="bi bi-upload"></i> Importar Estadísticas de
+                    Vulnerabilidades
+                </h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                ></button>
             </div>
-            <form method="POST" action="/import-statistics" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <form
+                method="POST"
+                action="/import-statistics"
+                enctype="multipart/form-data"
+            >
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}"
+                />
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="import_file" class="form-label">Seleccionar Archivo</label>
-                        <input type="file" class="form-control" id="import_file" name="file" accept=".csv,.json" required>
+                        <label for="import_file" class="form-label"
+                            >Seleccionar Archivo</label
+                        >
+                        <input
+                            type="file"
+                            class="form-control"
+                            id="import_file"
+                            name="file"
+                            accept=".csv,.json"
+                            required
+                        />
                         <div class="form-text">
                             Formatos soportados: CSV y JSON
                         </div>
                     </div>
                     <div class="alert alert-info">
                         <h6><i class="bi bi-info-circle"></i> Formato CSV</h6>
-                        <p class="mb-1">El archivo debe contener información de escaneos con vulnerabilidades</p>
+                        <p class="mb-1">
+                            El archivo debe contener información de escaneos con
+                            vulnerabilidades
+                        </p>
                     </div>
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle"></i>
-                        Los escaneos que ya existen serán actualizados con la nueva información.
+                        Los escaneos que ya existen serán actualizados con la
+                        nueva información.
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Importar</button>
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Importar
+                    </button>
                 </div>
             </form>
         </div>

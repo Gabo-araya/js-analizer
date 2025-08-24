@@ -9,26 +9,26 @@ const debugError = DEBUG_MODE ? console.error : () => {};
 
 document.addEventListener('DOMContentLoaded', function() {
     
-    // Edit Scan Client Handlers with debug and error handling
-    const editScanClientBtns = document.querySelectorAll('.edit-scan-client-btn');
-    debugLog('🔍 Found edit scan client buttons:', editScanClientBtns.length);
+    // Edit Scan Project Handlers with debug and error handling
+    const editScanProjectBtns = document.querySelectorAll('.edit-scan-project-btn');
+    debugLog('🔍 Found edit scan project buttons:', editScanProjectBtns.length);
     
-    editScanClientBtns.forEach(btn => {
+    editScanProjectBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            debugLog('🔧 Edit scan client clicked');
+            debugLog('🔧 Edit scan project clicked');
             
             const scanId = this.dataset.scanId;
-            const clientId = this.dataset.clientId;
+            const projectId = this.dataset.projectId;
             const scanTitle = this.dataset.scanTitle;
             
-            debugLog('📋 Data:', {scanId, clientId, scanTitle});
+            debugLog('📋 Data:', {scanId, projectId, scanTitle});
             
             // Find required elements with validation
             const elements = {
                 editScanName: document.getElementById("editScanName"),
-                editScanClientForm: document.getElementById("editScanClientForm"),
-                scanClientSelect: document.getElementById("scanClientSelect"),
-                editScanClientModal: document.getElementById("editScanClientModal")
+                editScanProjectForm: document.getElementById("editScanProjectForm"),
+                scanProjectSelect: document.getElementById("scanProjectSelect"),
+                editScanProjectModal: document.getElementById("editScanProjectModal")
             };
             
             // Debug: Check element existence
@@ -56,18 +56,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log('✅ Set scan name');
                 }
                 
-                if (elements.editScanClientForm && scanId) {
-                    elements.editScanClientForm.action = "/update-scan-project-dashboard/" + encodeURIComponent(scanId);
+                if (elements.editScanProjectForm && scanId) {
+                    elements.editScanProjectForm.action = "/update-scan-project-dashboard/" + encodeURIComponent(scanId);
                     console.log('✅ Set form action');
                 }
                 
-                if (elements.scanClientSelect) {
-                    elements.scanClientSelect.value = clientId || "";
-                    console.log('✅ Set client select value');
+                if (elements.scanProjectSelect) {
+                    elements.scanProjectSelect.value = projectId || "";
+                    console.log('✅ Set project select value');
                 }
                 
-                if (elements.editScanClientModal && typeof bootstrap !== 'undefined') {
-                    const modal = new bootstrap.Modal(elements.editScanClientModal);
+                if (elements.editScanProjectModal && typeof bootstrap !== 'undefined') {
+                    const modal = new bootstrap.Modal(elements.editScanProjectModal);
                     modal.show();
                     console.log('✅ Modal shown');
                 } else {
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
             } catch (error) {
-                console.error('❌ Error in edit scan client handler:', error);
+                console.error('❌ Error in edit scan project handler:', error);
                 alert('Error: No se pudo abrir el modal. Por favor recarga la página.');
             }
         });
@@ -83,10 +83,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Delete Scan Handlers
     const deleteScanBtns = document.querySelectorAll('.delete-scan-btn');
+    debugLog('🔍 Found delete scan buttons:', deleteScanBtns.length);
+    
     deleteScanBtns.forEach(btn => {
         btn.addEventListener('click', function() {
+            debugLog('🔧 Delete scan clicked');
             const scanId = this.dataset.scanId;
             const scanTitle = this.dataset.scanTitle;
+            debugLog('📋 Delete scan data:', {scanId, scanTitle});
             
             // Secure implementation without relying on inline functions
             const deleteScanNameElement = document.getElementById("deleteScanName");
@@ -104,6 +108,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (deleteScanModal && typeof bootstrap !== 'undefined') {
                 const modal = new bootstrap.Modal(deleteScanModal);
                 modal.show();
+                debugLog('✅ Delete scan modal shown');
+            } else {
+                debugError('❌ Bootstrap or modal element missing');
+                debugError('deleteScanModal exists:', !!deleteScanModal);
+                debugError('bootstrap available:', typeof bootstrap !== 'undefined');
             }
         });
     });
@@ -194,12 +203,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Bulk edit client handler with full implementation
-    const bulkEditClientBtns = document.querySelectorAll('.bulk-edit-client-btn');
-    console.log('🔍 Found bulk edit client buttons:', bulkEditClientBtns.length);
+    const bulkEditProjectBtns = document.querySelectorAll('.bulk-edit-project-btn');
+    console.log('🔍 Found bulk edit project buttons:', bulkEditProjectBtns.length);
     
-    bulkEditClientBtns.forEach(btn => {
+    bulkEditProjectBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            console.log('🔧 Bulk edit client clicked');
+            console.log('🔧 Bulk edit project clicked');
             
             try {
                 const checkedBoxes = document.querySelectorAll('.scan-checkbox:checked');
@@ -215,9 +224,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Find required elements
                 const bulkScanIdsElement = document.getElementById('bulkScanIds');
                 const bulkSelectedCountElement = document.getElementById('bulkSelectedCount');
-                const bulkEditClientModal = document.getElementById('bulkEditClientModal');
+                const bulkEditProjectModal = document.getElementById('bulkEditProjectModal');
                 
-                if (!bulkScanIdsElement || !bulkSelectedCountElement || !bulkEditClientModal) {
+                if (!bulkScanIdsElement || !bulkSelectedCountElement || !bulkEditProjectModal) {
                     console.error('❌ Missing bulk edit elements');
                     alert('Error: No se pueden cargar los elementos necesarios.');
                     return;
@@ -229,7 +238,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Show modal
                 if (typeof bootstrap !== 'undefined') {
-                    const modal = new bootstrap.Modal(bulkEditClientModal);
+                    const modal = new bootstrap.Modal(bulkEditProjectModal);
                     modal.show();
                     console.log('✅ Bulk edit modal shown');
                 } else {
@@ -243,58 +252,58 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Client modal handlers
-    const editClientBtns = document.querySelectorAll('[data-bs-target="#editClientModal"]');
-    editClientBtns.forEach(btn => {
+    // Project modal handlers
+    const editProjectBtns = document.querySelectorAll('[data-bs-target="#editProjectModal"]');
+    editProjectBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             // This data is passed through data attributes securely
-            const clientId = this.dataset.clientId;
-            const clientName = this.dataset.clientName;
-            const clientDescription = this.dataset.clientDescription;
-            const clientEmail = this.dataset.clientEmail;
-            const clientPhone = this.dataset.clientPhone;
-            const clientWebsite = this.dataset.clientWebsite;
+            const projectId = this.dataset.projectId;
+            const projectName = this.dataset.projectName;
+            const projectDescription = this.dataset.projectDescription;
+            const projectEmail = this.dataset.projectEmail;
+            const projectPhone = this.dataset.projectPhone;
+            const projectWebsite = this.dataset.projectWebsite;
             
             // Safely populate modal fields (these are already escaped in HTML)
-            if (clientId) {
-                const form = document.getElementById('editClientForm');
+            if (projectId) {
+                const form = document.getElementById('editProjectForm');
                 if (form) {
-                    form.action = '/edit-client/' + encodeURIComponent(clientId);
+                    form.action = '/edit-project/' + encodeURIComponent(projectId);
                 }
                 
                 const nameField = document.getElementById('edit_name');
-                if (nameField && clientName) nameField.value = clientName;
+                if (nameField && projectName) nameField.value = projectName;
                 
                 const descField = document.getElementById('edit_description');
-                if (descField && clientDescription) descField.value = clientDescription;
+                if (descField && projectDescription) descField.value = projectDescription;
                 
                 const emailField = document.getElementById('edit_contact_email');
-                if (emailField && clientEmail) emailField.value = clientEmail;
+                if (emailField && projectEmail) emailField.value = projectEmail;
                 
                 const phoneField = document.getElementById('edit_contact_phone');
-                if (phoneField && clientPhone) phoneField.value = clientPhone;
+                if (phoneField && projectPhone) phoneField.value = projectPhone;
                 
                 const websiteField = document.getElementById('edit_website');
-                if (websiteField && clientWebsite) websiteField.value = clientWebsite;
+                if (websiteField && projectWebsite) websiteField.value = projectWebsite;
             }
         });
     });
 
-    const deleteClientBtns = document.querySelectorAll('[data-bs-target="#deleteClientModal"]');
-    deleteClientBtns.forEach(btn => {
+    const deleteProjectBtns = document.querySelectorAll('[data-bs-target="#deleteProjectModal"]');
+    deleteProjectBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            const clientId = this.dataset.clientId;
-            const clientName = this.dataset.clientName;
+            const projectId = this.dataset.projectId;
+            const projectName = this.dataset.projectName;
             
-            if (clientId && clientName) {
-                const form = document.getElementById('deleteClientForm');
+            if (projectId && projectName) {
+                const form = document.getElementById('deleteProjectForm');
                 if (form) {
-                    form.action = '/delete-client/' + encodeURIComponent(clientId);
+                    form.action = '/delete-project/' + encodeURIComponent(projectId);
                 }
                 
-                const nameSpan = document.getElementById('deleteClientName');
+                const nameSpan = document.getElementById('deleteProjectName');
                 if (nameSpan) {
-                    nameSpan.textContent = clientName; // textContent is safe from XSS
+                    nameSpan.textContent = projectName; // textContent is safe from XSS
                 }
             }
         });

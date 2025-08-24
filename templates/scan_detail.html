@@ -217,33 +217,33 @@
                     type="button"
                     class="btn btn-outline-primary btn-sm"
                     data-bs-toggle="modal"
-                    data-bs-target="#editScanClientModal"
+                    data-bs-target="#editScanProjectModal"
                     data-scan-id="{{ scan.id }}"
                     data-scan-title="{{ (scan.title or scan.url)|e|truncate(30) }}"
-                    data-current-client-id="{{ scan.client_id or '' }}"
-                    title="Editar cliente del escaneo"
+                    data-current-project-id="{{ scan.project_id or '' }}"
+                    title="Editar proyecto del escaneo"
                 >
                     <i class="bi bi-pencil"></i> Editar Proyecto
                 </button>
             </div>
             <div class="card-body">
-                {% if scan.client_name %}
+                {% if scan.project_name %}
                 <div class="row">
                     <div class="col-md-6">
                         <p>
                             <strong>Proyecto:</strong>
                             <a
-                                href="/project/{{ scan.client_id }}"
+                                href="/project/{{ scan.project_id }}"
                                 class="text-decoration-none"
-                                >{{ scan.client_name }}</a
+                                >{{ scan.project_name }}</a
                             >
                         </p>
                     </div>
                     <div class="col-md-6">
                         <p>
-                            <strong>Análisis del cliente:</strong>
+                            <strong>Análisis del proyecto:</strong>
                             <a
-                                href="/?client_id={{ scan.client_id }}"
+                                href="/?project_id={{ scan.project_id }}"
                                 class="text-decoration-none"
                                 >Ver todos los análisis</a
                             >
@@ -253,7 +253,7 @@
                 {% else %}
                 <div class="text-muted">
                     <i class="bi bi-info-circle"></i> Este escaneo no está
-                    asociado a ningún cliente específico.
+                    asociado a ningún proyecto específico.
                 </div>
                 {% endif %}
             </div>
@@ -307,7 +307,8 @@
         >
             <i class="bi bi-file-earmark-code"></i> Archivos JavaScript
             <span class="badge rounded-pill bg-secondary"
-                >{{ file_urls|selectattr('file_type', 'equalto', 'js')|list|length }}</span
+                >{{ file_urls|selectattr('file_type', 'equalto',
+                'js')|list|length }}</span
             >
         </button>
     </li>
@@ -339,7 +340,7 @@
         role="tabpanel"
         aria-labelledby="summary-tab"
     >
-        <!-- Client Information Card -->
+        <!-- Project Information Card -->
 
         <div class="card">
             <div
@@ -731,8 +732,8 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for file in file_urls %}
-                            {% if file.file_type == 'js' %}
+                            {% for file in file_urls %} {% if file.file_type ==
+                            'js' %}
                             <tr>
                                 <td>
                                     <input
@@ -794,8 +795,7 @@
                                     </button>
                                 </td>
                             </tr>
-                            {% endif %}
-                            {% endfor %}
+                            {% endif %} {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -878,50 +878,94 @@
                                         }}</a
                                     >
                                     {% if vs.lines_count > 1 %}
-                                    <span class="badge bg-info ms-2">{{ vs.lines_count }} líneas</span>
+                                    <span class="badge bg-info ms-2"
+                                        >{{ vs.lines_count }} líneas</span
+                                    >
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if vs.lines|length == 1 %}
-                                        <code>{{ vs.lines[0].line_number }}</code>
+                                    <code>{{ vs.lines[0].line_number }}</code>
                                     {% else %}
-                                        <button class="btn btn-link btn-sm p-0" type="button" 
-                                                data-bs-toggle="collapse" data-bs-target="#lines-{{ vs.id }}"
-                                                aria-expanded="false">
-                                            <i class="bi bi-list-ul"></i> {{ vs.lines|length }} líneas
-                                            <i class="bi bi-chevron-down"></i>
-                                        </button>
-                                        <div id="lines-{{ vs.id }}" class="collapse mt-2">
-                                            {% for line in vs.lines %}
-                                            <div class="small text-muted mb-1">
-                                                <code>Línea {{ line.line_number }}</code>
-                                                <span class="badge bg-light text-dark ms-1">{{ line.version_keyword }}</span>
-                                            </div>
-                                            {% endfor %}
+                                    <button
+                                        class="btn btn-link btn-sm p-0"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#lines-{{ vs.id }}"
+                                        aria-expanded="false"
+                                    >
+                                        <i class="bi bi-list-ul"></i> {{
+                                        vs.lines|length }} líneas
+                                        <i class="bi bi-chevron-down"></i>
+                                    </button>
+                                    <div
+                                        id="lines-{{ vs.id }}"
+                                        class="collapse mt-2"
+                                    >
+                                        {% for line in vs.lines %}
+                                        <div class="small text-muted mb-1">
+                                            <code
+                                                >Línea {{ line.line_number
+                                                }}</code
+                                            >
+                                            <span
+                                                class="badge bg-light text-dark ms-1"
+                                                >{{ line.version_keyword
+                                                }}</span
+                                            >
                                         </div>
+                                        {% endfor %}
+                                    </div>
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if vs.lines|length == 1 %}
-                                        <code class="text-muted small">{{ vs.lines[0].line_content|e | truncate(80) }}</code>
+                                    <code class="text-muted small"
+                                        >{{ vs.lines[0].line_content|e |
+                                        truncate(80) }}</code
+                                    >
                                     {% else %}
-                                        <button class="btn btn-link btn-sm p-0" type="button" 
-                                                data-bs-toggle="collapse" data-bs-target="#content-{{ vs.id }}"
-                                                aria-expanded="false">
-                                            <i class="bi bi-eye"></i> Ver contenido
-                                            <i class="bi bi-chevron-down"></i>
-                                        </button>
-                                        <div id="content-{{ vs.id }}" class="collapse mt-2" style="max-height: 200px; overflow-y: auto;">
-                                            {% for line in vs.lines %}
-                                            <div class="mb-2 p-2 bg-light rounded">
-                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                    <small class="text-muted fw-bold">Línea {{ line.line_number }}</small>
-                                                    <span class="badge bg-secondary">{{ line.version_keyword }}</span>
-                                                </div>
-                                                <code class="small d-block text-break">{{ line.line_content|e | truncate(120) }}</code>
+                                    <button
+                                        class="btn btn-link btn-sm p-0"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#content-{{ vs.id }}"
+                                        aria-expanded="false"
+                                    >
+                                        <i class="bi bi-eye"></i> Ver contenido
+                                        <i class="bi bi-chevron-down"></i>
+                                    </button>
+                                    <div
+                                        id="content-{{ vs.id }}"
+                                        class="collapse mt-2"
+                                        style="
+                                            max-height: 200px;
+                                            overflow-y: auto;
+                                        "
+                                    >
+                                        {% for line in vs.lines %}
+                                        <div class="mb-2 p-2 bg-light rounded">
+                                            <div
+                                                class="d-flex justify-content-between align-items-center mb-1"
+                                            >
+                                                <small
+                                                    class="text-muted fw-bold"
+                                                    >Línea {{ line.line_number
+                                                    }}</small
+                                                >
+                                                <span class="badge bg-secondary"
+                                                    >{{ line.version_keyword
+                                                    }}</span
+                                                >
                                             </div>
-                                            {% endfor %}
+                                            <code
+                                                class="small d-block text-break"
+                                                >{{ line.line_content|e |
+                                                truncate(120) }}</code
+                                            >
                                         </div>
+                                        {% endfor %}
+                                    </div>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -1673,7 +1717,7 @@
     <!-- Edit Scan Client Modal -->
     <div
         class="modal fade"
-        id="editScanClientModal"
+        id="editScanProjectModal"
         tabindex="-1"
         aria-hidden="true"
     >
@@ -1689,7 +1733,7 @@
                         data-bs-dismiss="modal"
                     ></button>
                 </div>
-                <form method="POST" action="" id="editScanClientForm">
+                <form method="POST" action="" id="editScanProjectForm">
                     <input
                         type="hidden"
                         name="csrf_token"
@@ -1697,26 +1741,28 @@
                     />
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="client_id" class="form-label"
+                            <label for="project_id" class="form-label"
                                 >Proyecto</label
                             >
                             <select
                                 class="form-select"
-                                id="scanClientSelect"
-                                name="client_id"
+                                id="scanProjectSelect"
+                                name="project_id"
                             >
-                                <option value="">Sin cliente específico</option>
-                                {% for client in clients %}
+                                <option value="">
+                                    Sin proyecto específico
+                                </option>
+                                {% for project in projects %}
                                 <option
-                                    value="{{ client.id }}"
-                                    {% if scan.client_id == client.id %}selected{% endif %}
+                                    value="{{ project.id }}"
+                                    {% if scan.project_id == project.id %}selected{% endif %}
                                 >
-                                    {{ client.name }}
+                                    {{ project.name }}
                                 </option>
                                 {% endfor %}
                             </select>
                             <div class="form-text">
-                                Cambiando el cliente se actualizará:
+                                Cambiando el proyecto se actualizará:
                                 <strong id="editScanName">Loading...</strong>
                             </div>
                         </div>
@@ -1775,30 +1821,34 @@
             }
         }
 
-        // Handle edit scan client modal
-        const editScanClientModal = document.getElementById(
-            "editScanClientModal",
+        // Handle edit scan project modal
+        const editScanProjectModal = document.getElementById(
+            "editScanProjectModal",
         );
-        editScanClientModal.addEventListener("show.bs.modal", function (event) {
-            const button = event.relatedTarget;
-            const scanId = button.getAttribute("data-scan-id");
-            const scanTitle = button.getAttribute("data-scan-title");
-            const currentClientId = button.getAttribute(
-                "data-current-client-id",
-            );
+        editScanProjectModal.addEventListener(
+            "show.bs.modal",
+            function (event) {
+                const button = event.relatedTarget;
+                const scanId = button.getAttribute("data-scan-id");
+                const scanTitle = button.getAttribute("data-scan-title");
+                const currentProjectId = button.getAttribute(
+                    "data-current-project-id",
+                );
 
-            // Update form action
-            const form = document.getElementById("editScanClientForm");
-            form.action = "/update-scan-project-dashboard/" + scanId;
+                // Update form action
+                const form = document.getElementById("editScanProjectForm");
+                form.action = "/update-scan-project-dashboard/" + scanId;
 
-            // Update scan name
-            const scanNameSpan = document.getElementById("editScanName");
-            scanNameSpan.textContent = scanTitle;
+                // Update scan name
+                const scanNameSpan = document.getElementById("editScanName");
+                scanNameSpan.textContent = scanTitle;
 
-            // Set current client selection
-            const clientSelect = document.getElementById("scanClientSelect");
-            clientSelect.value = currentClientId || "";
-        });
+                // Set current project selection
+                const projectSelect =
+                    document.getElementById("scanProjectSelect");
+                projectSelect.value = currentProjectId || "";
+            },
+        );
     </script>
     {% endblock %}
 </div>

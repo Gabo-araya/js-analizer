@@ -1,22 +1,26 @@
-{% extends "base.html" %}
-{% set current_page = 'dashboard' %}
-
-{% block title %}Historial de Escaneos - {{ url }}{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% set current_page = 'dashboard' %} {% block title
+%}Historial de Escaneos - {{ url }}{% endblock %} {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/">Panel de Control</a></li>
-                <li class="breadcrumb-item"><a href="/scan/{{ current_scan_id }}">Detalle del Escaneo</a></li>
+                <li class="breadcrumb-item">
+                    <a href="/">Panel de Control</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="/scan/{{ current_scan_id }}"
+                        >Detalle del Escaneo</a
+                    >
+                </li>
                 <li class="breadcrumb-item active">Historial de URL</li>
             </ol>
         </nav>
         <h1 class="h2">Historial de Escaneos</h1>
         <p class="text-muted">
-            <i class="bi bi-link-45deg"></i> 
-            <a href="{{ url }}" target="_blank" class="text-decoration-none">{{ url|truncate(80) }}</a>
+            <i class="bi bi-link-45deg"></i>
+            <a href="{{ url }}" target="_blank" class="text-decoration-none"
+                >{{ url|truncate(80) }}</a
+            >
         </p>
         <div class="badge bg-info">{{ total_scans }} escaneos realizados</div>
     </div>
@@ -24,7 +28,11 @@
         <a href="/scan/{{ current_scan_id }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Volver al Escaneo
         </a>
-        <button type="button" class="btn btn-success" onclick="rescanFromHistory()">
+        <button
+            type="button"
+            class="btn btn-success"
+            onclick="rescanFromHistory()"
+        >
             <i class="bi bi-arrow-clockwise"></i> Nuevo Re-escaneo
         </button>
     </div>
@@ -96,55 +104,101 @@
                         </thead>
                         <tbody>
                             {% for scan in scans %}
-                            <tr {% if scan.id == current_scan_id %}class="table-warning"{% endif %}>
+                            <tr
+                                {%
+                                if
+                                scan.id=""
+                                ="current_scan_id"
+                                %}class="table-warning"
+                                {%
+                                endif
+                                %}
+                            >
                                 <td>
-                                    <span class="badge bg-secondary">{{ loop.revindex }}</span>
+                                    <span class="badge bg-secondary"
+                                        >{{ loop.revindex }}</span
+                                    >
                                     {% if loop.first %}
-                                    <span class="badge bg-success ms-1">Más Reciente</span>
-                                    {% endif %}
-                                    {% if scan.id == current_scan_id %}
-                                    <span class="badge bg-warning ms-1">Viendo</span>
+                                    <span class="badge bg-success ms-1"
+                                        >Más Reciente</span
+                                    >
+                                    {% endif %} {% if scan.id == current_scan_id
+                                    %}
+                                    <span class="badge bg-warning ms-1"
+                                        >Viendo</span
+                                    >
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="fw-bold">{{ scan.scan_date[:10] }}</div>
-                                    <small class="text-muted">{{ scan.scan_date[11:19] }}</small>
+                                    <div class="fw-bold">
+                                        {{ scan.scan_date[:10] }}
+                                    </div>
+                                    <small class="text-muted"
+                                        >{{ scan.scan_date[11:19] }}</small
+                                    >
                                 </td>
                                 <td>
-                                    {% if scan.client_name %}
-                                        <span class="badge bg-primary">{{ scan.client_name }}</span>
+                                    {% if scan.project_name %}
+                                    <span class="badge bg-primary"
+                                        >{{ scan.project_name }}</span
+                                    >
                                     {% else %}
-                                        <span class="text-muted">Sin cliente</span>
+                                    <span class="text-muted">Sin proyecto</span>
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if scan.status_code == 200 %}
-                                        <span class="badge bg-success">{{ scan.status_code }}</span>
+                                    <span class="badge bg-success"
+                                        >{{ scan.status_code }}</span
+                                    >
                                     {% else %}
-                                        <span class="badge bg-danger">{{ scan.status_code or 'Error' }}</span>
+                                    <span class="badge bg-danger"
+                                        >{{ scan.status_code or 'Error' }}</span
+                                    >
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <span class="badge bg-secondary me-1" title="Bibliotecas">
-                                        <i class="bi bi-bookshelf"></i> {{ scan.library_count }}
+                                    <span
+                                        class="badge bg-secondary me-1"
+                                        title="Bibliotecas"
+                                    >
+                                        <i class="bi bi-bookshelf"></i> {{
+                                        scan.library_count }}
                                     </span>
-                                    <span class="badge bg-info me-1" title="Archivos">
-                                        <i class="bi bi-file-earmark-code"></i> {{ scan.file_count }}
+                                    <span
+                                        class="badge bg-info me-1"
+                                        title="Archivos"
+                                    >
+                                        <i class="bi bi-file-earmark-code"></i>
+                                        {{ scan.file_count }}
                                     </span>
-                                    <span class="badge bg-warning" title="Versiones">
-                                        <i class="bi bi-hash"></i> {{ scan.version_string_count }}
+                                    <span
+                                        class="badge bg-warning"
+                                        title="Versiones"
+                                    >
+                                        <i class="bi bi-hash"></i> {{
+                                        scan.version_string_count }}
                                     </span>
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="/scan/{{ scan.id }}" class="btn btn-outline-primary" title="Ver detalles">
+                                        <a
+                                            href="/scan/{{ scan.id }}"
+                                            class="btn btn-outline-primary"
+                                            title="Ver detalles"
+                                        >
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         {% if scan.id != current_scan_id %}
-                                        <button type="button" class="btn btn-outline-secondary" 
-                                                onclick="compareScan({{ current_scan_id }}, {{ scan.id }})" 
-                                                title="Comparar con actual">
-                                            <i class="bi bi-arrow-left-right"></i>
+                                        <button
+                                            type="button"
+                                            class="btn btn-outline-secondary"
+                                            onclick="compareScan({{ current_scan_id }}, {{ scan.id }})"
+                                            title="Comparar con actual"
+                                        >
+                                            <i
+                                                class="bi bi-arrow-left-right"
+                                            ></i>
                                         </button>
                                         {% endif %}
                                     </div>
@@ -158,7 +212,9 @@
                 <div class="text-center p-5">
                     <i class="bi bi-clock-history display-4 text-muted"></i>
                     <h5 class="mt-3">Sin Historial</h5>
-                    <p class="text-muted">No se encontraron escaneos para esta URL.</p>
+                    <p class="text-muted">
+                        No se encontraron escaneos para esta URL.
+                    </p>
                 </div>
                 {% endif %}
             </div>
@@ -178,28 +234,47 @@
                 <div class="list-group list-group-flush">
                     {% for library in library_summary %}
                     <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-start">
+                        <div
+                            class="d-flex justify-content-between align-items-start"
+                        >
                             <div class="flex-grow-1">
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <span class="badge library-badge {{ 'js-badge' if library.type == 'js' else 'css-badge' }}">
+                                <div
+                                    class="d-flex align-items-center gap-2 mb-1"
+                                >
+                                    <span
+                                        class="badge library-badge {{ 'js-badge' if library.type == 'js' else 'css-badge' }}"
+                                    >
                                         {{ library.type.upper() }}
                                     </span>
-                                    <span class="fw-bold">{{ library.library_name }}</span>
+                                    <span class="fw-bold"
+                                        >{{ library.library_name }}</span
+                                    >
                                 </div>
                                 <small class="text-muted">
-                                    Detectada en {{ library.scan_count }} escaneo{{ 's' if library.scan_count > 1 else '' }}
+                                    Detectada en {{ library.scan_count }}
+                                    escaneo{{ 's' if library.scan_count > 1 else
+                                    '' }}
                                 </small>
                                 <div class="mt-1">
-                                    <small class="text-muted">Versiones: </small>
-                                    {% if library.versions_found %}
-                                        {% for version in library.versions_found.split(',')[:3] %}
-                                        <span class="badge bg-light text-dark">{{ version }}</span>
-                                        {% endfor %}
-                                        {% if library.versions_found.split(',')|length > 3 %}
-                                        <span class="text-muted">+{{ library.versions_found.split(',')|length - 3 }} más</span>
-                                        {% endif %}
-                                    {% else %}
-                                        <span class="text-muted">No detectada</span>
+                                    <small class="text-muted"
+                                        >Versiones:
+                                    </small>
+                                    {% if library.versions_found %} {% for
+                                    version in
+                                    library.versions_found.split(',')[:3] %}
+                                    <span class="badge bg-light text-dark"
+                                        >{{ version }}</span
+                                    >
+                                    {% endfor %} {% if
+                                    library.versions_found.split(',')|length > 3
+                                    %}
+                                    <span class="text-muted"
+                                        >+{{
+                                        library.versions_found.split(',')|length
+                                        - 3 }} más</span
+                                    >
+                                    {% endif %} {% else %}
+                                    <span class="text-muted">No detectada</span>
                                     {% endif %}
                                 </div>
                             </div>
@@ -211,7 +286,9 @@
                 <div class="text-center p-4">
                     <i class="bi bi-collection display-4 text-muted"></i>
                     <h6 class="mt-3">Sin Bibliotecas</h6>
-                    <p class="text-muted small">No se detectaron librerías en los escaneos.</p>
+                    <p class="text-muted small">
+                        No se detectaron librerías en los escaneos.
+                    </p>
                 </div>
                 {% endif %}
             </div>
@@ -220,27 +297,27 @@
 </div>
 
 <script>
-function rescanFromHistory() {
-    if (confirm('¿Quieres realizar un nuevo escaneo de esta URL?')) {
-        // Create form for re-scan using current scan ID
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/re-scan/{{ current_scan_id }}';
-        
-        const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = 'csrf_token';
-        csrfToken.value = '{{ csrf_token() }}';
-        form.appendChild(csrfToken);
-        
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
+    function rescanFromHistory() {
+        if (confirm("¿Quieres realizar un nuevo escaneo de esta URL?")) {
+            // Create form for re-scan using current scan ID
+            const form = document.createElement("form");
+            form.method = "POST";
+            form.action = "/re-scan/{{ current_scan_id }}";
 
-function compareScan(scanId1, scanId2) {
-    // Redirect to comparison view
-    window.location.href = `/compare-scans/${scanId1}/${scanId2}`;
-}
+            const csrfToken = document.createElement("input");
+            csrfToken.type = "hidden";
+            csrfToken.name = "csrf_token";
+            csrfToken.value = "{{ csrf_token() }}";
+            form.appendChild(csrfToken);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function compareScan(scanId1, scanId2) {
+        // Redirect to comparison view
+        window.location.href = `/compare-scans/${scanId1}/${scanId2}`;
+    }
 </script>
 {% endblock %}

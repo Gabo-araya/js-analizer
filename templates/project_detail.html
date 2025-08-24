@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% set current_page = 'clients' %}
+{% set current_page = 'projects' %}
 
-{% block title %}{{ client.name|e }} - Detalle del Proyecto{% endblock %}
+{% block title %}{{ project.name|e }} - Detalle del Proyecto{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -10,11 +10,11 @@
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2><i class="bi bi-person-badge"></i> {{ client.name|e }}</h2>
+                    <h2><i class="bi bi-person-badge"></i> {{ project.name|e }}</h2>
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb">
                             <li class="breadcrumb-item"><a href="/projects">Proyectos</a></li>
-                            <li class="breadcrumb-item active">{{ client.name|e }}</li>
+                            <li class="breadcrumb-item active">{{ project.name|e }}</li>
                         </ol>
                     </nav>
                 </div>
@@ -32,7 +32,7 @@
                             <i class="bi bi-cloud-upload"></i> Importar
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#importClientDataModal">
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#importProjectDataModal">
                                 <i class="bi bi-cloud-upload"></i> Importar Datos
                             </a></li>
                         </ul>
@@ -42,10 +42,10 @@
                             <i class="bi bi-cloud-download"></i> Exportar
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/export-project-data/{{ client.id }}/csv">
+                            <li><a class="dropdown-item" href="/export-project-data/{{ project.id }}/csv">
                                 <i class="bi bi-filetype-csv"></i> Exportar CSV
                             </a></li>
-                            <li><a class="dropdown-item" href="/export-project-data/{{ client.id }}/json">
+                            <li><a class="dropdown-item" href="/export-project-data/{{ project.id }}/json">
                                 <i class="bi bi-filetype-json"></i> Exportar JSON
                             </a></li>
                         </ul>
@@ -53,42 +53,42 @@
                 </div>
             </div>
 
-            <!-- Client Info Card -->
+            <!-- Project Info Card -->
             <div class="row mb-4">
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header bg-white d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">Información del Proyecto</h5>
-                            <button type="button" class="btn btn-outline-primary" 
-                                    data-bs-toggle="modal" data-bs-target="#editClientModal"
-                                    data-client-id="{{ client.id }}"
-                                    data-client-name="{{ client.name|e }}"
-                                    data-client-description="{{ client.description|e }}"
-                                    data-client-email="{{ client.contact_email|e }}"
-                                    data-client-phone="{{ client.contact_phone|e }}"
-                                    data-client-website="{{ client.website|e }}">
+                            <button type="button" class="btn btn-outline-primary"
+                                    data-bs-toggle="modal" data-bs-target="#editProjectModal"
+                                    data-project-id="{{ project.id }}"
+                                    data-project-name="{{ project.name|e }}"
+                                    data-project-description="{{ project.description|e }}"
+                                    data-project-email="{{ project.contact_email|e }}"
+                                    data-project-phone="{{ project.contact_phone|e }}"
+                                    data-project-website="{{ project.website|e }}">
                                 <i class="bi bi-pencil"></i> Editar Proyecto
                             </button>
                         </div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <p><strong>Nombre:</strong> {{ client.name|e }}</p>
-                                    {% if client.description %}
-                                    <p><strong>Descripción:</strong> {{ client.description }}</p>
+                                    <p><strong>Nombre:</strong> {{ project.name|e }}</p>
+                                    {% if project.description %}
+                                    <p><strong>Descripción:</strong> {{ project.description }}</p>
                                     {% endif %}
-                                    {% if client.website %}
-                                    <p><strong>Sitio Web:</strong> <a href="{{ client.website }}" target="_blank">{{ client.website }}</a></p>
+                                    {% if project.website %}
+                                    <p><strong>Sitio Web:</strong> <a href="{{ project.website }}" target="_blank">{{ project.website }}</a></p>
                                     {% endif %}
                                 </div>
                                 <div class="col-md-6">
-                                    {% if client.contact_email %}
-                                    <p><strong>Email:</strong> {{ client.contact_email }}</p>
+                                    {% if project.contact_email %}
+                                    <p><strong>Email:</strong> {{ project.contact_email }}</p>
                                     {% endif %}
-                                    {% if client.contact_phone %}
-                                    <p><strong>Teléfono:</strong> {{ client.contact_phone }}</p>
+                                    {% if project.contact_phone %}
+                                    <p><strong>Teléfono:</strong> {{ project.contact_phone }}</p>
                                     {% endif %}
-                                    <p><strong>Proyecto desde:</strong> {{ client.created_date[:10] }}</p>
+                                    <p><strong>Proyecto desde:</strong> {{ project.created_date[:10] }}</p>
                                 </div>
                             </div>
                         </div>
@@ -167,7 +167,7 @@
                     </h6>
                 </div>
                 <div class="card-body">
-                    <form method="GET" action="{{ url_for('project_detail', project_id=client.id) }}" id="searchForm">
+                    <form method="GET" action="{{ url_for('project_detail', project_id=project.id) }}" id="searchForm">
                         <div class="row">
                             <div class="col-md-8">
                                 <div class="input-group">
@@ -192,7 +192,7 @@
                             </div>
                             <div class="col-md-1">
                                 {% if request.args.get('search') or request.args.get('status') %}
-                                <a href="{{ url_for('project_detail', project_id=client.id) }}" class="btn btn-outline-secondary w-100">
+                                <a href="{{ url_for('project_detail', project_id=project.id) }}" class="btn btn-outline-secondary w-100">
                                     <i class="bi bi-x-circle"></i>
                                 </a>
                                 {% endif %}
@@ -311,11 +311,11 @@
                                                 type="button"
                                                 class="btn btn-outline-secondary btn-sm"
                                                 data-bs-toggle="modal"
-                                                data-bs-target="#editScanClientModal"
+                                                data-bs-target="#editScanProjectModal"
                                                 data-scan-id="{{ scan.id }}"
                                                 data-scan-title="{{ (scan.title or scan.url)|e|truncate(30) }}"
-                                                data-current-client-id="{{ scan.client_id or '' }}"
-                                                title="Editar cliente del escaneo"
+                                                data-current-project-id="{{ scan.project_id or '' }}"
+                                                title="Editar proyecto del escaneo"
                                             >
                                                 <i class="bi bi-pencil"></i>
                                             </button>
@@ -332,7 +332,7 @@
                                             <button
                                                 type="button"
                                                 class="btn btn-outline-danger delete-scan-btn"
-                                                data-scan-id="{{ scan.id }}" 
+                                                data-scan-id="{{ scan.id }}"
                                                 data-scan-title="{{ (scan.title or scan.url)|e }}"
                                                 title="Eliminar escaneo"
                                             >
@@ -359,13 +359,13 @@
                                     <br><strong>Estado:</strong> {{ 'Pendiente' if request.args.get('status') == 'pendiente' else 'Revisado' }}
                                 {% endif %}
                             </p>
-                            <a href="{{ url_for('project_detail', project_id=client.id) }}" class="btn btn-outline-primary">
+                            <a href="{{ url_for('project_detail', project_id=project.id) }}" class="btn btn-outline-primary">
                                 <i class="bi bi-arrow-left"></i> Ver Todos los Análisis
                             </a>
                         {% else %}
                             <i class="bi bi-search display-4 text-muted"></i>
                             <h5 class="mt-3">Sin Análisis Realizados</h5>
-                            <p class="text-muted">Comienza analizando la primera URL de este cliente</p>
+                            <p class="text-muted">Comienza analizando la primera URL de este proyecto</p>
                             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#analyzeUrlModal">
                                 <i class="bi bi-plus-lg"></i> Primer Análisis
                             </button>
@@ -383,12 +383,12 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-plus-lg"></i> Analizar URL para {{ client.name|e }}</h5>
+                <h5 class="modal-title"><i class="bi bi-plus-lg"></i> Analizar URL para {{ project.name|e }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="/analyze-url">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="hidden" name="client_id" value="{{ client.id }}"/>
+                <input type="hidden" name="project_id" value="{{ project.id }}"/>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="url" class="form-label">URL a Analizar *</label>
@@ -397,7 +397,7 @@
                     </div>
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i>
-                        Este análisis será asociado al cliente <strong>{{ client.name|e }}</strong>
+                        Este análisis será asociado al proyecto <strong>{{ project.name|e }}</strong>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -414,12 +414,12 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-card-list"></i> Análisis Masivo para {{ client.name|e }}</h5>
+                <h5 class="modal-title"><i class="bi bi-card-list"></i> Análisis Masivo para {{ project.name|e }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="/batch-analyze">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="hidden" name="client_id" value="{{ client.id }}"/>
+                <input type="hidden" name="project_id" value="{{ project.id }}"/>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="urls" class="form-label">URLs a Analizar (una por línea) *</label>
@@ -433,7 +433,7 @@
                     </div>
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i>
-                        Todos los análisis serán asociados al cliente <strong>{{ client.name|e }}</strong>
+                        Todos los análisis serán asociados al proyecto <strong>{{ project.name|e }}</strong>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -468,29 +468,29 @@
     </div>
 </div>
 
-<!-- Edit Scan Client Modal -->
-<div class="modal fade" id="editScanClientModal" tabindex="-1" aria-labelledby="editScanClientModalLabel" aria-hidden="true">
+<!-- Edit Scan Project Modal -->
+<div class="modal fade" id="editScanProjectModal" tabindex="-1" aria-labelledby="editScanProjectModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="editScanClientModalLabel">
+                <h5 class="modal-title" id="editScanProjectModalLabel">
                     <i class="bi bi-pencil"></i> Editar Proyecto del Escaneo
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <form method="POST" action="" id="editScanClientForm">
+            <form method="POST" action="" id="editScanProjectForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="scanClientSelect" class="form-label">Proyecto</label>
-                        <select class="form-select" id="scanClientSelect" name="client_id">
-                            <option value="">Sin cliente específico</option>
-                            {% for client_option in clients %}
-                            <option value="{{ client_option.id }}">{{ client_option.name }}</option>
+                        <label for="scanProjectSelect" class="form-label">Proyecto</label>
+                        <select class="form-select" id="scanProjectSelect" name="project_id">
+                            <option value="">Sin proyecto específico</option>
+                            {% for project_option in projects %}
+                            <option value="{{ project_option.id }}">{{ project_option.name }}</option>
                             {% endfor %}
                         </select>
                         <div class="form-text">
-                            Selecciona el cliente al que deseas asociar este escaneo, o deja en blanco para no asociarlo a ningún cliente.
+                            Selecciona el proyecto al que deseas asociar este escaneo, o deja en blanco para no asociarlo a ningún proyecto.
                         </div>
                     </div>
                     <div class="alert alert-info">
@@ -507,22 +507,22 @@
     </div>
 </div>
 
-<!-- Import Client Data Modal -->
-<div class="modal fade" id="importClientDataModal" tabindex="-1" aria-labelledby="importClientDataModalLabel" aria-hidden="true">
+<!-- Import Project Data Modal -->
+<div class="modal fade" id="importProjectDataModal" tabindex="-1" aria-labelledby="importProjectDataModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="importClientDataModalLabel">
+                <h5 class="modal-title" id="importProjectDataModalLabel">
                     <i class="bi bi-upload"></i> Importar Datos del Proyecto
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <form method="POST" action="/import-project-data/{{ client.id }}" enctype="multipart/form-data">
+            <form method="POST" action="/import-project-data/{{ project.id }}" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i>
-                        <strong>Importante:</strong> Los datos importados se agregarán a los escaneos existentes del cliente <strong>{{ client.name|e }}</strong>.
+                        <strong>Importante:</strong> Los datos importados se agregarán a los escaneos existentes del proyecto <strong>{{ project.name|e }}</strong>.
                     </div>
 
                     <div class="mb-3">
@@ -607,19 +607,19 @@ document.addEventListener('DOMContentLoaded', function() {
 // Funciones inline removidas - ahora se usan handlers externos seguros en secure_event_handlers.js
 </script>
 
-<!-- Edit Client Modal -->
-<div class="modal fade" id="editClientModal" tabindex="-1" aria-hidden="true">
+<!-- Edit Project Modal -->
+<div class="modal fade" id="editProjectModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Proyecto</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" id="editClientForm">
+            <form method="POST" id="editProjectForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="edit_name" class="form-label">Nombre del Cliente *</label>
+                        <label for="edit_name" class="form-label">Nombre del Proyecto *</label>
                         <input type="text" class="form-control" id="edit_name" name="name" required>
                     </div>
                     <div class="mb-3">
@@ -641,7 +641,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Actualizar Cliente</button>
+                    <button type="submit" class="btn btn-primary">Actualizar Proyecto</button>
                 </div>
             </form>
         </div>
@@ -649,26 +649,26 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <script>
-// Handle edit scan client modal
+// Handle edit scan project modal
 document.addEventListener('DOMContentLoaded', function() {
-    const editScanClientModal = document.getElementById('editScanClientModal');
-    editScanClientModal.addEventListener('show.bs.modal', function(event) {
+    const editScanProjectModal = document.getElementById('editScanProjectModal');
+    editScanProjectModal.addEventListener('show.bs.modal', function(event) {
         const button = event.relatedTarget;
         const scanId = button.getAttribute('data-scan-id');
         const scanTitle = button.getAttribute('data-scan-title');
-        const currentClientId = button.getAttribute('data-current-client-id');
-        
+        const currentProjectId = button.getAttribute('data-current-project-id');
+
         // Update form action
-        const form = document.getElementById('editScanClientForm');
+        const form = document.getElementById('editScanProjectForm');
         form.action = '/update-scan-project-dashboard/' + scanId;
-        
+
         // Update scan name
         const scanNameSpan = document.getElementById('editScanName');
         scanNameSpan.textContent = scanTitle;
-        
-        // Set current client selection
-        const clientSelect = document.getElementById('scanClientSelect');
-        clientSelect.value = currentClientId || '';
+
+        // Set current project selection
+        const projectSelect = document.getElementById('scanProjectSelect');
+        projectSelect.value = currentProjectId || '';
     });
 });
 </script>

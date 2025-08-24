@@ -14,11 +14,11 @@
                 <li class="breadcrumb-item active">Comparación de Escaneos</li>
             </ol>
         </nav>
-        
+
         <h2 class="mb-3">
             <i class="bi bi-arrow-left-right"></i> Comparación de Escaneos
         </h2>
-        
+
         <div class="row mb-4">
             <div class="col-md-5">
                 <div class="card border-secondary">
@@ -27,8 +27,8 @@
                             <i class="bi bi-clock"></i> Escaneo Anterior
                         </h5>
                         <p class="mb-1"><strong>Fecha:</strong> {{ scan1.scan_date[:16] }}</p>
-                        <p class="mb-1"><strong>Cliente:</strong> {{ scan1.client_name or 'Sin asignar' }}</p>
-                        <p class="mb-0"><strong>Estado:</strong> 
+                        <p class="mb-1"><strong>Proyecto:</strong> {{ scan1.project_name or 'Sin asignar' }}</p>
+                        <p class="mb-0"><strong>Estado:</strong>
                             <span class="badge bg-{{ 'success' if scan1.status_code == 200 else 'danger' }}">
                                 {{ scan1.status_code or 'Error' }}
                             </span>
@@ -39,11 +39,11 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="col-md-2 text-center align-self-center">
                 <h3 class="text-muted">VS</h3>
             </div>
-            
+
             <div class="col-md-5">
                 <div class="card border-primary">
                     <div class="card-body">
@@ -51,8 +51,8 @@
                             <i class="bi bi-clock-fill"></i> Escaneo Actual
                         </h5>
                         <p class="mb-1"><strong>Fecha:</strong> {{ scan2.scan_date[:16] }}</p>
-                        <p class="mb-1"><strong>Cliente:</strong> {{ scan2.client_name or 'Sin asignar' }}</p>
-                        <p class="mb-0"><strong>Estado:</strong> 
+                        <p class="mb-1"><strong>Proyecto:</strong> {{ scan2.project_name or 'Sin asignar' }}</p>
+                        <p class="mb-0"><strong>Estado:</strong>
                             <span class="badge bg-{{ 'success' if scan2.status_code == 200 else 'danger' }}">
                                 {{ scan2.status_code or 'Error' }}
                             </span>
@@ -65,7 +65,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Summary Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
@@ -129,7 +129,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Changes Summary Alert -->
     {% if total_changes > 0 %}
     <div class="alert alert-info mb-4">
@@ -152,7 +152,7 @@
             <div class="col-md-6">
                 <ul class="mb-0">
                     {% if metrics_diff.files != 0 %}
-                    <li>Archivos: {{ files1_count }} → {{ files2_count }} 
+                    <li>Archivos: {{ files1_count }} → {{ files2_count }}
                         ({% if metrics_diff.files > 0 %}+{% endif %}{{ metrics_diff.files }})
                     </li>
                     {% endif %}
@@ -162,7 +162,7 @@
                     </li>
                     {% endif %}
                     {% if metrics_diff.security != 0 %}
-                    <li>Score de seguridad: 
+                    <li>Score de seguridad:
                         {% if metrics_diff.security > 0 %}
                             <span class="text-success">+{{ metrics_diff.security }}% ⬆️</span>
                         {% else %}
@@ -179,7 +179,7 @@
         <i class="bi bi-check-circle"></i> No se detectaron cambios significativos entre los escaneos.
     </div>
     {% endif %}
-    
+
     <!-- Libraries Comparison Table -->
     <div class="card">
         <div class="card-header">
@@ -216,7 +216,7 @@
                             <td><span class="text-success">➕ Agregada</span></td>
                         </tr>
                         {% endfor %}
-                        
+
                         <!-- Updated Libraries -->
                         {% for item in libraries_comparison.updated %}
                         <tr class="table-warning">
@@ -234,7 +234,7 @@
                             <td><span class="text-warning">🔄 Versión cambiada</span></td>
                         </tr>
                         {% endfor %}
-                        
+
                         <!-- Removed Libraries -->
                         {% for item in libraries_comparison.removed %}
                         <tr class="table-danger">
@@ -252,7 +252,7 @@
                             <td><span class="text-danger">➖ Eliminada</span></td>
                         </tr>
                         {% endfor %}
-                        
+
                         <!-- Unchanged Libraries (collapsed by default) -->
                         {% if libraries_comparison.unchanged %}
                         <tr>
@@ -286,7 +286,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Metrics Comparison -->
     <div class="row mt-4">
         <div class="col-md-6">
@@ -366,7 +366,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
@@ -376,7 +376,7 @@
                     {% if metrics_diff.security != 0 %}
                         {% if metrics_diff.security > 0 %}
                         <div class="alert alert-success">
-                            <i class="bi bi-check-circle"></i> 
+                            <i class="bi bi-check-circle"></i>
                             <strong>Mejora detectada:</strong> El score de seguridad aumentó un {{ metrics_diff.security }}%
                         </div>
                         {% else %}
@@ -391,17 +391,17 @@
                         El score de seguridad se mantiene igual en ambos escaneos
                     </div>
                     {% endif %}
-                    
+
                     <div class="progress mb-3" style="height: 30px;">
-                        <div class="progress-bar bg-secondary" role="progressbar" 
+                        <div class="progress-bar bg-secondary" role="progressbar"
                              style="width: {{ security1_score }}%"
                              aria-valuenow="{{ security1_score }}" aria-valuemin="0" aria-valuemax="100">
                             Anterior: {{ security1_score }}%
                         </div>
                     </div>
-                    
+
                     <div class="progress" style="height: 30px;">
-                        <div class="progress-bar bg-{{ 'success' if security2_score >= 70 else 'warning' if security2_score >= 40 else 'danger' }}" 
+                        <div class="progress-bar bg-{{ 'success' if security2_score >= 70 else 'warning' if security2_score >= 40 else 'danger' }}"
                              role="progressbar" style="width: {{ security2_score }}%"
                              aria-valuenow="{{ security2_score }}" aria-valuemin="0" aria-valuemax="100">
                             Actual: {{ security2_score }}%
@@ -411,7 +411,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Action Buttons -->
     <div class="mt-4">
         <a href="/url-history/{{ scan1.id }}" class="btn btn-secondary">

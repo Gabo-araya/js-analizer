@@ -6,13 +6,13 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="h2">Panel de Control</h1>
-        {% if selected_client %}
+        {% if selected_project %}
         <small class="text-muted">
-            Mostrando análisis de: <strong>{{ selected_client.name }}</strong>
+            Mostrando análisis de: <strong>{{ selected_project.name }}</strong>
         </small>
-        {% elif request.args.get('client_id') == 'null' %}
+        {% elif request.args.get('project_id') == 'null' %}
         <small class="text-muted">
-            Mostrando análisis: <strong>Sin cliente asignado</strong>
+            Mostrando análisis: <strong>Sin proyecto asignado</strong>
         </small>
         {% endif %}
     </div>
@@ -88,7 +88,7 @@
         <div class="card stat-card h-100">
             <div class="card-body text-center">
                 <i class="bi bi-person-badge display-6 text-primary mb-2"></i>
-                <h3 class="mb-1">{{ stats.total_clients or 0 }}</h3>
+                <h3 class="mb-1">{{ stats.total_projects or 0 }}</h3>
                 <small class="text-muted">Proyectos</small>
             </div>
         </div>
@@ -98,24 +98,24 @@
 
 <!-- Filters and Search Section -->
 <div class="row mb-4">
-    {% if clients %}
+    {% if projects %}
     <div class="col-md-6 mb-3">
         <div class="card h-100">
             <div class="card-body">
                 <h6 class="card-title mb-3">
                     <i class="bi bi-funnel"></i> Filtrar por Proyecto
                 </h6>
-                <form method="GET" action="/" id="clientFilterForm">
+                <form method="GET" action="/" id="projectFilterForm">
                     <input type="hidden" name="search" value="{{ request.args.get('search', '') }}" />
-                    <select name="client_id" class="form-select" onchange="this.form.submit()">
+                    <select name="project_id" class="form-select" onchange="this.form.submit()">
                         <option value="">Todos los escaneos</option>
-                        <option value="null" {% if request.args.get('client_id') == 'null' %}selected{% endif %}>
-                            Sin cliente asignado
+                        <option value="null" {% if request.args.get('project_id') == 'null' %}selected{% endif %}>
+                            Sin proyecto asignado
                         </option>
                         <optgroup label="Proyectos">
-                            {% for client in clients %}
-                            <option value="{{ client.id }}" {% if selected_client and selected_client.id == client.id %}selected{% endif %}>
-                                {{ client.name }}
+                            {% for project in projects %}
+                            <option value="{{ project.id }}" {% if selected_project and selected_project.id == project.id %}selected{% endif %}>
+                                {{ project.name }}
                             </option>
                             {% endfor %}
                         </optgroup>
@@ -126,14 +126,14 @@
     </div>
     {% endif %}
 
-    <div class="col-md-{% if clients %}6{% else %}12{% endif %} mb-3">
+    <div class="col-md-{% if projects %}6{% else %}12{% endif %} mb-3">
         <div class="card h-100">
             <div class="card-body">
                 <h6 class="card-title mb-3">
                     <i class="bi bi-search"></i> Buscar Escaneos
                 </h6>
                 <form method="GET" action="/" id="searchForm">
-                    <input type="hidden" name="client_id" value="{{ request.args.get('client_id', '') }}" />
+                    <input type="hidden" name="project_id" value="{{ request.args.get('project_id', '') }}" />
                     <div class="input-group">
                         <input type="text" name="search" class="form-control"
                                placeholder="Buscar en títulos, URLs, librerías..."
@@ -142,7 +142,7 @@
                             <i class="bi bi-search"></i> Buscar
                         </button>
                         {% if request.args.get('search') %}
-                        <a href="/?client_id={{ request.args.get('client_id', '') }}" class="btn btn-outline-secondary">
+                        <a href="/?project_id={{ request.args.get('project_id', '') }}" class="btn btn-outline-secondary">
                             <i class="bi bi-x"></i> Limpiar
                         </a>
                         {% endif %}
@@ -154,7 +154,7 @@
 </div>
 
 <!-- Search Results Info -->
-{% if request.args.get('search') or selected_client or request.args.get('client_id') == 'null' %}
+{% if request.args.get('search') or selected_project or request.args.get('project_id') == 'null' %}
 <div class="row mb-4">
     <div class="col-12">
         <div class="alert alert-info d-flex align-items-center">
@@ -164,10 +164,10 @@
                 {% if request.args.get('search') %}
                     | Búsqueda: "{{ request.args.get('search') }}"
                 {% endif %}
-                {% if selected_client %}
-                    | Proyecto: {{ selected_client.name }}
-                {% elif request.args.get('client_id') == 'null' %}
-                    | Sin cliente asignado
+                {% if selected_project %}
+                    | Proyecto: {{ selected_project.name }}
+                {% elif request.args.get('project_id') == 'null' %}
+                    | Sin proyecto asignado
                 {% endif %}
             </div>
         </div>
@@ -190,13 +190,13 @@
                         <i class="bi bi-clock-history"></i>
                         {% if request.args.get('search') %} Resultados de
                         Búsqueda {% else %} Escaneos Recientes {% endif %} {% if
-                        selected_client %}
+                        selected_project %}
                         <small class="text-muted"
-                            >- {{ selected_client.name }}</small
+                            >- {{ selected_project.name }}</small
                         >
-                        {% elif request.args.get('client_id') == 'null' %}
+                        {% elif request.args.get('project_id') == 'null' %}
                         <small class="text-muted"
-                            >- Sin cliente asignado</small
+                            >- Sin proyecto asignado</small
                         >
                         {% endif %} {% if request.args.get('search') %}
                         <small class="text-muted"
@@ -336,7 +336,7 @@
                         <button
                             type="button"
                             class="btn btn-outline-secondary btn-sm"
-                            class="bulk-edit-client-btn"
+                            class="bulk-edit-project-btn"
                         >
                             <i class="bi bi-pencil"></i> Editar Proyecto
                         </button>
@@ -354,7 +354,7 @@
                                     />
                                 </th>
                                 <th scope="col">URL</th>
-                                {% if not selected_client %}
+                                {% if not selected_project %}
                                 <th scope="col">Proyecto</th>
                                 {% endif %}
                                 <th scope="col">Estado</th>
@@ -384,20 +384,20 @@
                                         >{{ scan.url|e }}</small
                                     >
                                 </td>
-                                {% if not selected_client %}
+                                {% if not selected_project %}
                                 <td>
-                                    {% if scan.client_name %}
+                                    {% if scan.project_name %}
                                     <a
-                                        href="/?client_id={{ scan.client_id }}{% if request.args.get('search') %}&search={{ request.args.get('search') }}{% endif %}"
+                                        href="/?project_id={{ scan.project_id }}{% if request.args.get('search') %}&search={{ request.args.get('search') }}{% endif %}"
                                         class="text-decoration-none"
                                     >
                                         <small class="text-primary"
-                                            >{{ scan.client_name }}</small
+                                            >{{ scan.project_name }}</small
                                         >
                                     </a>
                                     {% else %}
                                     <small class="text-muted"
-                                        >Sin cliente</small
+                                        >Sin proyecto</small
                                     >
                                     {% endif %}
                                 </td>
@@ -486,11 +486,11 @@
                                             type="button"
                                             class="btn btn-sm btn-outline-secondary"
                                             data-bs-toggle="modal"
-                                            data-bs-target="#editScanClientModal"
+                                            data-bs-target="#editScanProjectModal"
                                             data-scan-id="{{ scan.id }}"
                                             data-scan-title="{{ (scan.title or scan.url)|e|truncate(30) }}"
-                                            data-current-client-id="{{ scan.client_id or '' }}"
-                                            title="Editar cliente del escaneo"
+                                            data-current-project-id="{{ scan.project_id or '' }}"
+                                            title="Editar proyecto del escaneo"
                                         >
                                             <i class="bi bi-pencil"></i> Editar Proyecto
                                         </button>
@@ -507,8 +507,8 @@
                                         </form>
                                         <button
                                             type="button"
-                                            class="btn btn-sm btn-outline-danger"
-                                            data-scan-id="{{ scan.id }}" data-scan-title="{{ (scan.title or scan.url)|e|truncate(30)|e }}" class="delete-scan-btn"
+                                            class="btn btn-sm btn-outline-danger delete-scan-btn"
+                                            data-scan-id="{{ scan.id }}" data-scan-title="{{ (scan.title or scan.url)|e|truncate(30)|e }}"
                                             title="Eliminar escaneo"
                                         >
                                             <i class="bi bi-trash"></i>
@@ -687,25 +687,25 @@
                             analizar.
                         </div>
                     </div>
-                    {% if clients %}
+                    {% if projects %}
                     <div class="mb-3">
-                        <label for="clientSelect" class="form-label"
+                        <label for="projectSelect" class="form-label"
                             >Proyecto (Opcional)</label
                         >
                         <select
                             class="form-select"
-                            id="clientSelect"
-                            name="client_id"
+                            id="projectSelect"
+                            name="project_id"
                         >
-                            <option value="">Sin cliente específico</option>
-                            {% for client in clients %}
-                            <option value="{{ client.id }}">
-                                {{ client.name }}
+                            <option value="">Sin proyecto específico</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}">
+                                {{ project.name }}
                             </option>
                             {% endfor %}
                         </select>
                         <div class="form-text">
-                            Selecciona un cliente para asociar este análisis.
+                            Selecciona un proyecto para asociar este análisis.
                         </div>
                     </div>
                     {% endif %}
@@ -802,25 +802,25 @@ stackoverflow.com
                             con # se tratan como comentarios.
                         </div>
                     </div>
-                    {% if clients %}
+                    {% if projects %}
                     <div class="mb-3">
-                        <label for="batchClientSelect" class="form-label"
+                        <label for="batchProjectSelect" class="form-label"
                             >Proyecto (Opcional)</label
                         >
                         <select
                             class="form-select"
-                            id="batchClientSelect"
-                            name="client_id"
+                            id="batchProjectSelect"
+                            name="project_id"
                         >
-                            <option value="">Sin cliente específico</option>
-                            {% for client in clients %}
-                            <option value="{{ client.id }}">
-                                {{ client.name }}
+                            <option value="">Sin proyecto específico</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}">
+                                {{ project.name }}
                             </option>
                             {% endfor %}
                         </select>
                         <div class="form-text">
-                            Selecciona un cliente para asociar todos estos
+                            Selecciona un proyecto para asociar todos estos
                             análisis.
                         </div>
                     </div>
@@ -915,8 +915,8 @@ stackoverflow.com
                     <!-- Preserve current URL parameters -->
                     <input
                         type="hidden"
-                        name="return_client_id"
-                        value="{{ request.args.get('client_id', '') }}"
+                        name="return_project_id"
+                        value="{{ request.args.get('project_id', '') }}"
                     />
                     <input
                         type="hidden"
@@ -937,18 +937,18 @@ stackoverflow.com
     </div>
 </div>
 
-<!-- Edit Scan Client Modal -->
+<!-- Edit Scan Project Modal -->
 <div
     class="modal fade"
-    id="editScanClientModal"
+    id="editScanProjectModal"
     tabindex="-1"
-    aria-labelledby="editScanClientModalLabel"
+    aria-labelledby="editScanProjectModalLabel"
     aria-hidden="true"
 >
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="editScanClientModalLabel">
+                <h5 class="modal-title" id="editScanProjectModalLabel">
                     <i class="bi bi-pencil"></i> Editar Proyecto del Escaneo
                 </h5>
                 <button
@@ -958,18 +958,18 @@ stackoverflow.com
                     aria-label="Cerrar"
                 ></button>
             </div>
-            <form method="POST" action="" id="editScanClientForm">
+            <form method="POST" action="" id="editScanProjectForm">
                 <input
                     type="hidden"
                     name="csrf_token"
-                    id="edit_scan_client_csrf"
+                    id="edit_scan_project_csrf"
                     value="{{ csrf_token() }}"
                 />
                 <!-- Preserve current URL parameters -->
                 <input
                     type="hidden"
-                    name="return_client_id"
-                    value="{{ request.args.get('client_id', '') }}"
+                    name="return_project_id"
+                    value="{{ request.args.get('project_id', '') }}"
                 />
                 <input
                     type="hidden"
@@ -983,23 +983,23 @@ stackoverflow.com
                 />
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="scanClientSelect" class="form-label"
+                        <label for="scanProjectSelect" class="form-label"
                             >Proyecto</label
                         >
                         <select
                             class="form-select"
-                            id="scanClientSelect"
-                            name="client_id"
+                            id="scanProjectSelect"
+                            name="project_id"
                         >
-                            <option value="">Sin cliente específico</option>
-                            {% for client in clients %}
-                            <option value="{{ client.id }}">
-                                {{ client.name }}
+                            <option value="">Sin proyecto específico</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}">
+                                {{ project.name }}
                             </option>
                             {% endfor %}
                         </select>
                         <div class="form-text">
-                            Selecciona el cliente al que deseas asociar este
+                            Selecciona el proyecto al que deseas asociar este
                             escaneo.
                         </div>
                     </div>
@@ -1025,18 +1025,18 @@ stackoverflow.com
     </div>
 </div>
 
-<!-- Bulk Edit Client Modal -->
+<!-- Bulk Edit Project Modal -->
 <div
     class="modal fade"
-    id="bulkEditClientModal"
+    id="bulkEditProjectModal"
     tabindex="-1"
-    aria-labelledby="bulkEditClientModalLabel"
+    aria-labelledby="bulkEditProjectModalLabel"
     aria-hidden="true"
 >
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="bulkEditClientModalLabel">
+                <h5 class="modal-title" id="bulkEditProjectModalLabel">
                     <i class="bi bi-pencil"></i> Editar Proyecto de Múltiples
                     Escaneos
                 </h5>
@@ -1050,12 +1050,12 @@ stackoverflow.com
             <form
                 method="POST"
                 action="/bulk-update-scan-project"
-                id="bulkEditClientForm"
+                id="bulkEditProjectForm"
             >
                 <input
                     type="hidden"
                     name="csrf_token"
-                    id="bulk_edit_client_csrf"
+                    id="bulk_edit_project_csrf"
                     value="{{ csrf_token() }}"
                 />
                 <input
@@ -1066,23 +1066,23 @@ stackoverflow.com
                 />
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="bulkClientSelect" class="form-label"
+                        <label for="bulkProjectSelect" class="form-label"
                             >Proyecto</label
                         >
                         <select
                             class="form-select"
-                            id="bulkClientSelect"
-                            name="client_id"
+                            id="bulkProjectSelect"
+                            name="project_id"
                         >
-                            <option value="">Sin cliente específico</option>
-                            {% for client in clients %}
-                            <option value="{{ client.id }}">
-                                {{ client.name }}
+                            <option value="">Sin proyecto específico</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}">
+                                {{ project.name }}
                             </option>
                             {% endfor %}
                         </select>
                         <div class="form-text">
-                            Selecciona el cliente al que deseas asociar todos
+                            Selecciona el proyecto al que deseas asociar todos
                             los escaneos seleccionados.
                         </div>
                     </div>
@@ -1175,7 +1175,7 @@ stackoverflow.com
         }
     });
 
-    // función bulkEditClient removida - ahora se usa handler externo seguro
+    // función bulkEditProject removida - ahora se usa handler externo seguro
 
     // Function to build URL with current parameters
     function buildUrlWithParams(page) {
@@ -1186,9 +1186,9 @@ stackoverflow.com
             params.set("page", page);
         }
 
-        const clientId = '{{ request.args.get("client_id", "") }}';
-        if (clientId) {
-            params.set("client_id", clientId);
+        const projectId = '{{ request.args.get("project_id", "") }}';
+        if (projectId) {
+            params.set("project_id", projectId);
         }
 
         const search = '{{ request.args.get("search", "") }}';
@@ -1224,32 +1224,32 @@ stackoverflow.com
     });
 </script>
 
-<!-- Edit Scan Client Modal -->
-<div class="modal fade" id="editScanClientModal" tabindex="-1" aria-labelledby="editScanClientModalLabel" aria-hidden="true">
+<!-- Edit Scan Project Modal -->
+<div class="modal fade" id="editScanProjectModal" tabindex="-1" aria-labelledby="editScanProjectModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="editScanClientModalLabel">
+                <h5 class="modal-title" id="editScanProjectModalLabel">
                     <i class="bi bi-pencil"></i> Editar Proyecto del Escaneo
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <form method="POST" action="" id="editScanClientForm">
+            <form method="POST" action="" id="editScanProjectForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="hidden" name="return_client_id" value="{{ request.args.get('client_id', '') }}"/>
+                <input type="hidden" name="return_project_id" value="{{ request.args.get('project_id', '') }}"/>
                 <input type="hidden" name="return_search" value="{{ request.args.get('search', '') }}"/>
                 <input type="hidden" name="return_page" value="{{ request.args.get('page', '') }}"/>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="scanClientSelect" class="form-label">Seleccionar Proyecto</label>
-                        <select class="form-select" id="scanClientSelect" name="client_id">
-                            <option value="">Sin cliente específico</option>
-                            {% for client in clients %}
-                            <option value="{{ client.id }}">{{ client.name|e }}</option>
+                        <label for="scanProjectSelect" class="form-label">Seleccionar Proyecto</label>
+                        <select class="form-select" id="scanProjectSelect" name="project_id">
+                            <option value="">Sin proyecto específico</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}">{{ project.name|e }}</option>
                             {% endfor %}
                         </select>
                         <div class="form-text">
-                            Selecciona el cliente al que deseas asociar este escaneo.
+                            Selecciona el proyecto al que deseas asociar este escaneo.
                         </div>
                     </div>
                     <div class="alert alert-info">
@@ -1267,26 +1267,26 @@ stackoverflow.com
 </div>
 
 <script>
-// Handle edit scan client modal
+// Handle edit scan project modal
 document.addEventListener('DOMContentLoaded', function() {
-    const editScanClientModal = document.getElementById('editScanClientModal');
-    editScanClientModal.addEventListener('show.bs.modal', function(event) {
+    const editScanProjectModal = document.getElementById('editScanProjectModal');
+    editScanProjectModal.addEventListener('show.bs.modal', function(event) {
         const button = event.relatedTarget;
         const scanId = button.getAttribute('data-scan-id');
         const scanTitle = button.getAttribute('data-scan-title');
-        const currentClientId = button.getAttribute('data-current-client-id');
+        const currentProjectId = button.getAttribute('data-current-project-id');
 
         // Update form action
-        const form = document.getElementById('editScanClientForm');
+        const form = document.getElementById('editScanProjectForm');
         form.action = '/update-scan-project-dashboard/' + scanId;
 
         // Update scan name
         const scanNameSpan = document.getElementById('editScanName');
         scanNameSpan.textContent = scanTitle;
 
-        // Set current client selection
-        const clientSelect = document.getElementById('scanClientSelect');
-        clientSelect.value = currentClientId || '';
+        // Set current project selection
+        const projectSelect = document.getElementById('scanProjectSelect');
+        projectSelect.value = currentProjectId || '';
     });
 });
 </script>

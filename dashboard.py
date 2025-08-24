@@ -57,11 +57,11 @@ def to_json_filter(obj):
             elif isinstance(item, dict):
                 return {k: convert_any_rows(v) for k, v in item.items()}
             return item
-        
+
         converted = convert_any_rows(obj)
         return json.dumps(converted)
 
-@app.template_filter('has_vulnerability')  
+@app.template_filter('has_vulnerability')
 def has_vulnerability_filter(current_version, safe_version):
     """Template filter to check if a library version has vulnerabilities"""
     return has_vulnerability(current_version, safe_version)
@@ -266,9 +266,9 @@ def init_database():
     )
     ''')
 
-    # Create clients table
+    # Create projects table
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS clients (
+    CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
         description TEXT,
@@ -281,12 +281,12 @@ def init_database():
     )
     ''')
 
-    # Add client_id column to scans table if it doesn't exist
+    # Add project_id column to scans table if it doesn't exist
     try:
-        cursor.execute("SELECT client_id FROM scans LIMIT 1")
+        cursor.execute("SELECT project_id FROM scans LIMIT 1")
     except sqlite3.OperationalError:
-        cursor.execute("ALTER TABLE scans ADD COLUMN client_id INTEGER")
-        print("✅ Added client_id column to scans table")
+        cursor.execute("ALTER TABLE scans ADD COLUMN project_id INTEGER")
+        print("✅ Added project_id column to scans table")
 
     # Add role column to users table if it doesn't exist
     try:
@@ -329,7 +329,7 @@ def init_database():
             data_before TEXT,                  -- Estado anterior (JSON)
             data_after TEXT,                   -- Estado posterior (JSON)
             ip_address VARCHAR(45),            -- IPv4/IPv6 del usuario
-            user_agent TEXT,                   -- Navegador/cliente
+            user_agent TEXT,                   -- Navegador/proyecto
             success BOOLEAN NOT NULL DEFAULT 1, -- Si la acción fue exitosa
             error_message TEXT,                -- Mensaje de error si falló
             session_id VARCHAR(255),           -- ID de sesión
@@ -337,7 +337,7 @@ def init_database():
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
         ''')
-        
+
         # Create indexes for performance
         cursor.execute("CREATE INDEX idx_action_history_timestamp ON action_history(timestamp)")
         cursor.execute("CREATE INDEX idx_action_history_user_id ON action_history(user_id)")
@@ -345,7 +345,7 @@ def init_database():
         cursor.execute("CREATE INDEX idx_action_history_target_table ON action_history(target_table)")
         cursor.execute("CREATE INDEX idx_action_history_target_id ON action_history(target_id)")
         cursor.execute("CREATE INDEX idx_action_history_session_id ON action_history(session_id)")
-        
+
         print("✅ Created action_history table with indexes for audit trail")
 
     conn.commit()
@@ -358,27 +358,27 @@ def compare_versions(version1, version2):
     """
     if not version1 or not version2:
         return 0
-    
+
     try:
         # Normalize versions by removing common prefixes and suffixes
         v1_clean = re.sub(r'[^0-9\.]', '', str(version1))
         v2_clean = re.sub(r'[^0-9\.]', '', str(version2))
-        
+
         # Split into parts and pad with zeros
         v1_parts = [int(x) for x in v1_clean.split('.') if x.isdigit()]
         v2_parts = [int(x) for x in v2_clean.split('.') if x.isdigit()]
-        
+
         # Pad to same length
         max_len = max(len(v1_parts), len(v2_parts))
         v1_parts.extend([0] * (max_len - len(v1_parts)))
         v2_parts.extend([0] * (max_len - len(v2_parts)))
-        
+
         for i in range(max_len):
             if v1_parts[i] < v2_parts[i]:
                 return -1
             elif v1_parts[i] > v2_parts[i]:
                 return 1
-        
+
         return 0
     except:
         # Fallback to string comparison
@@ -391,17 +391,17 @@ def has_vulnerability(current_version, safe_version, latest_version=None, global
     """
     if not current_version:
         return False
-    
+
     # Determine which safe version to use (individual first, then global)
     effective_safe_version = safe_version or global_safe_version
-    
+
     if not effective_safe_version:
         return False
-    
+
     # If current version is less than safe version, it's vulnerable
     if compare_versions(current_version, effective_safe_version) < 0:
         return True
-    
+
     return False
 
 def create_default_admin():
@@ -433,7 +433,7 @@ def get_db_connection():
     """Crea una conexión ultra-optimizada a la base de datos con manejo robusto de concurrencia"""
     import time
     import random
-    
+
     # Retry en la conexión misma si es necesario
     max_retries = 3
     for attempt in range(max_retries):
@@ -441,13 +441,13 @@ def get_db_connection():
             # Agregar pequeño delay aleatorio para distribuir conexiones
             if attempt > 0:
                 time.sleep(random.uniform(0.05, 0.1))
-            
+
             conn = sqlite3.connect('analysis.db', timeout=60.0)  # Timeout aumentado
             conn.row_factory = sqlite3.Row
-            
+
             # Configuración ultra-optimizada para concurrencia máxima
             conn.execute('PRAGMA journal_mode=WAL')           # Write-Ahead Logging
-            conn.execute('PRAGMA synchronous=NORMAL')         # Balance seguridad/velocidad  
+            conn.execute('PRAGMA synchronous=NORMAL')         # Balance seguridad/velocidad
             conn.execute('PRAGMA temp_store=memory')          # Temp files en memoria
             conn.execute('PRAGMA busy_timeout=60000')         # 60 segundos timeout
             conn.execute('PRAGMA cache_size=-128000')         # 128MB cache (más grande)
@@ -456,9 +456,9 @@ def get_db_connection():
             conn.execute('PRAGMA mmap_size=268435456')        # 256MB memory mapping
             conn.execute('PRAGMA wal_timeout=30000')          # 30s timeout para WAL
             conn.execute('PRAGMA optimize')                   # Optimizar automáticamente
-            
+
             return conn
-            
+
         except sqlite3.OperationalError as e:
             if attempt < max_retries - 1:
                 print(f"Error conectando a BD (intento {attempt + 1}): {e}")
@@ -476,7 +476,7 @@ def convert_rows_deep(obj):
     Handles nested structures like lists, dicts, tuples
     """
     import sqlite3
-    
+
     # More specific detection for sqlite3.Row objects
     if isinstance(obj, sqlite3.Row):
         # This is definitely a sqlite3.Row object
@@ -487,7 +487,7 @@ def convert_rows_deep(obj):
             return dict(obj)
         except:
             pass
-    
+
     if isinstance(obj, dict):
         # Recursively convert dictionary values
         return {key: convert_rows_deep(value) for key, value in obj.items()}
@@ -513,7 +513,7 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             return redirect(url_for('login', next=request.url))
-        
+
         user_role = session.get('user_role', '')
         if user_role != 'admin':
             flash('Acceso denegado: Se requieren permisos de administrador', 'error')
@@ -529,11 +529,11 @@ def get_user_role():
 # SISTEMA DE HISTORIAL Y AUDITORÍA
 # ========================================
 
-def log_user_action(action_type, target_table, target_id=None, target_description=None, 
+def log_user_action(action_type, target_table, target_id=None, target_description=None,
                    data_before=None, data_after=None, success=True, error_message=None, notes=None):
     """
     Registra una acción en el historial de auditoría con manejo ultra-robusto de concurrencia
-    
+
     Args:
         action_type: Tipo de acción (CREATE, UPDATE, DELETE, LOGIN, LOGOUT, UNDO)
         target_table: Tabla afectada
@@ -550,49 +550,49 @@ def log_user_action(action_type, target_table, target_id=None, target_descriptio
         if LOGGING_DEBUG:
             print(f"[DEBUG] Action logging disabled, skipping: {action_type} on {target_table}")
         return
-    
+
     import time
     import random
     import threading
-    
+
     # Configuración más agresiva para resolver conflictos
     max_retries = 5
     base_delay = 0.2  # 200ms base más conservador
-    
+
     for attempt in range(max_retries):
         conn = None
         try:
             # Agregar delay inicial aleatorio para distribuir requests
             if attempt == 0:
                 time.sleep(random.uniform(0.01, 0.05))
-            
+
             conn = get_db_connection()
-            
+
             # Datos del usuario actual
             user_id = session.get('user_id', 0)
             username = session.get('username', 'Sistema')
             user_role = session.get('user_role', 'system')
-            
+
             # Datos de la request HTTP
             ip_address = request.remote_addr if request else None
             user_agent = request.headers.get('User-Agent') if request else None
             session_id = session.get('session_id') if session else None
-            
+
             # Serializar datos JSON
             data_before_json = json.dumps(data_before, default=str) if data_before else None
             data_after_json = json.dumps(data_after, default=str) if data_after else None
-            
+
             # Configuración ultra-conservadora para resolver deadlocks
             conn.execute('PRAGMA busy_timeout = 20000')  # 20 segundos
             conn.execute('PRAGMA journal_mode = WAL')    # Asegurar WAL mode
             conn.execute('PRAGMA wal_timeout = 10000')   # Timeout para WAL
-            
+
             # Usar transacción IMMEDIATE para reducir conflicts
             conn.execute('BEGIN IMMEDIATE')
-            
+
             conn.execute('''
                 INSERT INTO action_history (
-                    user_id, username, user_role, action_type, target_table, 
+                    user_id, username, user_role, action_type, target_table,
                     target_id, target_description, data_before, data_after,
                     ip_address, user_agent, success, error_message, session_id, notes
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -601,10 +601,10 @@ def log_user_action(action_type, target_table, target_id=None, target_descriptio
                 target_id, target_description, data_before_json, data_after_json,
                 ip_address, user_agent, success, error_message, session_id, notes
             ))
-            
+
             conn.commit()
             return  # Éxito, salir del loop
-            
+
         except sqlite3.OperationalError as e:
             error_msg = str(e).lower()
             if ("database is locked" in error_msg or "busy" in error_msg) and attempt < max_retries - 1:
@@ -613,14 +613,14 @@ def log_user_action(action_type, target_table, target_id=None, target_descriptio
                         conn.rollback()
                     except:
                         pass
-                
+
                 # Backoff exponencial más agresivo con jitter
                 delay = base_delay * (2 ** attempt) + random.uniform(0.1, 0.3)
-                
+
                 # Agregar delay extra en intentos finales
                 if attempt >= 2:
                     delay += random.uniform(0.5, 1.0)
-                
+
                 time.sleep(delay)
                 if LOGGING_DEBUG:
                     print(f"[DEBUG] Database locked, reintentando en {delay:.2f}s (intento {attempt + 1}/{max_retries}) - Thread: {threading.current_thread().ident} - Action: {action_type} on {target_table}")
@@ -653,36 +653,36 @@ def log_user_action(action_type, target_table, target_id=None, target_descriptio
 def log_batch_actions(actions_list):
     """
     Registra múltiples acciones en una sola transacción para mejorar performance
-    
+
     Args:
         actions_list: Lista de diccionarios con datos de acciones
     """
     if not actions_list:
         return
-    
+
     import time
     import random
-    
+
     max_retries = 3
     base_delay = 0.2
-    
+
     for attempt in range(max_retries):
         conn = None
         try:
             conn = get_db_connection()
             conn.execute('PRAGMA busy_timeout = 15000')  # 15 segundos para lotes
-            
+
             # Comenzar transacción
             conn.execute('BEGIN IMMEDIATE')
-            
+
             for action_data in actions_list:
                 # Serializar datos JSON
                 data_before_json = json.dumps(action_data.get('data_before'), default=str) if action_data.get('data_before') else None
                 data_after_json = json.dumps(action_data.get('data_after'), default=str) if action_data.get('data_after') else None
-                
+
                 conn.execute('''
                     INSERT INTO action_history (
-                        user_id, username, user_role, action_type, target_table, 
+                        user_id, username, user_role, action_type, target_table,
                         target_id, target_description, data_before, data_after,
                         ip_address, user_agent, success, error_message, session_id, notes
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -703,11 +703,11 @@ def log_batch_actions(actions_list):
                     action_data.get('session_id'),
                     action_data.get('notes')
                 ))
-            
+
             conn.commit()
             print(f"✅ Registradas {len(actions_list)} acciones en lote")
             return  # Éxito
-            
+
         except sqlite3.OperationalError as e:
             if "database is locked" in str(e).lower() and attempt < max_retries - 1:
                 if conn:
@@ -745,11 +745,11 @@ def log_batch_actions(actions_list):
 def get_record_data(table_name, record_id):
     """
     Obtiene todos los datos de un registro específico
-    
+
     Args:
         table_name: Nombre de la tabla
         record_id: ID del registro
-    
+
     Returns:
         dict: Datos del registro o None si no existe
     """
@@ -757,12 +757,12 @@ def get_record_data(table_name, record_id):
     try:
         cursor = conn.execute(f'SELECT * FROM {table_name} WHERE id = ?', (record_id,))
         record = cursor.fetchone()
-        
+
         if record:
             # Convertir Row a dict
             return dict(record)
         return None
-        
+
     except Exception as e:
         print(f"Error al obtener datos del registro {table_name}#{record_id}: {e}")
         return None
@@ -796,15 +796,15 @@ def record_exists(table_name, record_id):
 def log_action(action_type, target_table, get_target_id=None, get_description=None):
     """
     Decorador para registrar acciones automáticamente
-    
+
     Args:
         action_type: CREATE, UPDATE, DELETE, LOGIN, LOGOUT, UNDO
         target_table: tabla afectada (scans, libraries, users, etc.)
         get_target_id: función lambda para obtener ID del registro
         get_description: función lambda para obtener descripción legible
-    
+
     Uso:
-        @log_action('CREATE', 'scans', 
+        @log_action('CREATE', 'scans',
                    get_target_id=lambda: request.form.get('url'),
                    get_description=lambda: f"Nuevo escaneo: {request.form.get('url')}")
         def analyze_url():
@@ -815,17 +815,17 @@ def log_action(action_type, target_table, get_target_id=None, get_description=No
         def decorated_function(*args, **kwargs):
             target_id = None
             data_before = None
-            
+
             try:
                 # Capturar estado anterior para UPDATE/DELETE
                 if action_type in ['UPDATE', 'DELETE'] and get_target_id:
                     target_id = get_target_id(*args, **kwargs)
                     if target_id:
                         data_before = get_record_data(target_table, target_id)
-                
+
                 # Ejecutar función original
                 result = f(*args, **kwargs)
-                
+
                 # Capturar estado posterior y ID para CREATE/UPDATE
                 data_after = None
                 if action_type in ['CREATE', 'UPDATE']:
@@ -833,7 +833,7 @@ def log_action(action_type, target_table, get_target_id=None, get_description=No
                         target_id = get_target_id(*args, **kwargs)
                     if target_id:
                         data_after = get_record_data(target_table, target_id)
-                
+
                 # Registrar acción exitosa
                 log_user_action(
                     action_type=action_type,
@@ -844,9 +844,9 @@ def log_action(action_type, target_table, get_target_id=None, get_description=No
                     data_after=data_after,
                     success=True
                 )
-                
+
                 return result
-                
+
             except Exception as e:
                 # Registrar acción fallida
                 log_user_action(
@@ -859,7 +859,7 @@ def log_action(action_type, target_table, get_target_id=None, get_description=No
                     error_message=str(e)
                 )
                 raise  # Re-lanzar la excepción
-                
+
         return decorated_function
     return decorator
 
@@ -874,15 +874,15 @@ def log_action_async(action_type, target_table, get_target_id=None, get_descript
             try:
                 # Ejecutar función original primero
                 result = f(*args, **kwargs)
-                
+
                 # Logging en background (no bloqueante)
                 try:
                     target_id = get_target_id(*args, **kwargs) if get_target_id else None
                     description = get_description(*args, **kwargs) if get_description else None
-                    
+
                     # Usar thread para logging no-bloqueante
                     import threading
-                    
+
                     def background_log():
                         try:
                             log_user_action(
@@ -894,17 +894,17 @@ def log_action_async(action_type, target_table, get_target_id=None, get_descript
                             )
                         except Exception as e:
                             print(f"⚠️ Background logging failed: {e}")
-                    
+
                     # Solo hacer logging si está habilitado
                     if ENABLE_ACTION_LOGGING:
                         thread = threading.Thread(target=background_log, daemon=True)
                         thread.start()
-                
+
                 except Exception as e:
                     print(f"⚠️ Error setting up background logging: {e}")
-                
+
                 return result
-                
+
             except Exception as e:
                 # Registrar error sin afectar el flujo principal
                 try:
@@ -918,9 +918,9 @@ def log_action_async(action_type, target_table, get_target_id=None, get_descript
                         )
                 except:
                     pass  # Ignorar errores de logging
-                
+
                 raise  # Re-lanzar la excepción original
-                
+
         return decorated_function
     return decorator
 
@@ -934,14 +934,14 @@ def login():
         cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
         user = cursor.fetchone()
         conn.close()
-        
+
         if user and check_password_hash(user['password'], password):
             # Configurar sesión
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['user_role'] = user['role'] if 'role' in user.keys() and user['role'] else 'admin'
             session['session_id'] = generate_session_id()  # Generar ID único de sesión
-            
+
             # Registrar login exitoso
             log_user_action(
                 action_type='LOGIN',
@@ -951,18 +951,18 @@ def login():
                 success=True,
                 notes=f"Rol: {session['user_role']}"
             )
-            
+
             next_page = request.form.get('next') or request.args.get('next')
-            
+
             # Validar que la URL de redirección sea segura (prevenir open redirect)
             if next_page:
                 from urllib.parse import urlparse
                 next_url_parsed = urlparse(next_page)
-                
+
                 # Permitir rutas relativas o URLs que apunten al mismo host
                 if next_url_parsed.netloc == '' or next_url_parsed.netloc == request.host:
                     return redirect(next_page)
-            
+
             return redirect(url_for('index'))
         else:
             # Registrar intento de login fallido
@@ -987,7 +987,7 @@ def logout():
             target_description=f"Logout de usuario: {session.get('username', 'desconocido')}",
             success=True
         )
-    
+
     session.clear()
     flash('Has cerrado sesión exitosamente.', 'success')
     return redirect(url_for('login'))
@@ -995,49 +995,49 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    # Get page number, client filter, and search from URL parameters
+    # Get page number, project filter, and search from URL parameters
     page = request.args.get('page', 1, type=int)
-    client_id_param = request.args.get('client_id', '')
+    project_id_param = request.args.get('project_id', '')
     search_query = request.args.get('search', '').strip()
     per_page = 50
     offset = (page - 1) * per_page
 
     conn = get_db_connection()
-    
+
     # Build WHERE clause for filters
     where_conditions = []
     query_params = []
-    
-    # Handle client filter
-    if client_id_param:
-        if client_id_param == 'null':
-            # Filter for scans without client
-            where_conditions.append("s.client_id IS NULL")
+
+    # Handle project filter
+    if project_id_param:
+        if project_id_param == 'null':
+            # Filter for scans without project
+            where_conditions.append("s.project_id IS NULL")
         else:
-            # Filter for specific client
+            # Filter for specific project
             try:
-                client_id = int(client_id_param)
-                where_conditions.append("s.client_id = ?")
-                query_params.append(client_id)
+                project_id = int(project_id_param)
+                where_conditions.append("s.project_id = ?")
+                query_params.append(project_id)
             except ValueError:
-                # Invalid client_id, ignore filter
+                # Invalid project_id, ignore filter
                 pass
-    
+
     if search_query:
         # Search in titles, URLs, and associated libraries
         search_condition = """(
-            s.title LIKE ? OR 
-            s.url LIKE ? OR 
+            s.title LIKE ? OR
+            s.url LIKE ? OR
             s.id IN (
-                SELECT DISTINCT l.scan_id 
-                FROM libraries l 
+                SELECT DISTINCT l.scan_id
+                FROM libraries l
                 WHERE l.library_name LIKE ? OR l.description LIKE ?
             )
         )"""
         where_conditions.append(search_condition)
         search_param = f"%{search_query}%"
         query_params.extend([search_param, search_param, search_param, search_param])
-    
+
     # Combine WHERE conditions
     where_clause = ""
     if where_conditions:
@@ -1046,7 +1046,7 @@ def index():
     # Get summary stats
     # For the stats query, we need to duplicate parameters for each subquery that uses where_clause
     stats_query_params = query_params + query_params + query_params  # Three copies for the three subqueries
-    
+
     stats_query = f'''
         SELECT
             COUNT(DISTINCT s.id) as total_scans,
@@ -1054,13 +1054,13 @@ def index():
             (SELECT COUNT(DISTINCT fu.id) FROM file_urls fu JOIN scans s3 ON fu.scan_id = s3.id WHERE fu.file_type = 'js' {('AND ' + where_clause.replace('s.', 's3.').replace('WHERE ', '')) if 'WHERE' in where_clause else ''}) as total_files,
             SUM(CASE WHEN s.reviewed = 1 THEN 1 ELSE 0 END) as reviewed_scans,
             SUM(CASE WHEN s.reviewed = 0 THEN 1 ELSE 0 END) as pending_scans,
-            (SELECT COUNT(*) FROM clients WHERE is_active = 1) as total_clients,
+            (SELECT COUNT(*) FROM projects WHERE is_active = 1) as total_projects,
             (SELECT COUNT(*) FROM global_libraries) as global_libraries_count
         FROM scans s
         {where_clause}
     '''
     stats = conn.execute(stats_query, stats_query_params).fetchone()
-    
+
     # Calculate vulnerable scans using the same logic as statistics page
     all_scans_query = f'''
         SELECT s.id
@@ -1068,7 +1068,7 @@ def index():
         {where_clause}
     '''
     all_scans = conn.execute(all_scans_query, stats_query_params).fetchall()
-    
+
     # Count vulnerable scans using Python logic
     vulnerable_scans_count = 0
     for scan in all_scans:
@@ -1083,34 +1083,34 @@ def index():
             if has_vulnerability(lib['version'], lib['latest_safe_version'], lib['latest_version']):
                 has_vuln = True
                 break
-        
+
         if has_vuln:
             vulnerable_scans_count += 1
-    
+
     # Add vulnerable scans count to stats
     stats = dict(stats)
     stats['vulnerable_scans'] = vulnerable_scans_count
-    
-    # Get clients for filter dropdown
-    clients = conn.execute('SELECT id, name FROM clients WHERE is_active = 1 ORDER BY name').fetchall()
-    selected_client = None
-    if client_id_param and client_id_param != 'null':
+
+    # Get projects for filter dropdown
+    projects = conn.execute('SELECT id, name FROM projects WHERE is_active = 1 ORDER BY name').fetchall()
+    selected_project = None
+    if project_id_param and project_id_param != 'null':
         try:
-            client_id = int(client_id_param)
-            selected_client = conn.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
+            project_id = int(project_id_param)
+            selected_project = conn.execute('SELECT * FROM projects WHERE id = ?', (project_id,)).fetchone()
         except ValueError:
             pass
 
-    # Get recent scans with pagination and client info
+    # Get recent scans with pagination and project info
     scans_query = f'''
-        SELECT s.id, s.url, s.scan_date, s.status_code, s.title, s.client_id, s.reviewed,
-               c.name as client_name,
+        SELECT s.id, s.url, s.scan_date, s.status_code, s.title, s.project_id, s.reviewed,
+               c.name as project_name,
                COUNT(DISTINCT l.id) as library_count,
                COUNT(DISTINCT vs.id) as version_string_count,
                COUNT(DISTINCT fu.id) as file_count,
                COUNT(DISTINCT CASE WHEN fu.status_code IS NOT NULL AND fu.status_code != 200 THEN fu.id END) as error_count
         FROM scans s
-        LEFT JOIN clients c ON s.client_id = c.id
+        LEFT JOIN projects c ON s.project_id = c.id
         LEFT JOIN libraries l ON s.id = l.scan_id
         LEFT JOIN version_strings vs ON s.id = vs.scan_id
         LEFT JOIN file_urls fu ON s.id = fu.scan_id
@@ -1121,40 +1121,40 @@ def index():
     '''
     scans_params = query_params + [per_page, offset]
     recent_scans_raw = conn.execute(scans_query, scans_params).fetchall()
-    
+
     # Calculate vulnerability count for each scan using Python function
     recent_scans = []
     for scan in recent_scans_raw:
         scan_dict = dict(scan)
-        
+
         # Get libraries for this scan to count vulnerabilities properly
         vuln_count = conn.execute('''
             SELECT COUNT(*) as count
-            FROM libraries 
-            WHERE scan_id = ? 
-            AND version IS NOT NULL 
-            AND latest_safe_version IS NOT NULL 
-            AND version != '' 
+            FROM libraries
+            WHERE scan_id = ?
+            AND version IS NOT NULL
+            AND latest_safe_version IS NOT NULL
+            AND version != ''
             AND latest_safe_version != ''
         ''', (scan['id'],)).fetchone()['count']
-        
+
         # Count vulnerabilities using Python function for accurate comparison
         if vuln_count > 0:
             libraries = conn.execute('''
                 SELECT version, latest_safe_version
-                FROM libraries 
-                WHERE scan_id = ? 
-                AND version IS NOT NULL 
-                AND latest_safe_version IS NOT NULL 
-                AND version != '' 
+                FROM libraries
+                WHERE scan_id = ?
+                AND version IS NOT NULL
+                AND latest_safe_version IS NOT NULL
+                AND version != ''
                 AND latest_safe_version != ''
             ''', (scan['id'],)).fetchall()
-            
-            vulnerability_count = sum(1 for lib in libraries 
+
+            vulnerability_count = sum(1 for lib in libraries
                                     if has_vulnerability(lib['version'], lib['latest_safe_version']))
         else:
             vulnerability_count = 0
-        
+
         scan_dict['vulnerability_count'] = vulnerability_count
         recent_scans.append(scan_dict)
 
@@ -1216,8 +1216,8 @@ def index():
                          stats=stats,
                          recent_scans=recent_scans,
                          top_libraries=top_libraries,
-                         clients=clients,
-                         selected_client=selected_client,
+                         projects=projects,
+                         selected_project=selected_project,
                          pagination={
                              'page': page,
                              'per_page': per_page,
@@ -1234,11 +1234,11 @@ def index():
 def scan_detail(scan_id):
     conn = get_db_connection()
 
-    # Get scan details with client information
+    # Get scan details with project information
     scan = conn.execute('''
-        SELECT s.*, c.name as client_name
+        SELECT s.*, c.name as project_name
         FROM scans s
-        LEFT JOIN clients c ON s.client_id = c.id
+        LEFT JOIN projects c ON s.project_id = c.id
         WHERE s.id = ?
     ''', (scan_id,)).fetchone()
     if not scan:
@@ -1263,7 +1263,7 @@ def scan_detail(scan_id):
         WHERE scan_id = ? AND file_type = 'js'
         ORDER BY file_url, line_number
     ''', (scan_id,)).fetchall()
-    
+
     # Group version strings by file_url to avoid duplicates
     version_strings_grouped = {}
     for vs in version_strings_raw:
@@ -1278,7 +1278,7 @@ def scan_detail(scan_id):
                 'lines_count': 0,
                 'all_ids': []  # Keep track of all IDs for deletion
             }
-        
+
         version_strings_grouped[file_url]['lines'].append({
             'id': vs['id'],
             'line_number': vs['line_number'],
@@ -1306,11 +1306,11 @@ def scan_detail(scan_id):
     # Analyze security headers
     security_analysis = analyze_security_headers(headers)
 
-    # Get all active clients for the edit modal
-    clients = conn.execute('''
-        SELECT id, name 
-        FROM clients 
-        WHERE is_active = 1 
+    # Get all active projects for the edit modal
+    projects = conn.execute('''
+        SELECT id, name
+        FROM projects
+        WHERE is_active = 1
         ORDER BY name
     ''').fetchall()
 
@@ -1319,12 +1319,12 @@ def scan_detail(scan_id):
 
     # Get navigation info for scans of the same URL
     url_scans = conn.execute('''
-        SELECT id, scan_date 
-        FROM scans 
-        WHERE url = ? 
+        SELECT id, scan_date
+        FROM scans
+        WHERE url = ?
         ORDER BY scan_date ASC
     ''', (scan['url'],)).fetchall()
-    
+
     # Find current position and navigation
     scan_navigation = {
         'current_position': 0,
@@ -1332,7 +1332,7 @@ def scan_detail(scan_id):
         'previous_scan_id': None,
         'next_scan_id': None
     }
-    
+
     for i, url_scan in enumerate(url_scans):
         if url_scan['id'] == scan_id:
             scan_navigation['current_position'] = i + 1
@@ -1351,7 +1351,7 @@ def scan_detail(scan_id):
                          file_urls=file_urls,
                          headers=headers,
                          security_analysis=security_analysis,
-                         clients=clients,
+                         projects=projects,
                          global_libraries=global_libraries,
                          scan_navigation=scan_navigation)
 
@@ -1449,33 +1449,33 @@ def statistics():
     page = int(request.args.get('page', 1))
     per_page = 20
     offset = (page - 1) * per_page
-    
+
     # Get search parameter
     search = request.args.get('search', '').strip()
-    
+
     conn = get_db_connection()
-    
+
     # Build where clause for search
     where_clause = "WHERE vulnerability_count > 0"
     search_params = []
-    
+
     if search:
         where_clause += " AND (s.url LIKE ? OR s.title LIKE ? OR c.name LIKE ?)"
         search_params.extend([f'%{search}%', f'%{search}%', f'%{search}%'])
-    
+
     # Get all scans for vulnerability counting using Python logic
     all_scans_query = f'''
-        SELECT s.id, s.url, s.title, c.name as client_name
+        SELECT s.id, s.url, s.title, c.name as project_name
         FROM scans s
-        LEFT JOIN clients c ON s.client_id = c.id
+        LEFT JOIN projects c ON s.project_id = c.id
     '''
-    
+
     if search:
         all_scans_query += " WHERE (s.url LIKE ? OR s.title LIKE ? OR c.name LIKE ?)"
         all_scans = conn.execute(all_scans_query, [f'%{search}%', f'%{search}%', f'%{search}%']).fetchall()
     else:
         all_scans = conn.execute(all_scans_query).fetchall()
-    
+
     # Count vulnerable scans using Python logic
     vulnerable_scan_ids = []
     for scan in all_scans:
@@ -1490,37 +1490,37 @@ def statistics():
             if has_vulnerability(lib['version'], lib['latest_safe_version'], lib['latest_version']):
                 has_vuln = True
                 break
-        
+
         if has_vuln:
             vulnerable_scan_ids.append(scan['id'])
-    
+
     total_vulnerable_scans = len(vulnerable_scan_ids)
-    
+
     # Calculate pagination
     total_pages = max(1, (total_vulnerable_scans + per_page - 1) // per_page)
     has_prev = page > 1
     has_next = page < total_pages
     prev_num = page - 1 if has_prev else None
     next_num = page + 1 if has_next else None
-    
+
     # Apply pagination to filtered vulnerable scan IDs
     start_idx = offset
     end_idx = offset + per_page
     paginated_vulnerable_ids = vulnerable_scan_ids[start_idx:end_idx]
-    
+
     # Get detailed scan information for paginated results
     vulnerable_scans = []
     if paginated_vulnerable_ids:
         placeholders = ','.join('?' for _ in paginated_vulnerable_ids)
         scans_query = f'''
-            SELECT s.id, s.url, s.scan_date, s.status_code, s.title, s.client_id, s.reviewed,
-                   c.name as client_name,
+            SELECT s.id, s.url, s.scan_date, s.status_code, s.title, s.project_id, s.reviewed,
+                   c.name as project_name,
                    COUNT(DISTINCT l.id) as library_count,
                    COUNT(DISTINCT vs.id) as version_string_count,
                    COUNT(DISTINCT fu.id) as file_count,
                    COUNT(DISTINCT CASE WHEN fu.status_code IS NOT NULL AND fu.status_code != 200 THEN fu.id END) as error_count
             FROM scans s
-            LEFT JOIN clients c ON s.client_id = c.id
+            LEFT JOIN projects c ON s.project_id = c.id
             LEFT JOIN libraries l ON s.id = l.scan_id
             LEFT JOIN version_strings vs ON s.id = vs.scan_id
             LEFT JOIN file_urls fu ON s.id = fu.scan_id
@@ -1529,7 +1529,7 @@ def statistics():
             ORDER BY s.scan_date DESC
         '''
         scans_raw = conn.execute(scans_query, paginated_vulnerable_ids).fetchall()
-        
+
         # Add vulnerability count to each scan
         for scan in scans_raw:
             scan_dict = dict(scan)
@@ -1545,14 +1545,14 @@ def statistics():
                     vuln_count += 1
             scan_dict['vulnerability_count'] = vuln_count
             vulnerable_scans.append(scan_dict)
-    
+
     # Calculate total vulnerabilities across all vulnerable scans
     total_vulnerabilities = 0
     all_scans_query = '''
         SELECT s.id FROM scans s
     '''
     all_scan_ids = [row['id'] for row in conn.execute(all_scans_query).fetchall()]
-    
+
     for scan_id in vulnerable_scan_ids:
         libs_query = '''
             SELECT library_name, version, latest_safe_version, latest_version
@@ -1562,26 +1562,26 @@ def statistics():
         for lib in libraries:
             if has_vulnerability(lib['version'], lib['latest_safe_version'], lib['latest_version']):
                 total_vulnerabilities += 1
-    
+
     # Get total scans for percentage calculation
     total_scans = len(all_scan_ids)
-    
+
     # Get summary statistics
     summary_stats = {
         'total_vulnerable_scans': total_vulnerable_scans,
         'total_vulnerabilities': total_vulnerabilities,
         'total_scans': total_scans
     }
-    
-    # Get clients for potential filtering (future enhancement)
-    clients = conn.execute('SELECT id, name FROM clients WHERE is_active = 1 ORDER BY name').fetchall()
-    
+
+    # Get projects for potential filtering (future enhancement)
+    projects = conn.execute('SELECT id, name FROM projects WHERE is_active = 1 ORDER BY name').fetchall()
+
     conn.close()
-    
+
     return render_template('statistics.html',
                          vulnerable_scans=vulnerable_scans,
                          summary_stats=summary_stats,
-                         clients=clients,
+                         projects=projects,
                          pagination={
                              'page': page,
                              'per_page': per_page,
@@ -1628,7 +1628,7 @@ def reset_database():
 
 @app.route('/toggle-reviewed/<int:scan_id>', methods=['POST'])
 @login_required
-@log_action_async('UPDATE', 'scans', 
+@log_action_async('UPDATE', 'scans',
                  get_target_id=lambda scan_id: scan_id,
                  get_description=lambda scan_id: f"Cambio estado revisado del escaneo #{scan_id}")
 def toggle_reviewed(scan_id):
@@ -1640,27 +1640,27 @@ def toggle_reviewed(scan_id):
         if not current_status:
             flash('Escaneo no encontrado', 'error')
             return redirect(request.referrer or url_for('index'))
-        
+
         # Toggle the status
         new_status = 1 if not current_status['reviewed'] else 0
-        
+
         # Update the scan
         conn.execute('UPDATE scans SET reviewed = ? WHERE id = ?', (new_status, scan_id))
         conn.commit()
-        
+
         status_text = 'marcado como revisado' if new_status else 'marcado como no revisado'
         flash(f'Escaneo {status_text} exitosamente', 'success')
-        
+
     except Exception as e:
         flash(f'Error al actualizar estado de revisión: {str(e)}', 'error')
     finally:
         conn.close()
-    
+
     return redirect(request.referrer or url_for('index'))
 
 @app.route('/delete-scan/<int:scan_id>', methods=['POST'])
 @login_required
-@log_action('DELETE', 'scans', 
+@log_action('DELETE', 'scans',
            get_target_id=lambda scan_id: scan_id,
            get_description=lambda scan_id: f"Eliminación del escaneo #{scan_id}")
 def delete_scan(scan_id):
@@ -1678,20 +1678,20 @@ def delete_scan(scan_id):
         conn.close()
 
         flash('¡Escaneo eliminado exitosamente!', 'success')
-        
+
         # Preserve URL parameters when redirecting
-        client_id = request.form.get('return_client_id', '')
+        project_id = request.form.get('return_project_id', '')
         search = request.form.get('return_search', '')
         page = request.form.get('return_page', '')
-        
+
         redirect_params = {}
-        if client_id:
-            redirect_params['client_id'] = client_id
+        if project_id:
+            redirect_params['project_id'] = project_id
         if search:
             redirect_params['search'] = search
         if page:
             redirect_params['page'] = page
-            
+
         return redirect(url_for('index', **redirect_params))
 
     except Exception as e:
@@ -1702,171 +1702,171 @@ def delete_scan(scan_id):
 @login_required
 def update_scan_project(scan_id):
     try:
-        client_id = request.form.get('client_id', '').strip()
-        
-        # Convert empty string to None for client_id
-        if not client_id:
-            client_id = None
-        
+        project_id = request.form.get('project_id', '').strip()
+
+        # Convert empty string to None for project_id
+        if not project_id:
+            project_id = None
+
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Verify that the scan exists
         scan = cursor.execute('SELECT id, url FROM scans WHERE id = ?', (scan_id,)).fetchone()
         if not scan:
             flash('¡Escaneo no encontrado!', 'error')
             conn.close()
             return redirect(url_for('index'))
-        
-        # If client_id is provided, verify that the client exists
-        if client_id:
-            client = cursor.execute('SELECT id, name FROM clients WHERE id = ? AND is_active = 1', (client_id,)).fetchone()
-            if not client:
-                flash('¡Cliente no encontrado o inactivo!', 'error')
+
+        # If project_id is provided, verify that the project exists
+        if project_id:
+            project = cursor.execute('SELECT id, name FROM projects WHERE id = ? AND is_active = 1', (project_id,)).fetchone()
+            if not project:
+                flash('¡Proyecto no encontrado o inactivo!', 'error')
                 conn.close()
                 return redirect(url_for('scan_detail', scan_id=scan_id))
-        
-        # Get client name before updating if client_id is provided
-        client_name = None
-        if client_id:
-            client_name = cursor.execute('SELECT name FROM clients WHERE id = ?', (client_id,)).fetchone()['name']
-        
-        # Update the scan with the new client_id
-        cursor.execute('UPDATE scans SET client_id = ? WHERE id = ?', (client_id, scan_id))
+
+        # Get project name before updating if project_id is provided
+        project_name = None
+        if project_id:
+            project_name = cursor.execute('SELECT name FROM projects WHERE id = ?', (project_id,)).fetchone()['name']
+
+        # Update the scan with the new project_id
+        cursor.execute('UPDATE scans SET project_id = ? WHERE id = ?', (project_id, scan_id))
         conn.commit()
         conn.close()
-        
-        if client_id and client_name:
-            flash(f'¡Escaneo asociado exitosamente al cliente "{client_name}"!', 'success')
+
+        if project_id and project_name:
+            flash(f'¡Escaneo asociado exitosamente al proyecto "{project_name}"!', 'success')
         else:
-            flash('¡Escaneo desasociado de cliente exitosamente!', 'success')
-            
+            flash('¡Escaneo desasociado de proyecto exitosamente!', 'success')
+
         return redirect(url_for('scan_detail', scan_id=scan_id))
-        
+
     except Exception as e:
-        flash(f'Error al actualizar el cliente del escaneo: {str(e)}', 'error')
+        flash(f'Error al actualizar el proyecto del escaneo: {str(e)}', 'error')
         return redirect(url_for('scan_detail', scan_id=scan_id))
 
 @app.route('/update-scan-project-dashboard/<int:scan_id>', methods=['POST'])
 @login_required
 def update_scan_project_dashboard(scan_id):
-    """Update scan client from dashboard and return to dashboard with preserved parameters"""
+    """Update scan project from dashboard and return to dashboard with preserved parameters"""
     try:
-        client_id = request.form.get('client_id', '').strip()
-        
-        # Convert empty string to None for client_id
-        if not client_id:
-            client_id = None
-        
+        project_id = request.form.get('project_id', '').strip()
+
+        # Convert empty string to None for project_id
+        if not project_id:
+            project_id = None
+
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Verify that the scan exists
         scan = cursor.execute('SELECT id, url FROM scans WHERE id = ?', (scan_id,)).fetchone()
         if not scan:
             flash('¡Escaneo no encontrado!', 'error')
             conn.close()
             return redirect(url_for('index'))
-        
-        # If client_id is provided, verify that the client exists
-        if client_id:
-            client = cursor.execute('SELECT id, name FROM clients WHERE id = ? AND is_active = 1', (client_id,)).fetchone()
-            if not client:
-                flash('¡Cliente no encontrado o inactivo!', 'error')
+
+        # If project_id is provided, verify that the project exists
+        if project_id:
+            project = cursor.execute('SELECT id, name FROM projects WHERE id = ? AND is_active = 1', (project_id,)).fetchone()
+            if not project:
+                flash('¡Proyecto no encontrado o inactivo!', 'error')
                 conn.close()
                 return redirect(url_for('index'))
-        
-        # Get client name before updating if client_id is provided
-        client_name = None
-        if client_id:
-            client_name = cursor.execute('SELECT name FROM clients WHERE id = ?', (client_id,)).fetchone()['name']
-        
-        # Update the scan with the new client_id
-        cursor.execute('UPDATE scans SET client_id = ? WHERE id = ?', (client_id, scan_id))
+
+        # Get project name before updating if project_id is provided
+        project_name = None
+        if project_id:
+            project_name = cursor.execute('SELECT name FROM projects WHERE id = ?', (project_id,)).fetchone()['name']
+
+        # Update the scan with the new project_id
+        cursor.execute('UPDATE scans SET project_id = ? WHERE id = ?', (project_id, scan_id))
         conn.commit()
         conn.close()
-        
-        if client_id and client_name:
-            flash(f'¡Escaneo asociado exitosamente al cliente "{client_name}"!', 'success')
+
+        if project_id and project_name:
+            flash(f'¡Escaneo asociado exitosamente al proyecto "{project_name}"!', 'success')
         else:
-            flash('¡Escaneo desasociado de cliente exitosamente!', 'success')
-            
+            flash('¡Escaneo desasociado de proyecto exitosamente!', 'success')
+
         # Preserve URL parameters when redirecting
-        return_client_id = request.form.get('return_client_id', '')
+        return_project_id = request.form.get('return_project_id', '')
         return_search = request.form.get('return_search', '')
         return_page = request.form.get('return_page', '')
-        
+
         redirect_params = {}
-        if return_client_id:
-            redirect_params['client_id'] = return_client_id
+        if return_project_id:
+            redirect_params['project_id'] = return_project_id
         if return_search:
             redirect_params['search'] = return_search
         if return_page:
             redirect_params['page'] = return_page
-            
+
         return redirect(url_for('index', **redirect_params))
-        
+
     except Exception as e:
-        flash(f'Error al actualizar el cliente del escaneo: {str(e)}', 'error')
+        flash(f'Error al actualizar el proyecto del escaneo: {str(e)}', 'error')
         return redirect(url_for('index'))
 
 @app.route('/bulk-update-scan-project', methods=['POST'])
 @login_required
 def bulk_update_scan_project():
     try:
-        client_id = request.form.get('client_id', '').strip()
+        project_id = request.form.get('project_id', '').strip()
         scan_ids_str = request.form.get('scan_ids', '').strip()
-        
-        # Convert empty string to None for client_id
-        if not client_id:
-            client_id = None
-        
+
+        # Convert empty string to None for project_id
+        if not project_id:
+            project_id = None
+
         # Parse scan IDs
         if not scan_ids_str:
             flash('No se seleccionaron escaneos para actualizar.', 'error')
             return redirect(url_for('index'))
-        
+
         try:
             scan_ids = [int(id.strip()) for id in scan_ids_str.split(',') if id.strip()]
         except ValueError:
             flash('IDs de escaneo inválidos.', 'error')
             return redirect(url_for('index'))
-        
+
         if not scan_ids:
             flash('No se seleccionaron escaneos válidos para actualizar.', 'error')
             return redirect(url_for('index'))
-        
+
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        # If client_id is provided, verify that the client exists
-        client_name = None
-        if client_id:
-            client = cursor.execute('SELECT id, name FROM clients WHERE id = ? AND is_active = 1', (client_id,)).fetchone()
-            if not client:
-                flash('¡Cliente no encontrado o inactivo!', 'error')
+
+        # If project_id is provided, verify that the project exists
+        project_name = None
+        if project_id:
+            project = cursor.execute('SELECT id, name FROM projects WHERE id = ? AND is_active = 1', (project_id,)).fetchone()
+            if not project:
+                flash('¡Proyecto no encontrado o inactivo!', 'error')
                 conn.close()
                 return redirect(url_for('index'))
-            client_name = client['name']
-        
+            project_name = project['name']
+
         # Update all selected scans
         placeholders = ','.join(['?'] * len(scan_ids))
-        query = f'UPDATE scans SET client_id = ? WHERE id IN ({placeholders})'
-        cursor.execute(query, [client_id] + scan_ids)
-        
+        query = f'UPDATE scans SET project_id = ? WHERE id IN ({placeholders})'
+        cursor.execute(query, [project_id] + scan_ids)
+
         updated_count = cursor.rowcount
         conn.commit()
         conn.close()
-        
-        if client_id and client_name:
-            flash(f'¡{updated_count} escaneos asociados exitosamente al cliente "{client_name}"!', 'success')
+
+        if project_id and project_name:
+            flash(f'¡{updated_count} escaneos asociados exitosamente al proyecto "{project_name}"!', 'success')
         else:
-            flash(f'¡{updated_count} escaneos desasociados de cliente exitosamente!', 'success')
-            
+            flash(f'¡{updated_count} escaneos desasociados de proyecto exitosamente!', 'success')
+
         return redirect(url_for('index'))
-        
+
     except Exception as e:
-        flash(f'Error al actualizar clientes de escaneos: {str(e)}', 'error')
+        flash(f'Error al actualizar proyectos de escaneos: {str(e)}', 'error')
         return redirect(url_for('index'))
 
 @app.route('/re-scan/<int:scan_id>', methods=['POST'])
@@ -1875,23 +1875,23 @@ def re_scan_url(scan_id):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Get original scan details
         original_scan = cursor.execute('''
-            SELECT url, client_id 
-            FROM scans 
+            SELECT url, project_id
+            FROM scans
             WHERE id = ?
         ''', (scan_id,)).fetchone()
-        
+
         if not original_scan:
             flash('¡Escaneo original no encontrado!', 'error')
             return redirect(url_for('index'))
-        
+
         conn.close()
-        
+
         # Re-analyze the URL using existing function
-        result = analyze_single_url(original_scan['url'], client_id=original_scan['client_id'])
-        
+        result = analyze_single_url(original_scan['url'], project_id=original_scan['project_id'])
+
         if result['success']:
             flash(f'¡Re-escaneo completado! Se encontraron {result["libraries_count"]} librerías, {result["files_count"]} archivos, y {result["version_strings_count"]} cadenas de versión.', 'success')
             return redirect(url_for('scan_detail', scan_id=result['scan_id']))
@@ -1901,7 +1901,7 @@ def re_scan_url(scan_id):
                 return redirect(url_for('scan_detail', scan_id=result['scan_id']))
             else:
                 return redirect(url_for('scan_detail', scan_id=scan_id))
-                
+
     except Exception as e:
         flash(f'Error durante el re-escaneo: {str(e)}', 'error')
         return redirect(url_for('scan_detail', scan_id=scan_id))
@@ -1911,24 +1911,24 @@ def re_scan_url(scan_id):
 def url_history(scan_id):
     try:
         conn = get_db_connection()
-        
+
         # Get the URL from the original scan
         original_scan = conn.execute('SELECT url FROM scans WHERE id = ?', (scan_id,)).fetchone()
         if not original_scan:
             flash('¡Escaneo no encontrado!', 'error')
             return redirect(url_for('index'))
-        
+
         url = original_scan['url']
-        
+
         # Get all scans for this URL with additional details
         scans = conn.execute('''
-            SELECT s.id, s.url, s.scan_date, s.status_code, s.title, s.client_id,
-                   c.name as client_name,
+            SELECT s.id, s.url, s.scan_date, s.status_code, s.title, s.project_id,
+                   c.name as project_name,
                    COUNT(DISTINCT l.id) as library_count,
                    COUNT(DISTINCT vs.id) as version_string_count,
                    COUNT(DISTINCT fu.id) as file_count
             FROM scans s
-            LEFT JOIN clients c ON s.client_id = c.id
+            LEFT JOIN projects c ON s.project_id = c.id
             LEFT JOIN libraries l ON s.id = l.scan_id
             LEFT JOIN version_strings vs ON s.id = vs.scan_id
             LEFT JOIN file_urls fu ON s.id = fu.scan_id
@@ -1936,10 +1936,10 @@ def url_history(scan_id):
             GROUP BY s.id
             ORDER BY s.scan_date DESC
         ''', (url,)).fetchall()
-        
+
         # Get latest safe version and latest version for each library across all scans
         library_summary = conn.execute('''
-            SELECT 
+            SELECT
                 l.library_name,
                 l.type,
                 COUNT(DISTINCT s.id) as scan_count,
@@ -1952,16 +1952,16 @@ def url_history(scan_id):
             GROUP BY l.library_name, l.type
             ORDER BY l.library_name
         ''', (url,)).fetchall()
-        
+
         conn.close()
-        
-        return render_template('url_history.html', 
-                             scans=scans, 
+
+        return render_template('url_history.html',
+                             scans=scans,
                              library_summary=library_summary,
                              url=url,
                              current_scan_id=scan_id,
                              total_scans=len(scans))
-                             
+
     except Exception as e:
         flash(f'Error al obtener historial: {str(e)}', 'error')
         return redirect(url_for('scan_detail', scan_id=scan_id))
@@ -1972,31 +1972,31 @@ def compare_scans(scan_id1, scan_id2):
     """Compare two scans and show differences"""
     try:
         conn = get_db_connection()
-        
+
         # Get both scans
         scan1_raw = conn.execute('''
-            SELECT s.*, c.name as client_name
+            SELECT s.*, c.name as project_name
             FROM scans s
-            LEFT JOIN clients c ON s.client_id = c.id
+            LEFT JOIN projects c ON s.project_id = c.id
             WHERE s.id = ?
         ''', (scan_id1,)).fetchone()
-        
+
         scan2_raw = conn.execute('''
-            SELECT s.*, c.name as client_name
+            SELECT s.*, c.name as project_name
             FROM scans s
-            LEFT JOIN clients c ON s.client_id = c.id
+            LEFT JOIN projects c ON s.project_id = c.id
             WHERE s.id = ?
         ''', (scan_id2,)).fetchone()
-        
+
         if not scan1_raw or not scan2_raw:
             flash('Uno o ambos escaneos no existen', 'error')
             return redirect(url_for('index'))
-        
+
         # Verify both scans are from the same URL
         if scan1_raw['url'] != scan2_raw['url']:
             flash('Los escaneos deben ser de la misma URL para comparar', 'error')
             return redirect(url_for('scan_detail', scan_id=scan_id1))
-        
+
         # Order scans by date: scan1 = older (anterior), scan2 = newer (actual)
         if scan1_raw['scan_date'] > scan2_raw['scan_date']:
             # scan1_raw is newer, so swap them
@@ -2007,16 +2007,16 @@ def compare_scans(scan_id1, scan_id2):
             # scan1_raw is older, keep as is
             scan1 = scan1_raw  # older scan (anterior)
             scan2 = scan2_raw  # newer scan (actual)
-        
+
         # Get libraries for both scans
         libraries1 = conn.execute('''
-            SELECT library_name, type, version, description, 
+            SELECT library_name, type, version, description,
                    latest_safe_version, latest_version, is_manual
             FROM libraries
             WHERE scan_id = ?
             ORDER BY library_name
         ''', (scan_id1,)).fetchall()
-        
+
         libraries2 = conn.execute('''
             SELECT library_name, type, version, description,
                    latest_safe_version, latest_version, is_manual
@@ -2024,25 +2024,25 @@ def compare_scans(scan_id1, scan_id2):
             WHERE scan_id = ?
             ORDER BY library_name
         ''', (scan_id2,)).fetchall()
-        
+
         # Create dictionaries for easier comparison
         libs1_dict = {(lib['library_name'], lib['type']): lib for lib in libraries1}
         libs2_dict = {(lib['library_name'], lib['type']): lib for lib in libraries2}
-        
+
         # Compare libraries
         all_lib_keys = set(libs1_dict.keys()) | set(libs2_dict.keys())
-        
+
         libraries_comparison = {
             'added': [],
             'removed': [],
             'updated': [],
             'unchanged': []
         }
-        
+
         for lib_key in all_lib_keys:
             lib1 = libs1_dict.get(lib_key)
             lib2 = libs2_dict.get(lib_key)
-            
+
             if lib1 and not lib2:
                 # Library was removed
                 libraries_comparison['removed'].append({
@@ -2071,21 +2071,21 @@ def compare_scans(scan_id1, scan_id2):
                         'library': lib1,
                         'change_type': 'unchanged'
                     })
-        
+
         # Get file counts
         files1_count = conn.execute('SELECT COUNT(*) as cnt FROM file_urls WHERE scan_id = ? AND file_type = "js"', (scan_id1,)).fetchone()['cnt']
         files2_count = conn.execute('SELECT COUNT(*) as cnt FROM file_urls WHERE scan_id = ? AND file_type = "js"', (scan_id2,)).fetchone()['cnt']
-        
+
         # Get version strings counts
         versions1_count = conn.execute('SELECT COUNT(*) as cnt FROM version_strings WHERE scan_id = ?', (scan_id1,)).fetchone()['cnt']
         versions2_count = conn.execute('SELECT COUNT(*) as cnt FROM version_strings WHERE scan_id = ?', (scan_id2,)).fetchone()['cnt']
-        
+
         # Calculate security scores if headers exist
         security1_score = 0
         security2_score = 0
         headers1_analysis = None
         headers2_analysis = None
-        
+
         if scan1['headers']:
             try:
                 headers1 = json.loads(scan1['headers'])
@@ -2093,7 +2093,7 @@ def compare_scans(scan_id1, scan_id2):
                 headers1_analysis = analyze_security_headers(headers1)
             except:
                 pass
-        
+
         if scan2['headers']:
             try:
                 headers2 = json.loads(scan2['headers'])
@@ -2101,7 +2101,7 @@ def compare_scans(scan_id1, scan_id2):
                 headers2_analysis = analyze_security_headers(headers2)
             except:
                 pass
-        
+
         # Calculate metrics differences
         metrics_diff = {
             'libraries': len(libraries2) - len(libraries1),
@@ -2109,30 +2109,30 @@ def compare_scans(scan_id1, scan_id2):
             'versions': versions2_count - versions1_count,
             'security': security2_score - security1_score
         }
-        
+
         # Create summary
-        total_changes = (len(libraries_comparison['added']) + 
-                        len(libraries_comparison['removed']) + 
+        total_changes = (len(libraries_comparison['added']) +
+                        len(libraries_comparison['removed']) +
                         len(libraries_comparison['updated']))
-        
+
         # Calculate improvement score (simplified)
         improvement_score = 50  # Base score
         if metrics_diff['security'] > 0:
             improvement_score += 20
         elif metrics_diff['security'] < 0:
             improvement_score -= 20
-        
+
         if len(libraries_comparison['added']) > len(libraries_comparison['removed']):
             improvement_score += 10
         elif len(libraries_comparison['removed']) > len(libraries_comparison['added']):
             improvement_score -= 10
-        
+
         # Check for version updates (usually good)
         if len(libraries_comparison['updated']) > 0:
             improvement_score += 15
-        
+
         improvement_score = max(0, min(100, improvement_score))  # Clamp between 0-100
-        
+
         comparison_data = {
             'scan1': scan1,
             'scan2': scan2,
@@ -2151,10 +2151,10 @@ def compare_scans(scan_id1, scan_id2):
             'total_changes': total_changes,
             'improvement_score': improvement_score
         }
-        
+
         conn.close()
         return render_template('scan_comparison.html', **comparison_data)
-        
+
     except Exception as e:
         flash(f'Error al comparar escaneos: {str(e)}', 'error')
         return redirect(url_for('index'))
@@ -2165,14 +2165,14 @@ def delete_version_string(version_string_ids):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Parse comma-separated IDs
         try:
             ids = [int(id_str.strip()) for id_str in version_string_ids.split(',') if id_str.strip()]
         except ValueError:
             flash('IDs de cadenas de versión inválidos', 'error')
             return redirect(url_for('index'))
-        
+
         if not ids:
             flash('No se proporcionaron IDs válidos', 'error')
             return redirect(url_for('index'))
@@ -2388,7 +2388,7 @@ def edit_library(library_id):
                 SELECT library_name, latest_safe_version, latest_version, description, type
                 FROM global_libraries WHERE id = ?
             ''', (int(global_library_id),)).fetchone()
-            
+
             if global_lib:
                 # Override with global library data (keep version and source_url from form)
                 library_name = global_lib['library_name']
@@ -2506,7 +2506,7 @@ def get_scan_export_data(scan_id):
         'headers': headers,
         'security_analysis': security_analysis
     }
-    
+
     # Deep convert all Row objects to ensure JSON serialization compatibility
     return convert_rows_deep(result)
 
@@ -2524,7 +2524,7 @@ def enhanced_report(scan_id):
         # Pre-serialize libraries to JSON for JavaScript
         import json
         libraries_json = json.dumps(data['libraries'])
-        
+
         return render_template('enhanced_report.html',
                              scan=data['scan'],
                              libraries=data['libraries'],
@@ -3159,31 +3159,31 @@ def scan_file_for_versions(file_url, file_type, scan_id):
     """
     version_strings = []
     detected_libraries = []
-    
+
     # Diccionarios para evitar duplicados por URL fuente
     # Solo mantenemos la PRIMERA biblioteca y cadena de versión detectada por archivo
     first_library_per_source = {}
     first_version_string_per_source = {}
-    
+
     # Patrones de versión solicitados por el usuario
     VERSION_PATTERNS = [
         # Patrones v/V con números
         (r'\bv\.?\s*(\d+(?:\.\d+)*)\b', 'v_pattern'),
         (r'\bV\.?\s*(\d+(?:\.\d+)*)\b', 'V_pattern'),
-        
+
         # Versiones con formato x.x.x
         (r'\b(\d+\.\d+\.\d+)\b', 'semver'),
         (r'["\'](\d+\.\d+\.\d+)["\']', 'quoted_semver'),
         (r'\s(\d+\.\d+\.\d+)\s', 'spaced_semver'),
-        
+
         # Patrones version con =
         (r'\bversion\s*=\s*["\']?(\d+\.\d+\.\d+)["\']?', 'version_equals'),
         (r'\bVersion\s*=\s*["\']?(\d+\.\d+\.\d+)["\']?', 'Version_equals'),
-        
+
         # Patrones version con :
         (r'\bversion\s*:\s*["\']?(\d+\.\d+\.\d+)["\']?', 'version_colon'),
         (r'\bVersion\s*:\s*["\']?(\d+\.\d+\.\d+)["\']?', 'Version_colon'),
-        
+
         # Patrones adicionales útiles
         (r'/\*.*?v\.?\s*(\d+\.\d+\.\d+).*?\*/', 'comment_version'),
         (r'//.*?v\.?\s*(\d+\.\d+\.\d+)', 'line_comment_version'),
@@ -3193,7 +3193,7 @@ def scan_file_for_versions(file_url, file_type, scan_id):
         (r'-(\d+\.\d+\.\d+)\.(?:min\.)?(?:js|css)', 'filename_version'),
         (r'["\']version["\']\s*:\s*["\'](\d+\.\d+\.\d+)["\']', 'json_version'),
     ]
-    
+
     try:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -3207,7 +3207,7 @@ def scan_file_for_versions(file_url, file_type, scan_id):
             for line_num, line in enumerate(lines, 1):
                 # SOLO LA PRIMERA CADENA DE VERSIÓN POR ARCHIVO
                 if file_url not in first_version_string_per_source:
-                    
+
                     # MANTENER funcionalidad existente para compatibilidad
                     if re.search(r'version', line, re.I):
                         first_version_string_per_source[file_url] = {
@@ -3230,13 +3230,13 @@ def scan_file_for_versions(file_url, file_type, scan_id):
                             'version_keyword': 'versión'
                         }
                         continue
-                    
+
                     # NUEVOS PATRONES: Buscar versiones específicas
                     for pattern, pattern_type in VERSION_PATTERNS:
                         matches = re.finditer(pattern, line, re.I)
                         for match in matches:
                             version_number = match.group(1)
-                            
+
                             # Agregar PRIMERA cadena de versión por archivo
                             first_version_string_per_source[file_url] = {
                                 'scan_id': scan_id,
@@ -3247,11 +3247,11 @@ def scan_file_for_versions(file_url, file_type, scan_id):
                                 'version_keyword': pattern_type
                             }
                             break  # Solo el primer match por patrón
-                        
+
                         # Si ya encontramos una cadena de versión, salir del bucle de patrones
                         if file_url in first_version_string_per_source:
                             break
-                
+
                 # Detectar biblioteca automáticamente - SOLO LA PRIMERA POR URL
                 if file_url not in first_library_per_source:
                     for pattern, pattern_type in VERSION_PATTERNS:
@@ -3287,7 +3287,7 @@ def extract_library_name_from_context(line, file_url, version):
     """
     line_lower = line.lower()
     url_lower = file_url.lower()
-    
+
     # Bibliotecas conocidas en comentarios/líneas
     LIBRARY_PATTERNS = [
         ('jquery', 'jQuery'),
@@ -3315,18 +3315,18 @@ def extract_library_name_from_context(line, file_url, version):
         ('bulma', 'Bulma'),
         ('tailwind', 'Tailwind CSS'),
     ]
-    
+
     # Buscar en la línea
     for pattern, name in LIBRARY_PATTERNS:
         if pattern in line_lower or pattern in url_lower:
             return name
-    
+
     # Buscar en la URL del archivo
     filename = file_url.split('/')[-1].lower()
     for pattern, name in LIBRARY_PATTERNS:
         if pattern in filename:
             return name
-    
+
     # Si no se encuentra, retornar nombre genérico
     return f"Biblioteca desconocida ({filename.split('.')[0]})" if '.' in filename else "Biblioteca desconocida"
 
@@ -3425,7 +3425,7 @@ def is_safe_url(url):
     except Exception:
         return False
 
-def analyze_single_url_no_logging(url, client_id=None):
+def analyze_single_url_no_logging(url, project_id=None):
     """Versión optimizada sin logging automático para análisis masivos"""
     conn = None
     try:
@@ -3449,9 +3449,9 @@ def analyze_single_url_no_logging(url, client_id=None):
         cursor = conn.cursor()
 
         cursor.execute('''
-        INSERT INTO scans (url, status_code, title, headers, client_id)
+        INSERT INTO scans (url, status_code, title, headers, project_id)
         VALUES (?, ?, ?, ?, ?)
-        ''', (url, response.status_code, title, json.dumps(dict(response.headers)), client_id))
+        ''', (url, response.status_code, title, json.dumps(dict(response.headers)), project_id))
 
         scan_id = cursor.lastrowid
 
@@ -3463,12 +3463,17 @@ def analyze_single_url_no_logging(url, client_id=None):
 
         all_libraries = js_libraries + css_libraries
 
-        # Store libraries
+        # Store libraries (only if source_url is unique)
         for lib in all_libraries:
-            cursor.execute('''
-            INSERT INTO libraries (scan_id, library_name, version, type, source_url)
-            VALUES (?, ?, ?, ?, ?)
-            ''', (scan_id, lib['name'], lib['version'], lib['type'], lib['source']))
+            source_url = lib.get('source')
+            if not library_source_exists(cursor, scan_id, source_url):
+                cursor.execute('''
+                INSERT INTO libraries (scan_id, library_name, version, type, source_url)
+                VALUES (?, ?, ?, ?, ?)
+                ''', (scan_id, lib['name'], lib['version'], lib['type'], source_url))
+                print(f"  → Stored library: {lib['name']} from {source_url or 'No source'}")
+            else:
+                print(f"  → Skipped duplicate library: {lib['name']} (source already exists: {source_url})")
 
         # Get all JS and CSS files
         js_css_files = get_all_js_css_files(soup, url)
@@ -3490,14 +3495,19 @@ def analyze_single_url_no_logging(url, client_id=None):
             INSERT INTO version_strings (scan_id, file_url, file_type, line_number, line_content, version_keyword)
             VALUES (?, ?, ?, ?, ?, ?)
             ''', (vs['scan_id'], vs['file_url'], vs['file_type'], vs['line_number'], vs['line_content'], vs['version_keyword']))
-        
-        # Store automatically detected libraries
+
+        # Store automatically detected libraries (only if source_url is unique)
         for lib in all_detected_libraries:
-            cursor.execute('''
-            INSERT INTO libraries (scan_id, library_name, version, type, source_url, description, is_manual)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (scan_id, lib['name'], lib['version'], lib['type'], lib['source'], 
-                  f"Detectada automáticamente por patrón de versión ({lib['detection_method']})", 0))
+            source_url = lib.get('source')
+            if not library_source_exists(cursor, scan_id, source_url):
+                cursor.execute('''
+                INSERT INTO libraries (scan_id, library_name, version, type, source_url, description, is_manual)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (scan_id, lib['name'], lib['version'], lib['type'], source_url,
+                      f"Detectada automáticamente por patrón de versión ({lib['detection_method']})", 0))
+                print(f"  → Stored auto-detected library: {lib['name']} from {source_url or 'No source'}")
+            else:
+                print(f"  → Skipped duplicate auto-detected library: {lib['name']} (source already exists: {source_url})")
 
         conn.commit()
 
@@ -3533,7 +3543,21 @@ def analyze_single_url_no_logging(url, client_id=None):
         if conn:
             conn.close()
 
-def analyze_single_url(url, client_id=None):
+def library_source_exists(cursor, scan_id, source_url):
+    """
+    Verificar si ya existe una biblioteca con la misma source_url para este scan
+    Retorna True si existe, False si no existe
+    """
+    if not source_url or source_url.strip() == '':
+        return False
+    
+    result = cursor.execute(
+        'SELECT id FROM libraries WHERE scan_id = ? AND source_url = ?', 
+        (scan_id, source_url.strip())
+    ).fetchone()
+    return result is not None
+
+def analyze_single_url(url, project_id=None):
     conn = None
     try:
         # Validate URL to prevent SSRF attacks
@@ -3556,9 +3580,9 @@ def analyze_single_url(url, client_id=None):
         cursor = conn.cursor()
 
         cursor.execute('''
-        INSERT INTO scans (url, status_code, title, headers, client_id)
+        INSERT INTO scans (url, status_code, title, headers, project_id)
         VALUES (?, ?, ?, ?, ?)
-        ''', (url, response.status_code, title, json.dumps(dict(response.headers)), client_id))
+        ''', (url, response.status_code, title, json.dumps(dict(response.headers)), project_id))
 
         scan_id = cursor.lastrowid
 
@@ -3585,12 +3609,17 @@ def analyze_single_url(url, client_id=None):
 
         all_libraries = js_libraries + css_libraries
 
-        # Store libraries
+        # Store libraries (only if source_url is unique)
         for lib in all_libraries:
-            cursor.execute('''
-            INSERT INTO libraries (scan_id, library_name, version, type, source_url)
-            VALUES (?, ?, ?, ?, ?)
-            ''', (scan_id, lib['name'], lib['version'], lib['type'], lib['source']))
+            source_url = lib.get('source')
+            if not library_source_exists(cursor, scan_id, source_url):
+                cursor.execute('''
+                INSERT INTO libraries (scan_id, library_name, version, type, source_url)
+                VALUES (?, ?, ?, ?, ?)
+                ''', (scan_id, lib['name'], lib['version'], lib['type'], source_url))
+                print(f"  → Stored library: {lib['name']} from {source_url or 'No source'}")
+            else:
+                print(f"  → Skipped duplicate library: {lib['name']} (source already exists: {source_url})")
 
         # Get all JS and CSS files
         js_css_files = get_all_js_css_files(soup, url)
@@ -3612,14 +3641,19 @@ def analyze_single_url(url, client_id=None):
             INSERT INTO version_strings (scan_id, file_url, file_type, line_number, line_content, version_keyword)
             VALUES (?, ?, ?, ?, ?, ?)
             ''', (vs['scan_id'], vs['file_url'], vs['file_type'], vs['line_number'], vs['line_content'], vs['version_keyword']))
-        
-        # Store automatically detected libraries
+
+        # Store automatically detected libraries (only if source_url is unique)
         for lib in all_detected_libraries:
-            cursor.execute('''
-            INSERT INTO libraries (scan_id, library_name, version, type, source_url, description, is_manual)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (scan_id, lib['name'], lib['version'], lib['type'], lib['source'], 
-                  f"Detectada automáticamente por patrón de versión ({lib['detection_method']})", 0))
+            source_url = lib.get('source')
+            if not library_source_exists(cursor, scan_id, source_url):
+                cursor.execute('''
+                INSERT INTO libraries (scan_id, library_name, version, type, source_url, description, is_manual)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (scan_id, lib['name'], lib['version'], lib['type'], source_url,
+                      f"Detectada automáticamente por patrón de versión ({lib['detection_method']})", 0))
+                print(f"  → Stored auto-detected library: {lib['name']} from {source_url or 'No source'}")
+            else:
+                print(f"  → Skipped duplicate auto-detected library: {lib['name']} (source already exists: {source_url})")
 
         conn.commit()
 
@@ -3659,11 +3693,11 @@ def analyze_single_url(url, client_id=None):
 @login_required
 def analyze_url_route():
     url = request.form.get('url', '').strip()
-    client_id = request.form.get('client_id', '').strip()
-    
-    # Convert empty string to None for client_id
-    if not client_id:
-        client_id = None
+    project_id = request.form.get('project_id', '').strip()
+
+    # Convert empty string to None for project_id
+    if not project_id:
+        project_id = None
 
     if not url:
         flash('Por favor ingresa una URL válida', 'error')
@@ -3674,7 +3708,7 @@ def analyze_url_route():
         url = 'https://' + url
 
     try:
-        result = analyze_single_url(url, client_id=client_id)
+        result = analyze_single_url(url, project_id=project_id)
 
         if result['success']:
             flash(f'¡Análisis completado! Se encontraron {result["libraries_count"]} librerías, {result["files_count"]} archivos, y {result["version_strings_count"]} cadenas de versión.', 'success')
@@ -3688,14 +3722,14 @@ def analyze_url_route():
         return redirect(url_for('index'))
 
 @app.route('/batch-analyze', methods=['POST'])
-@login_required  
+@login_required
 def batch_analyze_route():
     urls_text = request.form.get('urls', '').strip()
-    client_id = request.form.get('client_id', '').strip()
-    
-    # Convert empty string to None for client_id
-    if not client_id:
-        client_id = None
+    project_id = request.form.get('project_id', '').strip()
+
+    # Convert empty string to None for project_id
+    if not project_id:
+        project_id = None
 
     if not urls_text:
         flash('Por favor ingresa al menos una URL', 'error')
@@ -3728,13 +3762,13 @@ def batch_analyze_route():
 
     # Colectar acciones de logging para procesamiento en lotes
     batch_actions = []
-    
+
     try:
         for i, url in enumerate(urls, 1):
             print(f"[{i}/{len(urls)}] Analyzing: {url}")
 
             # Usar análisis sin logging automático para evitar conflictos de base de datos
-            result = analyze_single_url_no_logging(url, client_id=client_id)
+            result = analyze_single_url_no_logging(url, project_id=project_id)
 
             if result['success']:
                 results['successful'] += 1
@@ -3743,7 +3777,7 @@ def batch_analyze_route():
                 results['total_version_strings'] += result['version_strings_count']
                 results['scan_ids'].append(result['scan_id'])
                 print(f"  ✓ Success: {result['libraries_count']} libs, {result['files_count']} files, {result['version_strings_count']} versions")
-                
+
                 # Preparar acción de logging para lote
                 batch_actions.append({
                     'user_id': session.get('user_id', 0),
@@ -3764,7 +3798,7 @@ def batch_analyze_route():
                 if result['scan_id']:
                     results['scan_ids'].append(result['scan_id'])
                 print(f"  ✗ Failed: {result['error']}")
-                
+
                 # Preparar acción de logging de error para lote
                 batch_actions.append({
                     'user_id': session.get('user_id', 0),
@@ -3784,7 +3818,7 @@ def batch_analyze_route():
 
             # Small delay to prevent overwhelming servers
             time.sleep(0.5)
-        
+
         # Registrar todas las acciones en lote al final
         if batch_actions:
             print(f"📝 Registrando {len(batch_actions)} acciones en lote...")
@@ -3808,35 +3842,35 @@ def batch_analyze_route():
 @login_required
 def global_libraries():
     conn = get_db_connection()
-    
+
     # Get search parameter
     search_query = request.args.get('search', '').strip()
-    
+
     # Build query with search filter including manual libraries count
     if search_query:
         libraries = conn.execute('''
-            SELECT gl.id, gl.library_name, gl.type, gl.latest_safe_version, gl.latest_version, 
+            SELECT gl.id, gl.library_name, gl.type, gl.latest_safe_version, gl.latest_version,
                    gl.description, gl.vulnerability_info, gl.source_url, gl.created_date, gl.updated_date,
                    COUNT(l.id) as manual_count
             FROM global_libraries gl
             LEFT JOIN libraries l ON gl.id = l.global_library_id AND l.is_manual = 1
             WHERE gl.library_name LIKE ? OR gl.description LIKE ?
-            GROUP BY gl.id, gl.library_name, gl.type, gl.latest_safe_version, gl.latest_version, 
+            GROUP BY gl.id, gl.library_name, gl.type, gl.latest_safe_version, gl.latest_version,
                      gl.description, gl.vulnerability_info, gl.source_url, gl.created_date, gl.updated_date
             ORDER BY gl.library_name
         ''', (f'%{search_query}%', f'%{search_query}%')).fetchall()
     else:
         libraries = conn.execute('''
-            SELECT gl.id, gl.library_name, gl.type, gl.latest_safe_version, gl.latest_version, 
+            SELECT gl.id, gl.library_name, gl.type, gl.latest_safe_version, gl.latest_version,
                    gl.description, gl.vulnerability_info, gl.source_url, gl.created_date, gl.updated_date,
                    COUNT(l.id) as manual_count
             FROM global_libraries gl
             LEFT JOIN libraries l ON gl.id = l.global_library_id AND l.is_manual = 1
-            GROUP BY gl.id, gl.library_name, gl.type, gl.latest_safe_version, gl.latest_version, 
+            GROUP BY gl.id, gl.library_name, gl.type, gl.latest_safe_version, gl.latest_version,
                      gl.description, gl.vulnerability_info, gl.source_url, gl.created_date, gl.updated_date
             ORDER BY gl.library_name
         ''').fetchall()
-    
+
     # Get top libraries with version information from actual scans
     top_libraries = conn.execute('''
         WITH library_versions AS (
@@ -3880,7 +3914,7 @@ def global_libraries():
         ORDER BY lt.usage_count DESC
         LIMIT 15
     ''').fetchall()
-    
+
     conn.close()
     return render_template('global_libraries.html', libraries=libraries, top_libraries=top_libraries)
 
@@ -3889,9 +3923,9 @@ def global_libraries():
 def api_global_libraries():
     conn = get_db_connection()
     libraries = conn.execute('''
-        SELECT id, library_name, type, latest_safe_version, latest_version, 
+        SELECT id, library_name, type, latest_safe_version, latest_version,
                description, vulnerability_info, source_url
-        FROM global_libraries 
+        FROM global_libraries
         ORDER BY library_name
     ''').fetchall()
     conn.close()
@@ -3908,39 +3942,39 @@ def add_global_library():
         description = request.form.get('description', '').strip()
         vulnerability_info = request.form.get('vulnerability_info', '').strip()
         source_url = request.form.get('source_url', '').strip()
-        
+
         if not library_name:
             flash('El nombre de la librería es requerido', 'error')
             return redirect(url_for('global_libraries'))
-        
+
         if not library_type or library_type not in ['js', 'css']:
             flash('Se requiere un tipo de librería válido (js o css)', 'error')
             return redirect(url_for('global_libraries'))
-        
+
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Check if library already exists
         cursor.execute("SELECT id FROM global_libraries WHERE library_name = ?", (library_name,))
         if cursor.fetchone():
             flash(f'La librería "{library_name}" ya existe en el catálogo', 'error')
             conn.close()
             return redirect(url_for('global_libraries'))
-        
+
         cursor.execute('''
-            INSERT INTO global_libraries 
+            INSERT INTO global_libraries
             (library_name, type, latest_safe_version, latest_version, description, vulnerability_info, source_url)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (library_name, library_type, latest_safe_version, latest_version, 
+        ''', (library_name, library_type, latest_safe_version, latest_version,
               description, vulnerability_info, source_url))
-        
+
         conn.commit()
         conn.close()
         flash(f'Librería "{library_name}" agregada exitosamente al catálogo', 'success')
-        
+
     except Exception as e:
         flash(f'Error al agregar librería: {str(e)}', 'error')
-    
+
     return redirect(url_for('global_libraries'))
 
 @app.route('/edit-global-library/<int:library_id>', methods=['POST'])
@@ -3954,46 +3988,46 @@ def edit_global_library(library_id):
         description = request.form.get('description', '').strip()
         vulnerability_info = request.form.get('vulnerability_info', '').strip()
         source_url = request.form.get('source_url', '').strip()
-        
+
         if not library_name:
             flash('El nombre de la librería es requerido', 'error')
             return redirect(url_for('global_libraries'))
-        
+
         if not library_type or library_type not in ['js', 'css']:
             flash('Se requiere un tipo de librería válido (js o css)', 'error')
             return redirect(url_for('global_libraries'))
-        
+
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Check if another library with same name exists
-        cursor.execute("SELECT id FROM global_libraries WHERE library_name = ? AND id != ?", 
+        cursor.execute("SELECT id FROM global_libraries WHERE library_name = ? AND id != ?",
                       (library_name, library_id))
         if cursor.fetchone():
             flash(f'Ya existe otra librería con el nombre "{library_name}"', 'error')
             conn.close()
             return redirect(url_for('global_libraries'))
-        
+
         cursor.execute('''
-            UPDATE global_libraries 
+            UPDATE global_libraries
             SET library_name = ?, type = ?, latest_safe_version = ?, latest_version = ?,
-                description = ?, vulnerability_info = ?, source_url = ?, 
+                description = ?, vulnerability_info = ?, source_url = ?,
                 updated_date = CURRENT_TIMESTAMP
             WHERE id = ?
         ''', (library_name, library_type, latest_safe_version, latest_version,
               description, vulnerability_info, source_url, library_id))
-        
+
         if cursor.rowcount == 0:
             flash('Librería no encontrada', 'error')
         else:
             flash(f'Librería "{library_name}" actualizada exitosamente', 'success')
-        
+
         conn.commit()
         conn.close()
-        
+
     except Exception as e:
         flash(f'Error al actualizar librería: {str(e)}', 'error')
-    
+
     return redirect(url_for('global_libraries'))
 
 @app.route('/delete-global-library/<int:library_id>', methods=['POST'])
@@ -4002,25 +4036,25 @@ def delete_global_library(library_id):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Get library name before deletion for flash message
         cursor.execute("SELECT library_name FROM global_libraries WHERE id = ?", (library_id,))
         library = cursor.fetchone()
-        
+
         if not library:
             flash('Librería no encontrada', 'error')
             conn.close()
             return redirect(url_for('global_libraries'))
-        
+
         cursor.execute("DELETE FROM global_libraries WHERE id = ?", (library_id,))
         conn.commit()
         conn.close()
-        
+
         flash(f'Librería "{library["library_name"]}" eliminada exitosamente', 'success')
-        
+
     except Exception as e:
         flash(f'Error al eliminar librería: {str(e)}', 'error')
-    
+
     return redirect(url_for('global_libraries'))
 
 @app.route('/asociar-bibliotecas')
@@ -4047,32 +4081,32 @@ def asociar_bibliotecas():
 def global_library_manual_libraries(global_lib_id):
     """Show all manual libraries associated with a specific global library"""
     conn = get_db_connection()
-    
+
     # Get global library info
     global_lib = conn.execute('''
-        SELECT id, library_name, type, latest_safe_version, latest_version, 
+        SELECT id, library_name, type, latest_safe_version, latest_version,
                description, vulnerability_info
-        FROM global_libraries 
+        FROM global_libraries
         WHERE id = ?
     ''', (global_lib_id,)).fetchone()
-    
+
     if not global_lib:
         flash('Biblioteca global no encontrada', 'error')
         return redirect(url_for('global_libraries'))
-    
+
     # Get all manual libraries associated with this global library
     manual_libraries = conn.execute('''
-        SELECT l.id, l.library_name, l.version, l.type, l.source_url, 
+        SELECT l.id, l.library_name, l.version, l.type, l.source_url,
                l.description, l.latest_safe_version, l.latest_version,
                s.id as scan_id, s.url, s.title, s.scan_date,
-               c.name as client_name, c.id as client_id
+               c.name as project_name, c.id as project_id
         FROM libraries l
         INNER JOIN scans s ON l.scan_id = s.id
-        LEFT JOIN clients c ON s.client_id = c.id
+        LEFT JOIN projects c ON s.project_id = c.id
         WHERE l.global_library_id = ? AND l.is_manual = 1
         ORDER BY s.scan_date DESC, l.library_name
     ''', (global_lib_id,)).fetchall()
-    
+
     # Add vulnerability status to each library
     manual_libs_with_vuln = []
     for lib in manual_libraries:
@@ -4082,9 +4116,9 @@ def global_library_manual_libraries(global_lib_id):
         safe_version = lib['latest_safe_version'] or global_lib['latest_safe_version']
         lib_dict['is_vulnerable'] = has_vulnerability(current_version, safe_version)
         manual_libs_with_vuln.append(lib_dict)
-    
+
     conn.close()
-    
+
     return render_template('manual_libraries_by_global.html',
                            global_library=global_lib,
                            manual_libraries=manual_libs_with_vuln)
@@ -4116,25 +4150,25 @@ def associate_library(library_id):
 
     return redirect(url_for('asociar_bibliotecas'))
 
-# Client Management Routes
+# Project Management Routes
 @app.route('/projects')
 @login_required
 def projects():
     conn = get_db_connection()
-    clients = conn.execute('''
-        SELECT c.*, 
+    projects = conn.execute('''
+        SELECT c.*,
                COUNT(s.id) as scan_count,
                MAX(s.scan_date) as last_scan,
                COUNT(CASE WHEN s.id IS NOT NULL AND (s.reviewed = 0 OR s.reviewed IS NULL) THEN 1 END) as pending_scans,
                COUNT(CASE WHEN s.id IS NOT NULL AND s.reviewed = 1 THEN 1 END) as completed_scans
-        FROM clients c
-        LEFT JOIN scans s ON c.id = s.client_id
+        FROM projects c
+        LEFT JOIN scans s ON c.id = s.project_id
         WHERE c.is_active = 1
         GROUP BY c.id, c.name, c.description, c.contact_email, c.contact_phone, c.website, c.created_date, c.updated_date, c.is_active
         ORDER BY c.name
     ''').fetchall()
     conn.close()
-    return render_template('clients.html', clients=clients)
+    return render_template('projects.html', projects=projects)
 
 @app.route('/add-project', methods=['POST'])
 @login_required
@@ -4145,33 +4179,33 @@ def add_project():
         contact_email = request.form.get('contact_email', '').strip()
         contact_phone = request.form.get('contact_phone', '').strip()
         website = request.form.get('website', '').strip()
-        
+
         if not name:
-            flash('El nombre del cliente es requerido', 'error')
+            flash('El nombre del proyecto es requerido', 'error')
             return redirect(url_for('projects'))
-        
+
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        # Check if client already exists
-        cursor.execute("SELECT id FROM clients WHERE name = ? AND is_active = 1", (name,))
+
+        # Check if project already exists
+        cursor.execute("SELECT id FROM projects WHERE name = ? AND is_active = 1", (name,))
         if cursor.fetchone():
-            flash(f'Ya existe un cliente con el nombre "{name}"', 'error')
+            flash(f'Ya existe un proyecto con el nombre "{name}"', 'error')
             conn.close()
             return redirect(url_for('projects'))
-        
+
         cursor.execute('''
-            INSERT INTO clients (name, description, contact_email, contact_phone, website)
+            INSERT INTO projects (name, description, contact_email, contact_phone, website)
             VALUES (?, ?, ?, ?, ?)
         ''', (name, description, contact_email, contact_phone, website))
-        
+
         conn.commit()
         conn.close()
-        flash(f'Cliente "{name}" agregado exitosamente', 'success')
-        
+        flash(f'Proyecto "{name}" agregado exitosamente', 'success')
+
     except Exception as e:
-        flash(f'Error al agregar cliente: {str(e)}', 'error')
-    
+        flash(f'Error al agregar proyecto: {str(e)}', 'error')
+
     return redirect(url_for('projects'))
 
 @app.route('/edit-project/<int:project_id>', methods=['POST'])
@@ -4183,40 +4217,40 @@ def edit_project(project_id):
         contact_email = request.form.get('contact_email', '').strip()
         contact_phone = request.form.get('contact_phone', '').strip()
         website = request.form.get('website', '').strip()
-        
+
         if not name:
-            flash('El nombre del cliente es requerido', 'error')
+            flash('El nombre del proyecto es requerido', 'error')
             return redirect(url_for('projects'))
-        
+
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        # Check if another client with same name exists
-        cursor.execute("SELECT id FROM clients WHERE name = ? AND id != ? AND is_active = 1", 
+
+        # Check if another project with same name exists
+        cursor.execute("SELECT id FROM projects WHERE name = ? AND id != ? AND is_active = 1",
                       (name, project_id))
         if cursor.fetchone():
-            flash(f'Ya existe otro cliente con el nombre "{name}"', 'error')
+            flash(f'Ya existe otro proyecto con el nombre "{name}"', 'error')
             conn.close()
             return redirect(url_for('projects'))
-        
+
         cursor.execute('''
-            UPDATE clients 
-            SET name = ?, description = ?, contact_email = ?, contact_phone = ?, 
+            UPDATE projects
+            SET name = ?, description = ?, contact_email = ?, contact_phone = ?,
                 website = ?, updated_date = CURRENT_TIMESTAMP
             WHERE id = ?
         ''', (name, description, contact_email, contact_phone, website, project_id))
-        
+
         if cursor.rowcount == 0:
-            flash('Cliente no encontrado', 'error')
+            flash('Proyecto no encontrado', 'error')
         else:
-            flash(f'Cliente "{name}" actualizado exitosamente', 'success')
-        
+            flash(f'Proyecto "{name}" actualizado exitosamente', 'success')
+
         conn.commit()
         conn.close()
-        
+
     except Exception as e:
-        flash(f'Error al actualizar cliente: {str(e)}', 'error')
-    
+        flash(f'Error al actualizar proyecto: {str(e)}', 'error')
+
     return redirect(url_for('projects'))
 
 @app.route('/delete-project/<int:project_id>', methods=['POST'])
@@ -4225,74 +4259,74 @@ def delete_project(project_id):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        # Get client name before deletion for flash message
-        cursor.execute("SELECT name FROM clients WHERE id = ?", (project_id,))
-        client = cursor.fetchone()
-        
-        if not client:
-            flash('Cliente no encontrado', 'error')
+
+        # Get project name before deletion for flash message
+        cursor.execute("SELECT name FROM projects WHERE id = ?", (project_id,))
+        project = cursor.fetchone()
+
+        if not project:
+            flash('Proyecto no encontrado', 'error')
             conn.close()
             return redirect(url_for('projects'))
-        
+
         # Soft delete - mark as inactive instead of deleting
-        cursor.execute("UPDATE clients SET is_active = 0 WHERE id = ?", (project_id,))
+        cursor.execute("UPDATE projects SET is_active = 0 WHERE id = ?", (project_id,))
         conn.commit()
         conn.close()
-        
-        flash(f'Cliente "{client.name}" desactivado exitosamente', 'success')
-        
+
+        flash(f'Proyecto "{project["name"]}" desactivado exitosamente', 'success')
+
     except Exception as e:
-        flash(f'Error al eliminar cliente: {str(e)}', 'error')
-    
+        flash(f'Error al eliminar proyecto: {str(e)}', 'error')
+
     return redirect(url_for('projects'))
 
 @app.route('/project/<int:project_id>')
 @login_required
 def project_detail(project_id):
     conn = get_db_connection()
-    
-    # Get client info
-    client = conn.execute('SELECT * FROM clients WHERE id = ? AND is_active = 1', (project_id,)).fetchone()
-    if not client:
-        flash('Cliente no encontrado', 'error')
+
+    # Get project info
+    project = conn.execute('SELECT * FROM projects WHERE id = ? AND is_active = 1', (project_id,)).fetchone()
+    if not project:
+        flash('Proyecto no encontrado', 'error')
         conn.close()
         return redirect(url_for('projects'))
-    
+
     # Get search and status filter parameters
     search_query = request.args.get('search', '').strip()
     status_filter = request.args.get('status', '').strip()
-    
-    # Build WHERE clause for client, search, and status filters
-    where_conditions = ["s.client_id = ?"]
+
+    # Build WHERE clause for project, search, and status filters
+    where_conditions = ["s.project_id = ?"]
     query_params = [project_id]
-    
+
     if search_query:
         # Search in titles, URLs, and associated libraries
         search_condition = """(
-            s.title LIKE ? OR 
-            s.url LIKE ? OR 
+            s.title LIKE ? OR
+            s.url LIKE ? OR
             s.id IN (
-                SELECT DISTINCT l.scan_id 
-                FROM libraries l 
+                SELECT DISTINCT l.scan_id
+                FROM libraries l
                 WHERE l.library_name LIKE ? OR l.description LIKE ?
             )
         )"""
         where_conditions.append(search_condition)
         search_param = f"%{search_query}%"
         query_params.extend([search_param, search_param, search_param, search_param])
-    
+
     if status_filter:
         if status_filter == 'revisado':
             where_conditions.append("s.reviewed = 1")
         elif status_filter == 'pendiente':
             where_conditions.append("s.reviewed = 0")
-    
+
     where_clause = "WHERE " + " AND ".join(where_conditions)
-    
-    # Get client scans with detailed statistics (matching dashboard counters)
+
+    # Get project scans with detailed statistics (matching dashboard counters)
     scans_query = f'''
-        SELECT s.*, 
+        SELECT s.*,
                COUNT(DISTINCT l.id) as library_count,
                COUNT(DISTINCT vs.id) as version_string_count,
                COUNT(DISTINCT fu.id) as file_count,
@@ -4306,33 +4340,33 @@ def project_detail(project_id):
         ORDER BY s.scan_date DESC
     '''
     scans_raw = conn.execute(scans_query, query_params).fetchall()
-    
+
     # Calculate vulnerability_count using has_vulnerability function for each scan
     scans = []
     for scan in scans_raw:
         scan_dict = dict(scan)
-        
+
         # Get libraries for this scan to count vulnerabilities correctly
         libraries_query = '''
             SELECT l.version, COALESCE(l.latest_safe_version, gl.latest_safe_version) as safe_version
             FROM libraries l
             LEFT JOIN global_libraries gl ON l.library_name = gl.library_name AND l.type = gl.type
-            WHERE l.scan_id = ? 
-            AND COALESCE(l.latest_safe_version, gl.latest_safe_version) IS NOT NULL 
-            AND l.version IS NOT NULL 
+            WHERE l.scan_id = ?
+            AND COALESCE(l.latest_safe_version, gl.latest_safe_version) IS NOT NULL
+            AND l.version IS NOT NULL
             AND l.version != ''
         '''
         libraries = conn.execute(libraries_query, (scan['id'],)).fetchall()
-        
-        vulnerability_count = sum(1 for lib in libraries 
+
+        vulnerability_count = sum(1 for lib in libraries
                                 if has_vulnerability(lib['version'], lib['safe_version']))
-        
+
         scan_dict['vulnerability_count'] = vulnerability_count
         scans.append(scan_dict)
-    
-    # Get client statistics (matching dashboard structure) with search filter
+
+    # Get project statistics (matching dashboard structure) with search filter
     stats_query = f'''
-        SELECT 
+        SELECT
             COUNT(DISTINCT s.id) as total_scans,
             COUNT(DISTINCT l.id) as total_libraries,
             COUNT(DISTINCT vs.id) as total_version_strings,
@@ -4347,7 +4381,7 @@ def project_detail(project_id):
         {where_clause}
     '''
     stats_raw = conn.execute(stats_query, query_params).fetchone()
-    
+
     # Calculate total_vulnerabilities using has_vulnerability function
     total_vulnerabilities_query = f'''
         SELECT l.version, COALESCE(l.latest_safe_version, gl.latest_safe_version) as safe_version
@@ -4355,53 +4389,53 @@ def project_detail(project_id):
         LEFT JOIN libraries l ON s.id = l.scan_id
         LEFT JOIN global_libraries gl ON l.library_name = gl.library_name AND l.type = gl.type
         {where_clause}
-        AND COALESCE(l.latest_safe_version, gl.latest_safe_version) IS NOT NULL 
-        AND l.version IS NOT NULL 
+        AND COALESCE(l.latest_safe_version, gl.latest_safe_version) IS NOT NULL
+        AND l.version IS NOT NULL
         AND l.version != ''
     '''
     all_libraries = conn.execute(total_vulnerabilities_query, query_params).fetchall()
-    
-    total_vulnerabilities = sum(1 for lib in all_libraries 
+
+    total_vulnerabilities = sum(1 for lib in all_libraries
                               if has_vulnerability(lib['version'], lib['safe_version']))
-    
+
     # Convert stats to dict and add calculated vulnerabilities
     stats = dict(stats_raw)
     stats['total_vulnerabilities'] = total_vulnerabilities
-    
-    # Get all clients for the edit modal dropdown
-    clients = conn.execute('SELECT id, name FROM clients WHERE is_active = 1 ORDER BY name').fetchall()
-    
+
+    # Get all projects for the edit modal dropdown
+    projects = conn.execute('SELECT id, name FROM projects WHERE is_active = 1 ORDER BY name').fetchall()
+
     conn.close()
-    return render_template('client_detail.html', client=client, scans=scans, stats=stats, clients=clients)
+    return render_template('project_detail.html', project=project, scans=scans, stats=stats, projects=projects)
 
 @app.route('/export-project-data/<int:project_id>/<format>')
 @login_required
 def export_project_data(project_id, format):
-    """Export specific client data with all scans and libraries in the specified format"""
+    """Export specific project data with all scans and libraries in the specified format"""
     try:
         conn = get_db_connection()
-        
-        # Get client info
-        client = conn.execute('SELECT * FROM clients WHERE id = ? AND is_active = 1', (project_id,)).fetchone()
-        if not client:
-            flash('Cliente no encontrado', 'error')
+
+        # Get project info
+        project = conn.execute('SELECT * FROM projects WHERE id = ? AND is_active = 1', (project_id,)).fetchone()
+        if not project:
+            flash('Proyecto no encontrado', 'error')
             conn.close()
             return redirect(url_for('projects'))
-        
-        # Get all scans for this client with libraries
+
+        # Get all scans for this project with libraries
         scans_data = conn.execute('''
-            SELECT s.*, 
+            SELECT s.*,
                    GROUP_CONCAT(DISTINCT l.library_name || '|' || COALESCE(l.version, '') || '|' || l.type) as libraries_info
             FROM scans s
             LEFT JOIN libraries l ON s.id = l.scan_id
-            WHERE s.client_id = ?
+            WHERE s.project_id = ?
             GROUP BY s.id
             ORDER BY s.scan_date DESC
         ''', (project_id,)).fetchall()
-        
+
         # Get statistics
         stats = conn.execute('''
-            SELECT 
+            SELECT
                 COUNT(DISTINCT s.id) as total_scans,
                 COUNT(DISTINCT l.library_name) as unique_libraries,
                 COUNT(DISTINCT fu.id) as total_files,
@@ -4410,28 +4444,28 @@ def export_project_data(project_id, format):
             FROM scans s
             LEFT JOIN libraries l ON s.id = l.scan_id
             LEFT JOIN file_urls fu ON s.id = fu.scan_id
-            WHERE s.client_id = ?
+            WHERE s.project_id = ?
         ''', (project_id,)).fetchone()
-        
+
         conn.close()
-        
+
         if format == 'csv':
             output = io.StringIO()
             writer = csv.writer(output)
-            
-            # Write client info section
-            writer.writerow(['# INFORMACIÓN DEL CLIENTE'])
+
+            # Write project info section
+            writer.writerow(['# INFORMACIÓN DEL PROYECTO'])
             writer.writerow(['Nombre', 'Descripción', 'Email', 'Teléfono', 'Sitio Web', 'Fecha Creación'])
             writer.writerow([
-                client['name'],
-                client['description'] or '',
-                client['contact_email'] or '',
-                client['contact_phone'] or '',
-                client['website'] or '',
-                client['created_date'][:10] if client['created_date'] else ''
+                project['name'],
+                project['description'] or '',
+                project['contact_email'] or '',
+                project['contact_phone'] or '',
+                project['website'] or '',
+                project['created_date'][:10] if project['created_date'] else ''
             ])
             writer.writerow([])  # Empty row for separation
-            
+
             # Write statistics section
             writer.writerow(['# ESTADÍSTICAS'])
             writer.writerow(['Total Escaneos', 'Bibliotecas Únicas', 'Total Archivos', 'Revisados', 'Pendientes'])
@@ -4443,11 +4477,11 @@ def export_project_data(project_id, format):
                 stats['pending_scans'] or 0
             ])
             writer.writerow([])  # Empty row for separation
-            
+
             # Write scans section
             writer.writerow(['# ESCANEOS REALIZADOS'])
             writer.writerow(['URL', 'Título', 'Fecha', 'Estado HTTP', 'Revisado', 'Bibliotecas Detectadas'])
-            
+
             for scan in scans_data:
                 libraries = ''
                 if scan['libraries_info']:
@@ -4459,7 +4493,7 @@ def export_project_data(project_id, format):
                             lib_version = parts[1] if parts[1] else 'N/A'
                             lib_list.append(f"{lib_name} ({lib_version})")
                     libraries = '; '.join(lib_list)
-                
+
                 writer.writerow([
                     scan['url'],
                     scan['title'] or '',
@@ -4468,24 +4502,24 @@ def export_project_data(project_id, format):
                     'Sí' if scan['reviewed'] == 1 else 'No',
                     libraries or 'Sin bibliotecas'
                 ])
-            
+
             response = make_response(output.getvalue())
-            filename = f"client_{client['name'].replace(' ', '_')}_data.csv"
+            filename = f"project_{project['name'].replace(' ', '_')}_data.csv"
             response.headers["Content-Disposition"] = f"attachment; filename={filename}"
             response.headers["Content-type"] = "text/csv"
             return response
-            
+
         elif format == 'json':
             # Prepare JSON data
             export_data = {
-                'client': {
-                    'id': client['id'],
-                    'name': client['name'],
-                    'description': client['description'],
-                    'contact_email': client['contact_email'],
-                    'contact_phone': client['contact_phone'],
-                    'website': client['website'],
-                    'created_date': client['created_date']
+                'project': {
+                    'id': project['id'],
+                    'name': project['name'],
+                    'description': project['description'],
+                    'contact_email': project['contact_email'],
+                    'contact_phone': project['contact_phone'],
+                    'website': project['website'],
+                    'created_date': project['created_date']
                 },
                 'statistics': {
                     'total_scans': stats['total_scans'] or 0,
@@ -4496,7 +4530,7 @@ def export_project_data(project_id, format):
                 },
                 'scans': []
             }
-            
+
             for scan in scans_data:
                 scan_obj = {
                     'id': scan['id'],
@@ -4507,7 +4541,7 @@ def export_project_data(project_id, format):
                     'reviewed': bool(scan['reviewed']),
                     'libraries': []
                 }
-                
+
                 if scan['libraries_info']:
                     for lib_info in scan['libraries_info'].split(','):
                         parts = lib_info.split('|')
@@ -4517,87 +4551,87 @@ def export_project_data(project_id, format):
                                 'version': parts[1] if parts[1] else None,
                                 'type': parts[2]
                             })
-                
+
                 export_data['scans'].append(scan_obj)
-            
+
             response = make_response(json.dumps(export_data, indent=2, ensure_ascii=False))
-            filename = f"client_{client['name'].replace(' ', '_')}_data.json"
+            filename = f"project_{project['name'].replace(' ', '_')}_data.json"
             response.headers["Content-Disposition"] = f"attachment; filename={filename}"
             response.headers["Content-type"] = "application/json"
             return response
         else:
             flash('Formato de exportación no válido', 'error')
-            return redirect(url_for('project_detail', project_id=client_id))
-            
+            return redirect(url_for('project_detail', project_id=project_id))
+
     except Exception as e:
-        flash(f'Error al exportar datos del cliente: {str(e)}', 'error')
-        return redirect(url_for('project_detail', project_id=client_id))
+        flash(f'Error al exportar datos del proyecto: {str(e)}', 'error')
+        return redirect(url_for('project_detail', project_id=project_id))
 
 @app.route('/import-project-data/<int:project_id>', methods=['POST'])
 @login_required
 def import_project_data(project_id):
-    """Import scan data from CSV or JSON file for a specific client"""
+    """Import scan data from CSV or JSON file for a specific project"""
     try:
-        # Verify client exists
+        # Verify project exists
         conn = get_db_connection()
-        client = conn.execute('SELECT * FROM clients WHERE id = ? AND is_active = 1', (project_id,)).fetchone()
-        if not client:
-            flash('Cliente no encontrado', 'error')
+        project = conn.execute('SELECT * FROM projects WHERE id = ? AND is_active = 1', (project_id,)).fetchone()
+        if not project:
+            flash('Proyecto no encontrado', 'error')
             conn.close()
             return redirect(url_for('projects'))
-        
+
         if 'file' not in request.files:
             flash('No se seleccionó ningún archivo', 'error')
-            return redirect(url_for('project_detail', project_id=client_id))
-        
+            return redirect(url_for('project_detail', project_id=project_id))
+
         file = request.files['file']
         if file.filename == '':
             flash('No se seleccionó ningún archivo', 'error')
-            return redirect(url_for('project_detail', project_id=client_id))
-        
+            return redirect(url_for('project_detail', project_id=project_id))
+
         if not file.filename.lower().endswith(('.csv', '.json')):
             flash('Solo se permiten archivos CSV o JSON', 'error')
-            return redirect(url_for('project_detail', project_id=client_id))
-        
+            return redirect(url_for('project_detail', project_id=project_id))
+
         skip_duplicates = request.form.get('skip_duplicates') == 'on'
         cursor = conn.cursor()
         imported_scans = 0
         skipped_urls = []
-        
+
         if file.filename.lower().endswith('.csv'):
             # Parse CSV file
             content = file.read().decode('utf-8')
             csv_reader = csv.DictReader(io.StringIO(content))
-            
+
             for row in csv_reader:
                 url = row.get('URL', '').strip()
                 if not url:
                     continue
-                
+
                 # Check for duplicate URL if skip_duplicates is enabled
                 if skip_duplicates:
                     existing = cursor.execute(
-                        'SELECT id FROM scans WHERE url = ? AND client_id = ?',
+                        'SELECT id FROM scans WHERE url = ? AND project_id = ?',
                         (url, project_id)
                     ).fetchone()
                     if existing:
                         skipped_urls.append(url)
                         continue
-                
+
                 # Insert scan
                 title = row.get('Título', '').strip() or None
                 scan_date = row.get('Fecha', '').strip() or datetime.now().isoformat()
                 status_code = int(row.get('Estado HTTP', 0)) if row.get('Estado HTTP', '').isdigit() else None
                 reviewed = 1 if row.get('Revisado', '').lower() in ['sí', 'si', 'yes', '1', 'true'] else 0
-                
+
                 cursor.execute('''
-                    INSERT INTO scans (url, title, scan_date, status_code, reviewed, client_id, headers)
+                    INSERT INTO scans (url, title, scan_date, status_code, reviewed, project_id, headers)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 ''', (url, title, scan_date, status_code, reviewed, project_id, '{}'))
-                
+
                 scan_id = cursor.lastrowid
                 imported_scans += 1
-                
+
                 # Parse and insert libraries if present
                 libraries_str = row.get('Bibliotecas Detectadas', '').strip()
                 if libraries_str and libraries_str != 'Sin bibliotecas':
@@ -4609,47 +4643,47 @@ def import_project_data(project_id):
                             lib_version = lib_str[lib_str.index('(')+1:lib_str.index(')')].strip()
                             if lib_version == 'N/A':
                                 lib_version = None
-                            
+
                             cursor.execute('''
                                 INSERT INTO libraries (scan_id, library_name, version, type, is_manual)
                                 VALUES (?, ?, ?, 'js', 1)
                             ''', (scan_id, lib_name, lib_version))
-                
+
         elif file.filename.lower().endswith('.json'):
             # Parse JSON file
             content = file.read().decode('utf-8')
             data = json.loads(content)
-            
+
             scans_list = data.get('scans', [])
             for scan_data in scans_list:
                 url = scan_data.get('url', '').strip()
                 if not url:
                     continue
-                
+
                 # Check for duplicate URL if skip_duplicates is enabled
                 if skip_duplicates:
                     existing = cursor.execute(
-                        'SELECT id FROM scans WHERE url = ? AND client_id = ?',
+                        'SELECT id FROM scans WHERE url = ? AND project_id = ?',
                         (url, project_id)
                     ).fetchone()
                     if existing:
                         skipped_urls.append(url)
                         continue
-                
+
                 # Insert scan
                 title = scan_data.get('title') or None
                 scan_date = scan_data.get('scan_date') or datetime.now().isoformat()
                 status_code = scan_data.get('status_code')
                 reviewed = 1 if scan_data.get('reviewed') else 0
-                
+
                 cursor.execute('''
-                    INSERT INTO scans (url, title, scan_date, status_code, reviewed, client_id, headers)
+                    INSERT INTO scans (url, title, scan_date, status_code, reviewed, project_id, headers)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 ''', (url, title, scan_date, status_code, reviewed, project_id, '{}'))
-                
+
                 scan_id = cursor.lastrowid
                 imported_scans += 1
-                
+
                 # Insert libraries if present
                 for lib in scan_data.get('libraries', []):
                     lib_name = lib.get('name')
@@ -4658,10 +4692,10 @@ def import_project_data(project_id):
                             INSERT INTO libraries (scan_id, library_name, version, type, is_manual)
                             VALUES (?, ?, ?, ?, 1)
                         ''', (scan_id, lib_name, lib.get('version'), lib.get('type', 'js')))
-        
+
         conn.commit()
         conn.close()
-        
+
         # Prepare success message
         if imported_scans > 0:
             msg = f'Se importaron {imported_scans} escaneo(s) exitosamente'
@@ -4673,123 +4707,123 @@ def import_project_data(project_id):
                 flash(f'No se importaron nuevos escaneos. {len(skipped_urls)} URL(s) ya existían', 'warning')
             else:
                 flash('No se encontraron escaneos válidos en el archivo', 'warning')
-        
-        return redirect(url_for('project_detail', project_id=client_id))
-        
+
+        return redirect(url_for('project_detail', project_id=project_id))
+
     except json.JSONDecodeError:
         flash('Error al parsear el archivo JSON. Verifica el formato', 'error')
-        return redirect(url_for('project_detail', project_id=client_id))
+        return redirect(url_for('project_detail', project_id=project_id))
     except Exception as e:
         flash(f'Error al importar datos: {str(e)}', 'error')
-        return redirect(url_for('project_detail', project_id=client_id))
+        return redirect(url_for('project_detail', project_id=project_id))
 
 @app.route('/export-projects/<format>')
 @login_required
 def export_projects(format):
-    """Export all clients and their associated URLs in the specified format"""
+    """Export all projects and their associated URLs in the specified format"""
     try:
         conn = get_db_connection()
-        
-        # Get all clients with their scan counts
-        clients = conn.execute('''
+
+        # Get all projects with their scan counts
+        projects = conn.execute('''
             SELECT c.*,
                    COUNT(DISTINCT s.id) as scan_count
-            FROM clients c
-            LEFT JOIN scans s ON c.id = s.client_id
+            FROM projects c
+            LEFT JOIN scans s ON c.id = s.project_id
             WHERE c.is_active = 1
             GROUP BY c.id
             ORDER BY c.name
         ''').fetchall()
-        
+
         if format == 'csv':
             output = io.StringIO()
             writer = csv.writer(output)
-            
-            # Write headers for clients section
-            writer.writerow(['# CLIENTES'])
+
+            # Write headers for projects section
+            writer.writerow(['# PROYECTOS'])
             writer.writerow(['Nombre', 'Descripción', 'Email', 'Teléfono', 'Sitio Web', 'Fecha Creación', 'Total URLs'])
-            
-            # Write client data
-            for client in clients:
+
+            # Write project data
+            for project in projects:
                 writer.writerow([
-                    client['name'],
-                    client['description'] or '',
-                    client['contact_email'] or '',
-                    client['contact_phone'] or '',
-                    client['website'] or '',
-                    client['created_date'][:10] if client['created_date'] else '',
-                    client['scan_count']
+                    project['name'],
+                    project['description'] or '',
+                    project['contact_email'] or '',
+                    project['contact_phone'] or '',
+                    project['website'] or '',
+                    project['created_date'][:10] if project['created_date'] else '',
+                    project['scan_count']
                 ])
-            
+
             writer.writerow([])  # Empty row separator
             writer.writerow(['# URLS ASOCIADAS'])
-            writer.writerow(['Cliente', 'URL', 'Título', 'Fecha Escaneo', 'Estado', 'Librerías'])
-            
-            # Get all scans for active clients
+            writer.writerow(['Proyecto', 'URL', 'Título', 'Fecha Escaneo', 'Estado', 'Librerías'])
+
+            # Get all scans for active projects
             scans = conn.execute('''
-                SELECT c.name as client_name, s.url, s.title, s.scan_date, s.status_code,
+                SELECT c.name as project_name, s.url, s.title, s.scan_date, s.status_code,
                        COUNT(DISTINCT l.id) as library_count
                 FROM scans s
-                JOIN clients c ON s.client_id = c.id
+                JOIN projects c ON s.project_id = c.id
                 LEFT JOIN libraries l ON s.id = l.scan_id
                 WHERE c.is_active = 1
                 GROUP BY s.id
                 ORDER BY c.name, s.scan_date DESC
             ''').fetchall()
-            
+
             for scan in scans:
                 writer.writerow([
-                    scan['client_name'],
+                    scan['project_name'],
                     scan['url'],
                     scan['title'] or '',
                     scan['scan_date'][:10] if scan['scan_date'] else '',
                     scan['status_code'] or 'Error',
                     scan['library_count']
                 ])
-            
+
             conn.close()
-            
+
             # Create response
             output.seek(0)
             return Response(
                 output.getvalue(),
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename=clients_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'}
+                headers={'Content-Disposition': f'attachment; filename=projects_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'}
             )
-            
+
         elif format == 'json':
             # Build JSON structure
             export_data = {
                 'export_date': datetime.now().isoformat(),
-                'total_clients': len(clients),
-                'clients': []
+                'total_projects': len(projects),
+                'projects': []
             }
-            
-            for client in clients:
-                # Get scans for this client
-                client_scans = conn.execute('''
+
+            for project in projects:
+                # Get scans for this project
+                project_scans = conn.execute('''
                     SELECT s.*, COUNT(DISTINCT CASE WHEN l.type = 'js' THEN l.id END) as libraries_count,
                            COUNT(DISTINCT CASE WHEN f.file_type = 'js' THEN f.id END) as files_count
                     FROM scans s
                     LEFT JOIN libraries l ON s.id = l.scan_id
                     LEFT JOIN file_urls f ON s.id = f.scan_id
-                    WHERE s.client_id = ?
+                    WHERE s.project_id = ?
                     GROUP BY s.id
                     ORDER BY s.scan_date DESC
-                ''', (client['id'],)).fetchall()
-                
-                client_data = {
-                    'name': client['name'],
-                    'description': client['description'],
-                    'contact_email': client['contact_email'],
-                    'contact_phone': client['contact_phone'],
-                    'website': client['website'],
-                    'created_date': client['created_date'],
+                ''', (project['id'],)).fetchall()
+
+                project_data = {
+                    'name': project['name'],
+                    'description': project['description'],
+                    'contact_email': project['contact_email'],
+                    'contact_phone': project['contact_phone'],
+                    'website': project['website'],
+                    'created_date': project['created_date'],
                     'scans': []
                 }
-                
-                for scan in client_scans:
-                    client_data['scans'].append({
+
+                for scan in project_scans:
+                    project_data['scans'].append({
                         'url': scan['url'],
                         'title': scan['title'],
                         'scan_date': scan['scan_date'],
@@ -4797,88 +4831,88 @@ def export_projects(format):
                         'libraries_count': scan['libraries_count'],
                         'files_count': scan['files_count']
                     })
-                
-                export_data['clients'].append(client_data)
-            
+
+                export_data['projects'].append(project_data)
+
             conn.close()
-            
+
             return Response(
                 json.dumps(export_data, indent=2, ensure_ascii=False),
                 mimetype='application/json',
-                headers={'Content-Disposition': f'attachment; filename=clients_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'}
+                headers={'Content-Disposition': f'attachment; filename=projects_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'}
             )
-            
+
         elif format == 'xlsx':
-            # Create Excel workbook with one sheet per client
+            # Create Excel workbook with one sheet per project
             from openpyxl import Workbook
             from openpyxl.styles import Font, PatternFill, Alignment
             from openpyxl.utils import get_column_letter
-            
+
             wb = Workbook()
-            
+
             # Remove default sheet
             if 'Sheet' in wb.sheetnames:
                 wb.remove(wb['Sheet'])
-            
+
             # Header styles
             header_font = Font(bold=True, color="FFFFFF")
             header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
             header_alignment = Alignment(horizontal="center", vertical="center")
-            
+
             # Subheader styles
             subheader_font = Font(bold=True)
             subheader_fill = PatternFill(start_color="D9E2F3", end_color="D9E2F3", fill_type="solid")
-            
-            for client in clients:
-                # Create sheet for each client (limit sheet name to 31 chars)
-                sheet_name = client['name'][:31] if len(client['name']) > 31 else client['name']
+
+            for project in projects:
+                # Create sheet for each project (limit sheet name to 31 chars)
+                sheet_name = project['name'][:31] if len(project['name']) > 31 else project['name']
                 # Remove invalid characters for Excel sheet names
                 for char in ['\\', '/', '*', '[', ']', ':', '?']:
                     sheet_name = sheet_name.replace(char, '_')
-                
+
                 ws = wb.create_sheet(title=sheet_name)
-                
-                # Client Information Section
-                ws['A1'] = 'INFORMACIÓN DEL CLIENTE'
+
+                # Project Information Section
+                ws['A1'] = 'INFORMACIÓN DEL PROYECTO'
                 ws['A1'].font = Font(bold=True, size=14)
                 ws.merge_cells('A1:F1')
-                
-                # Client details
-                client_info = [
+
+                # Project details
+                project_info = [
                     ['Campo', 'Valor'],
-                    ['Nombre', client['name']],
-                    ['Descripción', client['description'] or ''],
-                    ['Email', client['contact_email'] or ''],
-                    ['Teléfono', client['contact_phone'] or ''],
-                    ['Sitio Web', client['website'] or ''],
-                    ['Cliente desde', client['created_date'][:10] if client['created_date'] else ''],
-                    ['Total de escaneos', client['scan_count']]
+                    ['Nombre', project['name']],
+                    ['Descripción', project['description'] or ''],
+                    ['Email', project['contact_email'] or ''],
+                    ['Teléfono', project['contact_phone'] or ''],
+                    ['Sitio Web', project['website'] or ''],
+                    ['Proyecto desde', project['created_date'][:10] if project['created_date'] else ''],
+                    ['Total de escaneos', project['scan_count']]
                 ]
-                
-                for row_idx, row_data in enumerate(client_info, start=3):
+
+                for row_idx, row_data in enumerate(project_info, start=3):
                     for col_idx, value in enumerate(row_data, start=1):
                         cell = ws.cell(row=row_idx, column=col_idx, value=value)
                         if row_idx == 3:  # Header row
                             cell.font = subheader_font
                             cell.fill = subheader_fill
-                
+
                 # URLs Section (starting from row 13)
                 ws['A13'] = 'URLS ESCANEADAS'
                 ws['A13'].font = Font(bold=True, size=14)
                 ws.merge_cells('A13:G13')
-                
-                # Get scans for this client
-                client_scans = conn.execute('''
+
+                # Get scans for this project
+                project_scans = conn.execute('''
                     SELECT s.*, COUNT(DISTINCT CASE WHEN l.type = 'js' THEN l.id END) as libraries_count,
                            COUNT(DISTINCT CASE WHEN f.file_type = 'js' THEN f.id END) as files_count
                     FROM scans s
                     LEFT JOIN libraries l ON s.id = l.scan_id
                     LEFT JOIN file_urls f ON s.id = f.scan_id
-                    WHERE s.client_id = ?
+                    WHERE s.project_id = ?
                     GROUP BY s.id
                     ORDER BY s.scan_date DESC
-                ''', (client['id'],)).fetchall()
-                
+                ''', (project['id'],)).fetchall()
+
                 # Headers for scans table
                 scan_headers = ['URL', 'Título', 'Fecha Escaneo', 'Estado', 'Librerías', 'Archivos', 'Score Seguridad']
                 for col_idx, header in enumerate(scan_headers, start=1):
@@ -4886,16 +4920,16 @@ def export_projects(format):
                     cell.font = header_font
                     cell.fill = header_fill
                     cell.alignment = header_alignment
-                
+
                 # Scan data
-                for row_idx, scan in enumerate(client_scans, start=16):
+                for row_idx, scan in enumerate(project_scans, start=16):
                     ws.cell(row=row_idx, column=1, value=scan['url'])
                     ws.cell(row=row_idx, column=2, value=scan['title'] or '')
                     ws.cell(row=row_idx, column=3, value=scan['scan_date'][:16] if scan['scan_date'] else '')
                     ws.cell(row=row_idx, column=4, value=scan['status_code'] or 'Error')
                     ws.cell(row=row_idx, column=5, value=scan['libraries_count'])
                     ws.cell(row=row_idx, column=6, value=scan['files_count'])
-                    
+
                     # Try to get security score from headers
                     if scan['headers']:
                         try:
@@ -4906,7 +4940,7 @@ def export_projects(format):
                             ws.cell(row=row_idx, column=7, value='N/A')
                     else:
                         ws.cell(row=row_idx, column=7, value='N/A')
-                
+
                 # Auto-adjust column widths
                 for column in ws.columns:
                     max_length = 0
@@ -4919,31 +4953,31 @@ def export_projects(format):
                             pass
                     adjusted_width = min(max_length + 2, 50)
                     ws.column_dimensions[column_letter].width = adjusted_width
-            
+
             # Create summary sheet
             summary = wb.create_sheet(title="Resumen", index=0)
             summary['A1'] = 'RESUMEN DE EXPORTACIÓN'
             summary['A1'].font = Font(bold=True, size=14)
             summary.merge_cells('A1:D1')
-            
+
             summary_data = [
                 ['Fecha de exportación', datetime.now().strftime('%Y-%m-%d %H:%M:%S')],
-                ['Total de clientes', len(clients)],
-                ['Total de URLs escaneadas', conn.execute('SELECT COUNT(*) as cnt FROM scans WHERE client_id IS NOT NULL').fetchone()['cnt']],
-                ['Cliente con más escaneos', '']
+                ['Total de proyectos', len(projects)],
+                ['Total de URLs escaneadas', conn.execute('SELECT COUNT(*) as cnt FROM scans WHERE project_id IS NOT NULL').fetchone()['cnt']],
+                ['Proyecto con más escaneos', '']
             ]
-            
-            # Find client with most scans
-            if clients:
-                max_client = max(clients, key=lambda x: x['scan_count'])
-                summary_data[3][1] = f"{max_client['name']} ({max_client['scan_count']} escaneos)"
-            
+
+            # Find project with most scans
+            if projects:
+                max_project = max(projects, key=lambda x: x['scan_count'])
+                summary_data[3][1] = f"{max_project['name']} ({max_project['scan_count']} escaneos)"
+
             for row_idx, row_data in enumerate(summary_data, start=3):
                 for col_idx, value in enumerate(row_data, start=1):
                     summary.cell(row=row_idx, column=col_idx, value=value)
                     if col_idx == 1:
                         summary.cell(row=row_idx, column=col_idx).font = Font(bold=True)
-            
+
             # Auto-adjust summary columns
             for column in summary.columns:
                 max_length = 0
@@ -4956,169 +4990,169 @@ def export_projects(format):
                         pass
                 adjusted_width = min(max_length + 2, 50)
                 summary.column_dimensions[column_letter].width = adjusted_width
-            
+
             conn.close()
-            
+
             # Save to BytesIO
             output = io.BytesIO()
             wb.save(output)
             output.seek(0)
-            
+
             return Response(
                 output.getvalue(),
                 mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                headers={'Content-Disposition': f'attachment; filename=clients_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'}
+                headers={'Content-Disposition': f'attachment; filename=projects_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'}
             )
-            
+
         else:
             flash('Formato de exportación no válido', 'error')
             return redirect(url_for('projects'))
-            
+
     except Exception as e:
-        flash(f'Error al exportar clientes: {str(e)}', 'error')
+        flash(f'Error al exportar proyectos: {str(e)}', 'error')
         return redirect(url_for('projects'))
 
 @app.route('/import-projects', methods=['POST'])
 @login_required
 def import_projects():
-    """Import clients from CSV or JSON file"""
+    """Import projects from CSV or JSON file"""
     try:
         if 'file' not in request.files:
             flash('No se seleccionó ningún archivo', 'error')
             return redirect(url_for('projects'))
-        
+
         file = request.files['file']
         if file.filename == '':
             flash('No se seleccionó ningún archivo', 'error')
             return redirect(url_for('projects'))
-        
+
         if not file.filename.lower().endswith(('.csv', '.json')):
             flash('Solo se permiten archivos CSV o JSON', 'error')
             return redirect(url_for('projects'))
-        
+
         conn = get_db_connection()
         cursor = conn.cursor()
-        imported_clients = 0
+        imported_projects = 0
         imported_urls = 0
         errors = []
-        
+
         if file.filename.lower().endswith('.csv'):
             # Parse CSV file
             content = file.read().decode('utf-8')
             lines = content.strip().split('\n')
-            
+
             # Find sections
-            client_section_start = -1
+            project_section_start = -1
             url_section_start = -1
-            
+
             for i, line in enumerate(lines):
-                if '# CLIENTES' in line:
-                    client_section_start = i + 2  # Skip header and column names
+                if '# PROYECTOS' in line:
+                    project_section_start = i + 2  # Skip header and column names
                 elif '# URLS ASOCIADAS' in line:
                     url_section_start = i + 2  # Skip header and column names
                     break
-            
-            if client_section_start > 0:
-                # Parse clients
-                csv_reader = csv.DictReader(io.StringIO('\n'.join(lines[client_section_start-1:url_section_start-3])))
-                
+
+            if project_section_start > 0:
+                # Parse projects
+                csv_reader = csv.DictReader(io.StringIO('\n'.join(lines[project_section_start-1:url_section_start-3])))
+
                 for row in csv_reader:
                     try:
-                        client_name = row.get('Nombre', '').strip()
-                        if not client_name:
+                        project_name = row.get('Nombre', '').strip()
+                        if not project_name:
                             continue
-                        
-                        # Check if client already exists
-                        cursor.execute("SELECT id FROM clients WHERE name = ?", (client_name,))
+
+                        # Check if project already exists
+                        cursor.execute("SELECT id FROM projects WHERE name = ?", (project_name,))
                         existing = cursor.fetchone()
-                        
+
                         if existing:
-                            errors.append(f'Cliente "{client_name}" ya existe')
+                            errors.append(f'Proyecto "{project_name}" ya existe')
                             continue
-                        
+
                         cursor.execute('''
-                            INSERT INTO clients (name, description, contact_email, contact_phone, website)
+                            INSERT INTO projects (name, description, contact_email, contact_phone, website)
                             VALUES (?, ?, ?, ?, ?)
                         ''', (
-                            client_name,
+                            project_name,
                             row.get('Descripción', ''),
                             row.get('Email', ''),
                             row.get('Teléfono', ''),
                             row.get('Sitio Web', '')
                         ))
-                        
-                        imported_clients += 1
-                        
+
+                        imported_projects += 1
+
                     except Exception as e:
-                        errors.append(f'Error importando cliente: {str(e)}')
-                
+                        errors.append(f'Error importando proyecto: {str(e)}')
+
             conn.commit()
-            
+
         elif file.filename.lower().endswith('.json'):
             # Parse JSON file
             content = file.read().decode('utf-8')
             data = json.loads(content)
-            
-            if 'clients' not in data:
+
+            if 'projects' not in data:
                 flash('Formato de archivo JSON inválido', 'error')
                 return redirect(url_for('projects'))
-            
-            for client_data in data['clients']:
+
+            for project_data in data['projects']:
                 try:
-                    client_name = client_data.get('name', '').strip()
-                    if not client_name:
+                    project_name = project_data.get('name', '').strip()
+                    if not project_name:
                         continue
-                    
-                    # Check if client already exists
-                    cursor.execute("SELECT id FROM clients WHERE name = ?", (client_name,))
+
+                    # Check if project already exists
+                    cursor.execute("SELECT id FROM projects WHERE name = ?", (project_name,))
                     existing = cursor.fetchone()
-                    
+
                     if existing:
-                        errors.append(f'Cliente "{client_name}" ya existe')
+                        errors.append(f'Proyecto "{project_name}" ya existe')
                         continue
-                    
+
                     cursor.execute('''
-                        INSERT INTO clients (name, description, contact_email, contact_phone, website)
+                        INSERT INTO projects (name, description, contact_email, contact_phone, website)
                         VALUES (?, ?, ?, ?, ?)
                     ''', (
-                        client_name,
-                        client_data.get('description', ''),
-                        client_data.get('contact_email', ''),
-                        client_data.get('contact_phone', ''),
-                        client_data.get('website', '')
+                        project_name,
+                        project_data.get('description', ''),
+                        project_data.get('contact_email', ''),
+                        project_data.get('contact_phone', ''),
+                        project_data.get('website', '')
                     ))
-                    
-                    imported_clients += 1
-                    
+
+                    imported_projects += 1
+
                 except Exception as e:
-                    errors.append(f'Error importando cliente {client_name}: {str(e)}')
-            
+                    errors.append(f'Error importando proyecto {project_name}: {str(e)}')
+
             conn.commit()
-        
+
         conn.close()
-        
+
         # Prepare success message
-        success_msg = f'Importación completada: {imported_clients} cliente(s) importado(s)'
+        success_msg = f'Importación completada: {imported_projects} proyecto(s) importado(s)'
         if errors:
             success_msg += f', {len(errors)} error(es)'
             for error in errors[:5]:  # Show first 5 errors
                 flash(error, 'warning')
-        
+
         flash(success_msg, 'success')
         return redirect(url_for('projects'))
-        
+
     except json.JSONDecodeError:
         flash('Error al parsear archivo JSON', 'error')
         return redirect(url_for('projects'))
     except Exception as e:
-        flash(f'Error al importar clientes: {str(e)}', 'error')
+        flash(f'Error al importar proyectos: {str(e)}', 'error')
         return redirect(url_for('projects'))
 
 def calculate_security_score(headers):
     """Calculate security score based on headers"""
     score = 0
     max_score = 7
-    
+
     security_headers = [
         'Strict-Transport-Security',
         'Content-Security-Policy',
@@ -5128,11 +5162,11 @@ def calculate_security_score(headers):
         'Referrer-Policy',
         'Permissions-Policy'
     ]
-    
+
     for header in security_headers:
         if header in headers:
             score += 1
-    
+
     return int((score / max_score) * 100)
 
 @app.route('/users')
@@ -5155,7 +5189,7 @@ def add_user():
     if not username or not password:
         flash('Usuario y contraseña son requeridos', 'error')
         return redirect(url_for('users'))
-    
+
     if role not in ['admin', 'analyst']:
         role = 'analyst'  # Default to analyst if invalid role
 
@@ -5206,7 +5240,7 @@ def historial():
     """Página principal de historial global de acciones"""
     page = request.args.get('page', 1, type=int)
     per_page = 50
-    
+
     # Filtros
     user_filter = request.args.get('user', '').strip()
     action_filter = request.args.get('action', '').strip()
@@ -5214,43 +5248,43 @@ def historial():
     date_from = request.args.get('date_from', '').strip()
     date_to = request.args.get('date_to', '').strip()
     search = request.args.get('search', '').strip()
-    
+
     conn = get_db_connection()
-    
+
     # Construir query con filtros
     where_conditions = []
     params = []
-    
+
     if user_filter:
         where_conditions.append("(username LIKE ? OR user_role LIKE ?)")
         params.extend([f'%{user_filter}%', f'%{user_filter}%'])
-    
+
     if action_filter:
         where_conditions.append("action_type = ?")
         params.append(action_filter)
-    
+
     if table_filter:
         where_conditions.append("target_table = ?")
         params.append(table_filter)
-    
+
     if date_from:
         where_conditions.append("DATE(timestamp) >= ?")
         params.append(date_from)
-    
+
     if date_to:
         where_conditions.append("DATE(timestamp) <= ?")
         params.append(date_to)
-    
+
     if search:
         where_conditions.append("(target_description LIKE ? OR notes LIKE ? OR error_message LIKE ?)")
         params.extend([f'%{search}%', f'%{search}%', f'%{search}%'])
-    
+
     where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
-    
+
     # Obtener total de registros para paginación
     count_query = f"SELECT COUNT(*) as total FROM action_history WHERE {where_clause}"
     total_records = conn.execute(count_query, params).fetchone()['total']
-    
+
     # Calcular paginación
     total_pages = (total_records + per_page - 1) // per_page
     offset = (page - 1) * per_page
@@ -5258,28 +5292,28 @@ def historial():
     has_next = page < total_pages
     prev_num = page - 1 if has_prev else None
     next_num = page + 1 if has_next else None
-    
+
     # Obtener registros paginados
     records_query = f'''
-        SELECT * FROM action_history 
+        SELECT * FROM action_history
         WHERE {where_clause}
         ORDER BY timestamp DESC
         LIMIT ? OFFSET ?
     '''
     records = conn.execute(records_query, params + [per_page, offset]).fetchall()
-    
+
     # Datos para filtros
     users_query = "SELECT DISTINCT username, user_role FROM action_history ORDER BY username"
     users = conn.execute(users_query).fetchall()
-    
+
     action_types_query = "SELECT DISTINCT action_type FROM action_history ORDER BY action_type"
     action_types = [row['action_type'] for row in conn.execute(action_types_query).fetchall()]
-    
+
     table_names_query = "SELECT DISTINCT target_table FROM action_history ORDER BY target_table"
     table_names = [row['target_table'] for row in conn.execute(table_names_query).fetchall()]
-    
+
     conn.close()
-    
+
     return render_template('historial.html',
         records=[dict(record) for record in records],
         pagination={
@@ -5311,18 +5345,18 @@ def historial():
 def historial_details(action_id):
     """Obtiene los detalles de una acción específica"""
     conn = get_db_connection()
-    
+
     try:
         record = conn.execute(
-            'SELECT * FROM action_history WHERE id = ?', 
+            'SELECT * FROM action_history WHERE id = ?',
             (action_id,)
         ).fetchone()
-        
+
         if not record:
             return jsonify({'error': 'Registro no encontrado'}), 404
-        
+
         return jsonify(dict(record))
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
@@ -5342,7 +5376,7 @@ source logging_config.sh
 # Reiniciar servidor</pre>
         <a href="/">← Volver al inicio</a>
         """
-    
+
     try:
         # Test logging simple
         log_user_action(
@@ -5352,14 +5386,14 @@ source logging_config.sh
             success=True,
             notes='Prueba desde /test-logging'
         )
-        
+
         return """
         <h2>✅ Test de Logging EXITOSO</h2>
         <p>El logging está funcionando correctamente.</p>
         <p><a href="/historial">Ver historial →</a></p>
         <p><a href="/">← Volver al inicio</a></p>
         """
-        
+
     except Exception as e:
         return f"""
         <h2>❌ Test de Logging FALLIDO</h2>
@@ -5374,42 +5408,42 @@ source logging_config.sh
 def undo_action(action_id):
     """Deshace una acción específica del historial"""
     conn = get_db_connection()
-    
+
     try:
         # Obtener registro del historial
         history_record = conn.execute(
-            'SELECT * FROM action_history WHERE id = ?', 
+            'SELECT * FROM action_history WHERE id = ?',
             (action_id,)
         ).fetchone()
-        
+
         if not history_record:
             return jsonify({'success': False, 'message': 'Registro de historial no encontrado'}), 404
-        
+
         # Verificar que se puede deshacer
         if history_record['action_type'] not in ['UPDATE', 'DELETE']:
             return jsonify({'success': False, 'message': 'Esta acción no se puede deshacer'}), 400
-        
+
         if not history_record['data_before']:
             return jsonify({'success': False, 'message': 'No hay datos previos para restaurar'}), 400
-        
+
         # Verificar permisos
         if not check_undo_permission(history_record['action_type'], history_record['target_table']):
             return jsonify({'success': False, 'message': 'No tienes permisos para deshacer esta acción'}), 403
-        
+
         try:
             data_before = json.loads(history_record['data_before'])
-            
+
             if history_record['action_type'] == 'DELETE':
                 # Restaurar registro eliminado
                 restore_deleted_record(history_record['target_table'], data_before)
                 action_description = f"Restaurado registro eliminado de {history_record['target_table']} #{data_before.get('id', 'N/A')}"
-                
+
             elif history_record['action_type'] == 'UPDATE':
                 # Revertir cambios
-                revert_update(history_record['target_table'], 
+                revert_update(history_record['target_table'],
                              history_record['target_id'], data_before)
                 action_description = f"Revertidos cambios en {history_record['target_table']} #{history_record['target_id']}"
-            
+
             # Registrar la acción de deshacer
             log_user_action(
                 action_type='UNDO',
@@ -5420,12 +5454,12 @@ def undo_action(action_id):
                 data_after={'undone_by': session['username'], 'undone_at': datetime.now().isoformat()},
                 notes=f"Usuario {session['username']} deshizo acción {history_record['action_type']} del {history_record['timestamp']}"
             )
-            
+
             return jsonify({
-                'success': True, 
+                'success': True,
                 'message': f'Acción deshecha exitosamente: {action_description}'
             })
-            
+
         except json.JSONDecodeError:
             return jsonify({'success': False, 'message': 'Error al procesar datos del historial'}), 500
         except Exception as e:
@@ -5439,7 +5473,7 @@ def undo_action(action_id):
                 error_message=str(e)
             )
             return jsonify({'success': False, 'message': f'Error al deshacer acción: {str(e)}'}), 500
-        
+
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error interno: {str(e)}'}), 500
     finally:
@@ -5448,7 +5482,7 @@ def undo_action(action_id):
 def restore_deleted_record(table_name, data):
     """Restaura un registro eliminado"""
     conn = get_db_connection()
-    
+
     try:
         # Manejar conflicto de ID
         original_id = data.get('id')
@@ -5457,20 +5491,20 @@ def restore_deleted_record(table_name, data):
             new_id = get_next_available_id(table_name)
             data['id'] = new_id
             print(f"⚠️ ID {original_id} ya existe, usando nuevo ID {new_id}")
-        
+
         # Remover campos automáticos que no deben insertarse
         data_copy = data.copy()
-        
+
         # Construir query de inserción
         columns = ', '.join(data_copy.keys())
         placeholders = ', '.join(['?' for _ in data_copy])
         values = list(data_copy.values())
-        
+
         conn.execute(f'INSERT INTO {table_name} ({columns}) VALUES ({placeholders})', values)
         conn.commit()
-        
+
         print(f"✅ Registro restaurado en {table_name} con ID {data_copy.get('id')}")
-        
+
     except Exception as e:
         print(f"❌ Error al restaurar registro en {table_name}: {e}")
         raise
@@ -5480,27 +5514,27 @@ def restore_deleted_record(table_name, data):
 def revert_update(table_name, record_id, previous_data):
     """Revierte un registro a su estado anterior"""
     conn = get_db_connection()
-    
+
     try:
         # Verificar que el registro existe
         if not record_exists(table_name, record_id):
             raise Exception(f"El registro {table_name}#{record_id} ya no existe")
-        
+
         # Remover el ID de los datos a actualizar
         update_data = {k: v for k, v in previous_data.items() if k != 'id'}
-        
+
         if not update_data:
             raise Exception("No hay datos para revertir")
-        
+
         # Construir query de actualización
         set_clause = ', '.join([f'{col} = ?' for col in update_data.keys()])
         values = list(update_data.values()) + [record_id]
-        
+
         conn.execute(f'UPDATE {table_name} SET {set_clause} WHERE id = ?', values)
         conn.commit()
-        
+
         print(f"✅ Registro revertido en {table_name}#{record_id}")
-        
+
     except Exception as e:
         print(f"❌ Error al revertir registro en {table_name}#{record_id}: {e}")
         raise
@@ -5510,7 +5544,7 @@ def revert_update(table_name, record_id, previous_data):
 def check_undo_permission(action_type, target_table):
     """Verifica permisos para deshacer acciones específicas"""
     user_role = session.get('user_role')
-    
+
     # Acciones críticas solo para admins
     critical_actions = ['DELETE']
     critical_tables = ['users']
@@ -5519,19 +5553,19 @@ def check_undo_permission(action_type, target_table):
         ('DELETE', 'scans'),
         ('DELETE', 'libraries')
     ]
-    
+
     # Verificar si es acción crítica
     if action_type in critical_actions:
         return user_role == 'admin'
-    
+
     # Verificar tabla crítica
     if target_table in critical_tables:
         return user_role == 'admin'
-    
+
     # Verificar combinaciones específicas
     if (action_type, target_table) in admin_only_combinations:
         return user_role == 'admin'
-    
+
     # Otras acciones permitidas para todos los usuarios autenticados
     return True
 
@@ -5556,22 +5590,22 @@ def change_own_password():
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     # Get current user info
     cursor.execute("SELECT password FROM users WHERE id = ?", (session['user_id'],))
     user = cursor.fetchone()
-    
+
     if not user or not check_password_hash(user['password'], current_password):
         flash('La contraseña actual es incorrecta', 'error')
         conn.close()
         return redirect(request.referrer or url_for('index'))
-    
+
     # Update password
     cursor.execute("UPDATE users SET password = ? WHERE id = ?",
                    (generate_password_hash(new_password), session['user_id']))
     conn.commit()
     conn.close()
-    
+
     flash('Tu contraseña ha sido actualizada exitosamente', 'success')
     return redirect(request.referrer or url_for('index'))
 
@@ -5587,27 +5621,27 @@ def change_role(user_id):
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     # Get current user info
     cursor.execute("SELECT username, role FROM users WHERE id = ?", (user_id,))
     user = cursor.fetchone()
-    
+
     if not user:
         flash('Usuario no encontrado', 'error')
         conn.close()
         return redirect(url_for('users'))
-    
+
     # Prevent changing role of default admin user 'gabo'
     if user['username'] == 'gabo' and new_role != 'admin':
         flash('No se puede cambiar el rol del usuario administrador por defecto', 'error')
         conn.close()
         return redirect(url_for('users'))
-    
+
     # Update role
     cursor.execute("UPDATE users SET role = ? WHERE id = ?", (new_role, user_id))
     conn.commit()
     conn.close()
-    
+
     role_name = 'Administrador' if new_role == 'admin' else 'Analista'
     flash(f'Rol actualizado exitosamente a {role_name}', 'success')
     return redirect(url_for('users'))
@@ -5655,23 +5689,23 @@ def export_global_libraries(format):
     try:
         conn = get_db_connection()
         libraries = conn.execute('''
-            SELECT library_name, type, latest_safe_version, latest_version, 
+            SELECT library_name, type, latest_safe_version, latest_version,
                    description, vulnerability_info, source_url
-            FROM global_libraries 
+            FROM global_libraries
             ORDER BY library_name
         ''').fetchall()
         conn.close()
-        
+
         if format == 'csv':
             output = io.StringIO()
             writer = csv.writer(output)
-            
+
             # Write headers
             writer.writerow([
-                'Nombre', 'Tipo', 'Versión Segura', 'Última Versión', 
+                'Nombre', 'Tipo', 'Versión Segura', 'Última Versión',
                 'Descripción', 'Vulnerabilidades', 'URL Fuente'
             ])
-            
+
             # Write data
             for lib in libraries:
                 writer.writerow([
@@ -5679,12 +5713,12 @@ def export_global_libraries(format):
                     lib['latest_version'] or '', lib['description'] or '',
                     lib['vulnerability_info'] or '', lib['source_url'] or ''
                 ])
-            
+
             response = make_response(output.getvalue())
             response.headers["Content-Disposition"] = "attachment; filename=global_libraries.csv"
             response.headers["Content-type"] = "text/csv"
             return response
-            
+
         elif format == 'json':
             libraries_data = []
             for lib in libraries:
@@ -5697,7 +5731,7 @@ def export_global_libraries(format):
                     'vulnerability_info': lib['vulnerability_info'],
                     'source_url': lib['source_url']
                 })
-            
+
             response = make_response(json.dumps(libraries_data, indent=2))
             response.headers["Content-Disposition"] = "attachment; filename=global_libraries.json"
             response.headers["Content-type"] = "application/json"
@@ -5705,7 +5739,7 @@ def export_global_libraries(format):
         else:
             flash('Formato de exportación no válido', 'error')
             return redirect(url_for('global_libraries'))
-            
+
     except Exception as e:
         flash(f'Error al exportar catálogo: {str(e)}', 'error')
         return redirect(url_for('global_libraries'))
@@ -5717,44 +5751,44 @@ def import_global_libraries():
         if 'file' not in request.files:
             flash('No se seleccionó ningún archivo', 'error')
             return redirect(url_for('global_libraries'))
-        
+
         file = request.files['file']
         if file.filename == '':
             flash('No se seleccionó ningún archivo', 'error')
             return redirect(url_for('global_libraries'))
-        
+
         if not file.filename.lower().endswith(('.csv', '.json')):
             flash('Solo se permiten archivos CSV o JSON', 'error')
             return redirect(url_for('global_libraries'))
-        
+
         conn = get_db_connection()
         cursor = conn.cursor()
         imported_count = 0
         errors = []
-        
+
         if file.filename.lower().endswith('.csv'):
             # Parse CSV file
             content = file.read().decode('utf-8')
             csv_reader = csv.DictReader(io.StringIO(content))
-            
+
             for row in csv_reader:
                 try:
                     library_name = row.get('Nombre', '').strip()
                     if not library_name:
                         continue
-                    
+
                     library_type = row.get('Tipo', '').strip().lower()
                     if library_type not in ['js', 'css']:
                         library_type = 'js'  # default
-                    
+
                     # Check if library already exists
                     cursor.execute("SELECT id FROM global_libraries WHERE library_name = ?", (library_name,))
                     if cursor.fetchone():
                         errors.append(f'Librería "{library_name}" ya existe')
                         continue
-                    
+
                     cursor.execute('''
-                        INSERT INTO global_libraries 
+                        INSERT INTO global_libraries
                         (library_name, type, latest_safe_version, latest_version, description, vulnerability_info, source_url)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
                     ''', (
@@ -5766,36 +5800,36 @@ def import_global_libraries():
                         row.get('URL Fuente', '').strip() or None
                     ))
                     imported_count += 1
-                    
+
                 except Exception as e:
                     errors.append(f'Error procesando "{library_name}": {str(e)}')
-        
+
         elif file.filename.lower().endswith('.json'):
             # Parse JSON file
             content = file.read().decode('utf-8')
             libraries_data = json.loads(content)
-            
+
             if not isinstance(libraries_data, list):
                 raise ValueError("El archivo JSON debe contener una lista de librerías")
-            
+
             for lib in libraries_data:
                 try:
                     library_name = lib.get('library_name', '').strip()
                     if not library_name:
                         continue
-                    
+
                     library_type = lib.get('type', '').strip().lower()
                     if library_type not in ['js', 'css']:
                         library_type = 'js'  # default
-                    
+
                     # Check if library already exists
                     cursor.execute("SELECT id FROM global_libraries WHERE library_name = ?", (library_name,))
                     if cursor.fetchone():
                         errors.append(f'Librería "{library_name}" ya existe')
                         continue
-                    
+
                     cursor.execute('''
-                        INSERT INTO global_libraries 
+                        INSERT INTO global_libraries
                         (library_name, type, latest_safe_version, latest_version, description, vulnerability_info, source_url)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
                     ''', (
@@ -5807,28 +5841,28 @@ def import_global_libraries():
                         lib.get('source_url') or None
                     ))
                     imported_count += 1
-                    
+
                 except Exception as e:
                     errors.append(f'Error procesando "{library_name}": {str(e)}')
-        
+
         conn.commit()
         conn.close()
-        
+
         if imported_count > 0:
             flash(f'{imported_count} librerías importadas exitosamente', 'success')
-        
+
         if errors:
             error_msg = f'{len(errors)} errores encontrados: ' + '; '.join(errors[:3])
             if len(errors) > 3:
                 error_msg += f' y {len(errors) - 3} más...'
             flash(error_msg, 'warning')
-        
+
         if imported_count == 0 and not errors:
             flash('No se encontraron librerías válidas para importar', 'warning')
-            
+
     except Exception as e:
         flash(f'Error al importar catálogo: {str(e)}', 'error')
-    
+
     return redirect(url_for('global_libraries'))
 
 # Statistics Export/Import Routes
@@ -5837,52 +5871,52 @@ def import_global_libraries():
 def export_statistics(format):
     try:
         conn = get_db_connection()
-        
+
         # Get all scans first
         all_scans = conn.execute('''
-            SELECT 
+            SELECT
                 s.id,
                 s.url,
                 s.title,
                 s.scan_date,
                 s.status_code,
-                c.name as client_name,
+                c.name as project_name,
                 COUNT(DISTINCT l2.id) as library_count,
                 COUNT(DISTINCT f.id) as file_count
             FROM scans s
-            LEFT JOIN clients c ON s.client_id = c.id
+            LEFT JOIN projects c ON s.project_id = c.id
             LEFT JOIN libraries l2 ON s.id = l2.scan_id
             LEFT JOIN file_urls f ON s.id = f.scan_id
             GROUP BY s.id
             ORDER BY s.scan_date DESC
         ''').fetchall()
-        
+
         # Filter vulnerable scans using has_vulnerability function
         vulnerable_scans = []
         for scan in all_scans:
             scan_dict = dict(scan)
-            
+
             # Get libraries for this scan to count vulnerabilities correctly
             libraries = conn.execute('''
                 SELECT l.version, COALESCE(l.latest_safe_version, gl.latest_safe_version) as safe_version
                 FROM libraries l
                 LEFT JOIN global_libraries gl ON l.library_name = gl.library_name AND l.type = gl.type
-                WHERE l.scan_id = ? 
-                AND COALESCE(l.latest_safe_version, gl.latest_safe_version) IS NOT NULL 
-                AND l.version IS NOT NULL 
+                WHERE l.scan_id = ?
+                AND COALESCE(l.latest_safe_version, gl.latest_safe_version) IS NOT NULL
+                AND l.version IS NOT NULL
                 AND l.version != ''
             ''', (scan['id'],)).fetchall()
-            
-            vulnerability_count = sum(1 for lib in libraries 
+
+            vulnerability_count = sum(1 for lib in libraries
                                     if has_vulnerability(lib['version'], lib['safe_version']))
-            
+
             if vulnerability_count > 0:
                 scan_dict['vulnerability_count'] = vulnerability_count
                 vulnerable_scans.append(scan_dict)
-        
+
         # Also get detailed vulnerability info for each scan
         vulnerabilities = conn.execute('''
-            SELECT 
+            SELECT
                 l.scan_id,
                 l.library_name,
                 l.version,
@@ -5890,41 +5924,41 @@ def export_statistics(format):
                 l.description,
                 l.source_url
             FROM libraries l
-            WHERE l.version IS NOT NULL 
-                AND l.latest_safe_version IS NOT NULL 
+            WHERE l.version IS NOT NULL
+                AND l.latest_safe_version IS NOT NULL
                 AND l.version != l.latest_safe_version
                 AND l.version < l.latest_safe_version
             ORDER BY l.scan_id, l.library_name
         ''').fetchall()
-        
+
         conn.close()
-        
+
         if format == 'csv':
             # Create CSV response
             output = io.StringIO()
             writer = csv.writer(output)
-            
+
             # Write header for scans
-            writer.writerow(['URL', 'Título', 'Cliente', 'Fecha Escaneo', 'Estado', 'Vulnerabilidades', 'Total Librerías', 'Total Archivos'])
-            
+            writer.writerow(['URL', 'Título', 'Proyecto', 'Fecha Escaneo', 'Estado', 'Vulnerabilidades', 'Total Librerías', 'Total Archivos'])
+
             # Write scan data
             for scan in vulnerable_scans:
                 writer.writerow([
                     scan['url'],
                     scan['title'] or '',
-                    scan['client_name'] or 'Sin cliente',
+                    scan['project_name'] or 'Sin proyecto',
                     scan['scan_date'],
                     scan['status_code'],
                     scan['vulnerability_count'],
                     scan['library_count'],
                     scan['file_count']
                 ])
-            
+
             # Add separator
             writer.writerow([])
             writer.writerow(['--- Detalle de Vulnerabilidades ---'])
             writer.writerow(['ID Escaneo', 'Librería', 'Versión Actual', 'Versión Segura', 'Descripción', 'URL Fuente'])
-            
+
             # Write vulnerability details
             for vuln in vulnerabilities:
                 writer.writerow([
@@ -5935,13 +5969,13 @@ def export_statistics(format):
                     vuln['description'] or '',
                     vuln['source_url'] or ''
                 ])
-            
+
             # Prepare response
             output.seek(0)
             response = Response(output.getvalue(), mimetype='text/csv')
             response.headers['Content-Disposition'] = f'attachment; filename=estadisticas_vulnerabilidades_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
             return response
-            
+
         elif format == 'json':
             # Prepare JSON data
             data = {
@@ -5953,7 +5987,7 @@ def export_statistics(format):
                 'vulnerable_scans': [dict(scan) for scan in vulnerable_scans],
                 'vulnerability_details': []
             }
-            
+
             # Group vulnerabilities by scan_id
             scan_vulns = {}
             for vuln in vulnerabilities:
@@ -5967,18 +6001,18 @@ def export_statistics(format):
                     'description': vuln['description'],
                     'source_url': vuln['source_url']
                 })
-            
+
             data['vulnerability_details'] = scan_vulns
-            
+
             # Return JSON response
             response = Response(json.dumps(data, indent=2, ensure_ascii=False), mimetype='application/json')
             response.headers['Content-Disposition'] = f'attachment; filename=estadisticas_vulnerabilidades_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
             return response
-            
+
         else:
             flash('Formato de exportación no válido', 'error')
             return redirect(url_for('statistics'))
-            
+
     except Exception as e:
         flash(f'Error al exportar estadísticas: {str(e)}', 'error')
         return redirect(url_for('statistics'))
@@ -5990,33 +6024,33 @@ def import_statistics():
         if 'file' not in request.files:
             flash('No se seleccionó ningún archivo', 'error')
             return redirect(url_for('statistics'))
-        
+
         file = request.files['file']
         if file.filename == '':
             flash('No se seleccionó ningún archivo', 'error')
             return redirect(url_for('statistics'))
-        
+
         if not file.filename.lower().endswith(('.csv', '.json')):
             flash('Solo se permiten archivos CSV o JSON', 'error')
             return redirect(url_for('statistics'))
-        
+
         conn = get_db_connection()
         cursor = conn.cursor()
         imported_scans = 0
         updated_scans = 0
         errors = []
-        
+
         if file.filename.lower().endswith('.json'):
             # Parse JSON file
             content = file.read().decode('utf-8')
             data = json.loads(content)
-            
+
             if 'vulnerable_scans' in data:
                 for scan_data in data['vulnerable_scans']:
                     try:
                         # Check if scan already exists
                         existing = cursor.execute('SELECT id FROM scans WHERE url = ?', (scan_data['url'],)).fetchone()
-                        
+
                         if existing:
                             # Update existing scan
                             scan_id = existing['id']
@@ -6034,7 +6068,7 @@ def import_statistics():
                             ))
                             scan_id = cursor.lastrowid
                             imported_scans += 1
-                        
+
                         # Import vulnerability details if available
                         if 'vulnerability_details' in data and str(scan_id) in data['vulnerability_details']:
                             for vuln in data['vulnerability_details'][str(scan_id)]:
@@ -6043,7 +6077,7 @@ def import_statistics():
                                     'SELECT id FROM libraries WHERE scan_id = ? AND library_name = ?',
                                     (scan_id, vuln['library_name'])
                                 ).fetchone()
-                                
+
                                 if not existing_lib:
                                     cursor.execute('''
                                         INSERT INTO libraries (scan_id, library_name, version, latest_safe_version, description, source_url)
@@ -6056,28 +6090,28 @@ def import_statistics():
                                         vuln.get('description'),
                                         vuln.get('source_url')
                                     ))
-                                    
+
                     except Exception as e:
                         errors.append(f'Error procesando escaneo "{scan_data.get("url", "unknown")}": {str(e)}')
-        
+
         elif file.filename.lower().endswith('.csv'):
             # Parse CSV file
             content = file.read().decode('utf-8')
             csv_reader = csv.DictReader(io.StringIO(content))
-            
+
             for row in csv_reader:
                 try:
                     # Skip separator rows
                     if '---' in str(row.get('URL', '')):
                         continue
-                        
+
                     url = row.get('URL', '').strip()
                     if not url or url == 'ID Escaneo':  # Skip vulnerability detail headers
                         continue
-                    
+
                     # Check if scan already exists
                     existing = cursor.execute('SELECT id FROM scans WHERE url = ?', (url,)).fetchone()
-                    
+
                     if existing:
                         scan_id = existing['id']
                         updated_scans += 1
@@ -6093,33 +6127,33 @@ def import_statistics():
                             int(row.get('Estado', 200)) if row.get('Estado', '').isdigit() else 200
                         ))
                         imported_scans += 1
-                        
+
                 except Exception as e:
                     errors.append(f'Error procesando fila CSV: {str(e)}')
-        
+
         conn.commit()
         conn.close()
-        
+
         # Prepare success message
         if imported_scans > 0:
             flash(f'{imported_scans} escaneos importados exitosamente', 'success')
         if updated_scans > 0:
             flash(f'{updated_scans} escaneos actualizados', 'info')
-        
+
         if errors:
             error_msg = f'{len(errors)} errores encontrados: ' + '; '.join(errors[:3])
             if len(errors) > 3:
                 error_msg += f' y {len(errors) - 3} más...'
             flash(error_msg, 'warning')
-        
+
         if imported_scans == 0 and updated_scans == 0 and not errors:
             flash('No se encontraron datos válidos para importar', 'warning')
-            
+
     except json.JSONDecodeError as e:
         flash(f'Error al parsear archivo JSON: {str(e)}', 'error')
     except Exception as e:
         flash(f'Error al importar estadísticas: {str(e)}', 'error')
-    
+
     return redirect(url_for('statistics'))
 
 if __name__ == '__main__':
