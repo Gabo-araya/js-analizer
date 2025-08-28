@@ -22,6 +22,26 @@ from openpyxl.styles import Font, Alignment, PatternFill
 import pandas as pd
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
+from security_config import rate_limit, log_security_event
+
+# Import Fase 2 enhanced detection systems
+try:
+    from library_signatures import detect_libraries_by_content, get_library_info
+    CONTENT_DETECTION_AVAILABLE = True
+    print("🎯 Dashboard: Content-based library detection enabled")
+except ImportError:
+    print("⚠️ Dashboard: Content-based detection not available")
+    CONTENT_DETECTION_AVAILABLE = False
+
+
+try:
+    from cdn_analyzer import analyze_cdn_url, get_cdn_recommendations, cdn_analyzer
+    CDN_ANALYZER_AVAILABLE = True
+    supported_cdns = len(cdn_analyzer.get_supported_cdns())
+    print(f"🌐 Dashboard: CDN analyzer enabled ({supported_cdns} CDNs)")
+except ImportError:
+    print("⚠️ Dashboard: CDN analyzer not available")
+    CDN_ANALYZER_AVAILABLE = False
 
 app = Flask(__name__)
 csrf = CSRFProtect(app)
@@ -91,44 +111,101 @@ def truncate_left(value, length=40):
 
 def analyze_security_headers(headers):
     """
-    Analyzes HTTP headers for security best practices
-    Returns dict with present headers, missing headers, and recommendations
+    Analyzes HTTP headers for security best practices (Enhanced 2024)
+    Returns dict with present headers, missing headers, warnings, and weighted security score
     """
+    # Headers clasificados por prioridad de seguridad
     security_headers = {
+        # CRÍTICOS (40% del score)
         'strict-transport-security': {
             'name': 'Strict-Transport-Security',
             'description': 'Enforces HTTPS connections',
-            'recommendation': 'max-age=31536000; includeSubDomains'
+            'recommendation': 'max-age=31536000; includeSubDomains; preload',
+            'priority': 'critical',
+            'weight': 20
+        },
+        'content-security-policy': {
+            'name': 'Content-Security-Policy',
+            'description': 'Controls resource loading and prevents XSS',
+            'recommendation': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'",
+            'priority': 'critical',
+            'weight': 20
+        },
+        
+        # ALTOS (30% del score)
+        'x-frame-options': {
+            'name': 'X-Frame-Options',
+            'description': 'Prevents clickjacking attacks',
+            'recommendation': 'DENY or SAMEORIGIN',
+            'priority': 'high',
+            'weight': 10
         },
         'x-content-type-options': {
             'name': 'X-Content-Type-Options',
             'description': 'Prevents MIME type sniffing',
-            'recommendation': 'nosniff'
+            'recommendation': 'nosniff',
+            'priority': 'high',
+            'weight': 10
         },
-        'x-frame-options': {
-            'name': 'X-Frame-Options',
-            'description': 'Prevents clickjacking attacks',
-            'recommendation': 'DENY or SAMEORIGIN'
+        'cross-origin-embedder-policy': {
+            'name': 'Cross-Origin-Embedder-Policy',
+            'description': 'Controls cross-origin resource embedding',
+            'recommendation': 'require-corp',
+            'priority': 'high',
+            'weight': 5
         },
-        'x-xss-protection': {
-            'name': 'X-XSS-Protection',
-            'description': 'Enables XSS filtering',
-            'recommendation': '1; mode=block'
+        'cross-origin-opener-policy': {
+            'name': 'Cross-Origin-Opener-Policy',
+            'description': 'Isolates browsing context from cross-origin windows',
+            'recommendation': 'same-origin',
+            'priority': 'high',
+            'weight': 5
         },
-        'content-security-policy': {
-            'name': 'Content-Security-Policy',
-            'description': 'Controls resource loading',
-            'recommendation': "default-src 'self'"
-        },
+        
+        # MEDIOS (20% del score)
         'referrer-policy': {
             'name': 'Referrer-Policy',
-            'description': 'Controls referrer information',
-            'recommendation': 'strict-origin-when-cross-origin'
+            'description': 'Controls referrer information leakage',
+            'recommendation': 'strict-origin-when-cross-origin',
+            'priority': 'medium',
+            'weight': 7
         },
         'permissions-policy': {
             'name': 'Permissions-Policy',
-            'description': 'Controls browser features',
-            'recommendation': 'geolocation=(), microphone=(), camera=()'
+            'description': 'Controls browser API access',
+            'recommendation': 'geolocation=(), microphone=(), camera=()',
+            'priority': 'medium',
+            'weight': 7
+        },
+        'cross-origin-resource-policy': {
+            'name': 'Cross-Origin-Resource-Policy',
+            'description': 'Controls cross-origin resource sharing',
+            'recommendation': 'cross-origin',
+            'priority': 'medium',
+            'weight': 6
+        },
+        
+        # BAJOS (10% del score)
+        'x-xss-protection': {
+            'name': 'X-XSS-Protection',
+            'description': 'Legacy XSS filtering (deprecated, use CSP)',
+            'recommendation': '0 (deprecated, use CSP)',
+            'priority': 'low',
+            'weight': 3
+        },
+        'expect-ct': {
+            'name': 'Expect-CT',
+            'description': 'Certificate Transparency monitoring',
+            'recommendation': 'max-age=86400, enforce',
+            'priority': 'low',
+            'weight': 4
+        },
+        'origin-agent-cluster': {
+            'name': 'Origin-Agent-Cluster',
+            'description': 'Requests origin-keyed agent clustering',
+            'recommendation': '?1',
+            'priority': 'low',
+            'weight': 3
         }
     }
 
@@ -138,6 +215,8 @@ def analyze_security_headers(headers):
     present_headers = []
     missing_headers = []
     warnings = []
+    total_weight = sum(header_info['weight'] for header_info in security_headers.values())
+    achieved_weight = 0
 
     for header_key, header_info in security_headers.items():
         if header_key in headers_lower:
@@ -145,27 +224,140 @@ def analyze_security_headers(headers):
             present_headers.append({
                 'name': header_info['name'],
                 'value': header_value,
-                'description': header_info['description']
+                'description': header_info['description'],
+                'priority': header_info['priority']
             })
+            achieved_weight += header_info['weight']
 
-            # Check for common misconfigurations
-            if header_key == 'x-xss-protection' and header_value == '0':
-                warnings.append(f"X-XSS-Protection is disabled. Consider enabling it.")
-            elif header_key == 'x-frame-options' and header_value.upper() == 'ALLOWALL':
-                warnings.append(f"X-Frame-Options allows all frames. Consider using DENY or SAMEORIGIN.")
+            # Validación inteligente por header específico
+            header_warnings = _validate_header_value(header_key, header_value, header_info)
+            warnings.extend(header_warnings)
+            
         else:
             missing_headers.append({
                 'name': header_info['name'],
                 'description': header_info['description'],
-                'recommendation': header_info['recommendation']
+                'recommendation': header_info['recommendation'],
+                'priority': header_info['priority']
             })
+
+    # Calcular puntuación ponderada por prioridad
+    weighted_score = round((achieved_weight / total_weight) * 100) if total_weight > 0 else 0
 
     return {
         'present': present_headers,
         'missing': missing_headers,
         'warnings': warnings,
-        'security_score': round((len(present_headers) / len(security_headers)) * 100)
+        'security_score': weighted_score,
+        'priority_breakdown': _calculate_priority_breakdown(present_headers, security_headers)
     }
+
+
+def _validate_header_value(header_key, header_value, header_info):
+    """
+    Validación inteligente de valores de headers de seguridad
+    """
+    warnings = []
+    
+    if header_key == 'content-security-policy':
+        # Validación CSP inteligente
+        csp_warnings = _validate_csp_policy(header_value)
+        warnings.extend(csp_warnings)
+        
+    elif header_key == 'strict-transport-security':
+        # Validar HSTS
+        if 'max-age' not in header_value.lower():
+            warnings.append("HSTS header missing max-age directive")
+        elif 'max-age=0' in header_value.lower():
+            warnings.append("HSTS disabled with max-age=0")
+        elif 'includesubdomains' not in header_value.lower():
+            warnings.append("HSTS missing includeSubDomains for better security")
+            
+    elif header_key == 'x-xss-protection':
+        # X-XSS-Protection es legacy y puede causar vulnerabilidades
+        if header_value != '0':
+            warnings.append("X-XSS-Protection is deprecated and may introduce vulnerabilities. Set to '0' and use CSP instead")
+            
+    elif header_key == 'x-frame-options':
+        if header_value.upper() == 'ALLOWALL':
+            warnings.append("X-Frame-Options set to ALLOWALL - vulnerable to clickjacking")
+        elif header_value.upper() not in ['DENY', 'SAMEORIGIN']:
+            warnings.append(f"X-Frame-Options value '{header_value}' may not be secure")
+            
+    elif header_key == 'referrer-policy':
+        unsafe_policies = ['unsafe-url', 'no-referrer-when-downgrade', 'origin-when-cross-origin']
+        if header_value.lower() in unsafe_policies:
+            warnings.append(f"Referrer-Policy '{header_value}' may leak sensitive information")
+    
+    return warnings
+
+
+def _validate_csp_policy(csp_value):
+    """
+    Validación inteligente de Content Security Policy
+    """
+    warnings = []
+    csp_lower = csp_value.lower()
+    
+    # Detectar configuraciones peligrosas
+    if "'unsafe-inline'" in csp_lower:
+        warnings.append("CSP allows 'unsafe-inline' - vulnerable to XSS attacks")
+    
+    if "'unsafe-eval'" in csp_lower:
+        warnings.append("CSP allows 'unsafe-eval' - vulnerable to code injection")
+        
+    if "'unsafe-hashes'" in csp_lower:
+        warnings.append("CSP allows 'unsafe-hashes' - potential security risk")
+    
+    if "* " in csp_value or csp_value.startswith("*") or " *" in csp_value:
+        warnings.append("CSP uses wildcard (*) - allows any domain")
+        
+    # Detectar protocolos inseguros
+    if "http://" in csp_lower and "https://" not in csp_lower:
+        warnings.append("CSP allows HTTP resources - should prefer HTTPS")
+        
+    if "data:" in csp_lower:
+        warnings.append("CSP allows data: URIs - potential for data exfiltration")
+        
+    # Verificar directivas críticas
+    if "default-src" not in csp_lower and "script-src" not in csp_lower:
+        warnings.append("CSP missing script-src directive - scripts may load from anywhere")
+        
+    if "object-src" not in csp_lower:
+        warnings.append("CSP missing object-src directive - consider adding 'object-src 'none''")
+    
+    # Detectar CDNs conocidos (esto es informativo, no warning)
+    known_cdns = ['cdnjs.cloudflare.com', 'unpkg.com', 'jsdelivr.net', 'ajax.googleapis.com']
+    for cdn in known_cdns:
+        if cdn in csp_lower:
+            # No es warning, solo informativo - los CDNs conocidos son generalmente seguros
+            pass
+    
+    return warnings
+
+
+def _calculate_priority_breakdown(present_headers, security_headers):
+    """
+    Calcula breakdown por prioridad para mostrar en el dashboard
+    """
+    priority_stats = {
+        'critical': {'present': 0, 'total': 0},
+        'high': {'present': 0, 'total': 0}, 
+        'medium': {'present': 0, 'total': 0},
+        'low': {'present': 0, 'total': 0}
+    }
+    
+    # Contar totales por prioridad
+    for header_info in security_headers.values():
+        priority = header_info['priority']
+        priority_stats[priority]['total'] += 1
+    
+    # Contar presentes por prioridad
+    for header in present_headers:
+        priority = header['priority']
+        priority_stats[priority]['present'] += 1
+    
+    return priority_stats
 
 def init_database():
     """Initialize database tables if they don't exist"""
@@ -925,6 +1117,7 @@ def log_action_async(action_type, target_table, get_target_id=None, get_descript
     return decorator
 
 @app.route('/login', methods=['GET', 'POST'])
+@rate_limit('login', 'Demasiados intentos de login. Espera un minuto antes de intentar nuevamente.')
 def login():
     if request.method == 'POST':
         username = request.form['username']
@@ -1684,9 +1877,17 @@ def delete_scan(scan_id):
         search = request.form.get('return_search', '')
         page = request.form.get('return_page', '')
 
-        redirect_params = {}
+        # Check if we need to redirect to a specific project page
         if project_id:
-            redirect_params['project_id'] = project_id
+            redirect_params = {'project_id': project_id}
+            if search:
+                redirect_params['search'] = search
+            if page:
+                redirect_params['page'] = page
+            return redirect(url_for('project_detail', **redirect_params))
+        
+        # Otherwise redirect to index with preserved parameters
+        redirect_params = {}
         if search:
             redirect_params['search'] = search
         if page:
@@ -2543,6 +2744,7 @@ def enhanced_report(scan_id):
 
 @app.route('/export/pdf/<int:scan_id>')
 @login_required
+@rate_limit('export')
 def export_pdf(scan_id):
     """Generate enhanced PDF report with professional styling"""
     try:
@@ -2682,6 +2884,7 @@ def create_basic_pdf_report(data):
 
 @app.route('/export/csv/<int:scan_id>')
 @login_required
+@rate_limit('export')
 def export_csv(scan_id):
     try:
         data = get_scan_export_data(scan_id)
@@ -2800,6 +3003,7 @@ def export_csv(scan_id):
 
 @app.route('/export/excel/<int:scan_id>')
 @login_required
+@rate_limit('export')
 def export_excel(scan_id):
     try:
         data = get_scan_export_data(scan_id)
@@ -3275,10 +3479,48 @@ def scan_file_for_versions(file_url, file_type, scan_id):
     except Exception as e:
         print(f"  ✗ Error scanning {file_url}: {str(e)}")
 
+    # 🚀 FASE 2: DETECCIÓN AVANZADA POR CONTENIDO
+    if CONTENT_DETECTION_AVAILABLE and 'content' in locals() and content and file_url not in first_library_per_source:
+        try:
+            content_detections = detect_libraries_by_content(content, file_type)
+            if content_detections:
+                # Tomar la detección con mayor confianza
+                best_detection = max(content_detections, key=lambda x: x['confidence'])
+                
+                first_library_per_source[file_url] = {
+                    'name': best_detection['library_name'].title(),
+                    'version': best_detection.get('version', 'unknown'),
+                    'type': file_type,
+                    'source': file_url,
+                    'detection_method': 'content_analysis',
+                    'confidence': best_detection.get('confidence', 0.8),
+                    'analysis_details': best_detection.get('details', []),
+                    'matches': best_detection.get('matches', 0)
+                }
+                
+                # Agregar versión string si se detectó versión
+                version = best_detection.get('version', 'unknown')
+                if version != 'unknown' and file_url not in first_version_string_per_source:
+                    first_version_string_per_source[file_url] = {
+                        'scan_id': scan_id,
+                        'file_url': file_url,
+                        'file_type': file_type,
+                        'line_number': 1,  # Línea estimada
+                        'line_content': f'Library detected: {best_detection["library_name"]} v{version}',
+                        'version_keyword': f'{best_detection["library_name"]}_content_analysis'
+                    }
+                
+                print(f"  🎯 Content analysis detected: {best_detection['library_name']} v{version} (confidence: {best_detection['confidence']:.1f}, matches: {best_detection.get('matches', 0)})")
+                
+        except Exception as e:
+            print(f"  ⚠️ Error in content analysis for {file_url}: {str(e)}")
+
     # Convertir diccionarios a listas - solo UNA entrada por archivo fuente
     version_strings = list(first_version_string_per_source.values())
     detected_libraries = list(first_library_per_source.values())
     return version_strings, detected_libraries
+
+
 
 
 def extract_library_name_from_context(line, file_url, version):
@@ -3609,17 +3851,47 @@ def analyze_single_url(url, project_id=None):
 
         all_libraries = js_libraries + css_libraries
 
-        # Store libraries (only if source_url is unique)
+        # 🚀 FASE 2: Store libraries with vulnerability and CDN analysis
+        cdn_libraries = []
+        outdated_cdn_count = 0
+        
         for lib in all_libraries:
             source_url = lib.get('source')
             if not library_source_exists(cursor, scan_id, source_url):
+                
+                
+                # 🌐 ANÁLISIS CDN 
+                cdn_analysis = None
+                if CDN_ANALYZER_AVAILABLE and source_url:
+                    cdn_analysis = analyze_cdn_url(source_url)
+                    if cdn_analysis:
+                        cdn_libraries.append(cdn_analysis)
+                        if cdn_analysis.get('is_outdated', False):
+                            outdated_cdn_count += 1
+                
                 cursor.execute('''
                 INSERT INTO libraries (scan_id, library_name, version, type, source_url)
                 VALUES (?, ?, ?, ?, ?)
                 ''', (scan_id, lib['name'], lib['version'], lib['type'], source_url))
-                print(f"  → Stored library: {lib['name']} from {source_url or 'No source'}")
+                
+                # Log con información de CDN
+                cdn_indicator = ""
+                
+                if cdn_analysis:
+                    if cdn_analysis.get('is_outdated', False):
+                        cdn_indicator = f" 📦 {cdn_analysis.get('cdn_name', 'Unknown')} (OUTDATED)"
+                    else:
+                        cdn_indicator = f" 📦 {cdn_analysis.get('cdn_name', 'Unknown')}"
+                
+                print(f"  → Stored library: {lib['name']} v{lib['version']}{cdn_indicator}")
             else:
                 print(f"  → Skipped duplicate library: {lib['name']} (source already exists: {source_url})")
+        
+        # 🌐 RESUMEN ANÁLISIS CDN
+        if CDN_ANALYZER_AVAILABLE and cdn_libraries:
+            print(f"  🌐 CDN Analysis: {len(cdn_libraries)} libraries from CDN")
+            if outdated_cdn_count > 0:
+                print(f"    ⚠️ {outdated_cdn_count} outdated CDN libraries detected")
 
         # Get all JS and CSS files
         js_css_files = get_all_js_css_files(soup, url)
@@ -3691,6 +3963,7 @@ def analyze_single_url(url, project_id=None):
 
 @app.route('/analyze-url', methods=['POST'])
 @login_required
+@rate_limit('analysis', 'Límite de análisis alcanzado. Espera un momento antes de analizar otra URL.')
 def analyze_url_route():
     url = request.form.get('url', '').strip()
     project_id = request.form.get('project_id', '').strip()
@@ -3723,6 +3996,7 @@ def analyze_url_route():
 
 @app.route('/batch-analyze', methods=['POST'])
 @login_required
+@rate_limit('batch_analysis', 'Límite de análisis en lotes alcanzado. Espera un momento.')
 def batch_analyze_route():
     urls_text = request.form.get('urls', '').strip()
     project_id = request.form.get('project_id', '').strip()
@@ -3836,6 +4110,7 @@ def batch_analyze_route():
         flash(f'Análisis masivo fallido: {str(e)}', 'error')
 
     return redirect(url_for('index'))
+
 
 # Global Libraries Management Routes
 @app.route('/global-libraries')

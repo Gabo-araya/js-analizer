@@ -8,8 +8,9 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 from datetime import datetime
 import time
+from typing import Dict, List, Optional, Tuple
 
-# Import our advanced library detector
+# Import our advanced library detectors
 try:
     from library_detector import LibraryDetector, detect_libraries_advanced
     ADVANCED_DETECTION_AVAILABLE = True
@@ -17,6 +18,26 @@ try:
 except ImportError:
     print("⚠️ Advanced library detector not available, using basic detection")
     ADVANCED_DETECTION_AVAILABLE = False
+
+# Import enhanced content-based detection
+try:
+    from library_signatures import detect_libraries_by_content, get_library_info
+    CONTENT_DETECTION_AVAILABLE = True
+    print("✅ Content-based library detection enabled")
+except ImportError:
+    print("⚠️ Content-based detection not available")
+    CONTENT_DETECTION_AVAILABLE = False
+
+
+# Import CDN analyzer
+try:
+    from cdn_analyzer import analyze_cdn_url, get_cdn_recommendations, cdn_analyzer
+    CDN_ANALYZER_AVAILABLE = True
+    print("✅ CDN dependency analyzer enabled")
+    print(f"🌐 CDN Analyzer supports {len(cdn_analyzer.get_supported_cdns())} CDN providers")
+except ImportError:
+    print("⚠️ CDN analyzer not available")
+    CDN_ANALYZER_AVAILABLE = False
 
 class LibraryAnalyzer:
     def __init__(self, db_path="analysis.db"):
@@ -590,6 +611,16 @@ class LibraryAnalyzer:
             if ntg_library:
                 first_library_per_source[file_url] = ntg_library
 
+        # 🚀 NUEVA DETECCIÓN POR CONTENIDO: Análisis inteligente del código fuente
+        if CONTENT_DETECTION_AVAILABLE and content and file_url not in first_library_per_source:
+            content_detections = self._detect_libraries_by_content_analysis(
+                content, file_type, file_url, scan_id, first_version_string_per_source
+            )
+            if content_detections:
+                # Tomar la detección con mayor confianza
+                best_detection = max(content_detections, key=lambda x: x['confidence'])
+                first_library_per_source[file_url] = best_detection
+
         # Convertir diccionarios a listas - solo UNA entrada por archivo fuente
         version_strings = list(first_version_string_per_source.values())
         detected_libraries = list(first_library_per_source.values())
@@ -783,18 +814,28 @@ class LibraryAnalyzer:
             if ADVANCED_DETECTION_AVAILABLE:
                 all_libraries = self._enhance_with_contextual_detection(all_libraries, url, soup)
 
-            # Store libraries (only if source_url is unique)
+            # Store libraries (only if source_url is unique) with vulnerability analysis
             for lib in all_libraries:
                 source_url = lib.get('source')
                 if not self.library_source_exists(cursor, scan_id, source_url):
+                    
                     cursor.execute('''
                     INSERT INTO libraries (scan_id, library_name, version, type, source_url, global_library_id)
                     VALUES (?, ?, ?, ?, ?, ?)
                     ''', (scan_id, lib['name'], lib['version'], lib['type'], source_url,
                           lib.get('global_library_id')))
-                    print(f"  → Stored library: {lib['name']} from {source_url or 'No source'}")
+                    
+                    print(f"  → Stored library: {lib['name']} v{lib['version']}")
                 else:
                     print(f"  → Skipped duplicate library: {lib['name']} (source already exists: {source_url})")
+
+            # 🌐 ANÁLISIS CDN: Detectar dependencias de CDN y recomendaciones
+            if CDN_ANALYZER_AVAILABLE:
+                cdn_analysis = self._analyze_cdn_dependencies(all_libraries)
+                if cdn_analysis['cdn_libraries']:
+                    print(f"  🌐 CDN Analysis: {len(cdn_analysis['cdn_libraries'])} libraries from CDN")
+                    if cdn_analysis['outdated_count'] > 0:
+                        print(f"    ⚠️ {cdn_analysis['outdated_count']} outdated CDN libraries detected")
 
             # Get all JavaScript files
             js_files = self.get_all_js_files(soup, url)
@@ -979,6 +1020,98 @@ class LibraryAnalyzer:
         except Exception as e:
             print(f"  ✗ Error in NTG post-processing for {file_url}: {str(e)}")
             return None
+
+    def _detect_libraries_by_content_analysis(self, content, file_type, file_url, scan_id, version_strings_dict):
+        """
+        🚀 Nueva función: Detecta librerías mediante análisis inteligente del contenido
+        Utiliza firmas de código específicas para identificar librerías con alta precisión
+        """
+        try:
+            # Usar el nuevo motor de detección por contenido
+            detections = detect_libraries_by_content(content, file_type)
+            
+            processed_detections = []
+            for detection in detections:
+                library_name = detection['library_name']
+                version = detection.get('version', 'unknown')
+                confidence = detection.get('confidence', 0.8)
+                details = detection.get('details', [])
+                
+                # Crear entrada de librería detectada
+                processed_detection = {
+                    'name': detection['library_name'].title(),
+                    'version': version,
+                    'type': file_type,
+                    'source': file_url,
+                    'detection_method': 'content_analysis',
+                    'confidence': confidence,
+                    'analysis_details': details,
+                    'matches': detection.get('matches', 0)
+                }
+                
+                # Agregar versión string si se detectó versión
+                if version != 'unknown' and file_url not in version_strings_dict:
+                    version_strings_dict[file_url] = {
+                        'scan_id': scan_id,
+                        'file_url': file_url,
+                        'file_type': file_type,
+                        'line_number': 1,  # Línea estimada
+                        'line_content': f'Library detected: {library_name} v{version}',
+                        'version_keyword': f'{library_name}_content_analysis'
+                    }
+                
+                processed_detections.append(processed_detection)
+                
+                print(f"  🎯 Content analysis detected: {library_name} v{version} (confidence: {confidence:.1f}, matches: {detection.get('matches', 0)})")
+            
+            return processed_detections
+            
+        except Exception as e:
+            print(f"  ⚠️ Error in content analysis for {file_url}: {str(e)}")
+            return []
+
+
+    def _analyze_cdn_dependencies(self, libraries: List[Dict]) -> Dict:
+        """
+        🌐 Analiza dependencias de CDN y genera recomendaciones
+        """
+        if not CDN_ANALYZER_AVAILABLE:
+            return {'cdn_libraries': [], 'outdated_count': 0, 'recommendations': []}
+        
+        try:
+            cdn_libraries = []
+            outdated_count = 0
+            
+            for lib in libraries:
+                source_url = lib.get('source', '')
+                if source_url:
+                    cdn_analysis = analyze_cdn_url(source_url)
+                    if cdn_analysis:
+                        cdn_libraries.append({
+                            **cdn_analysis,
+                            'library_info': lib
+                        })
+                        
+                        if cdn_analysis.get('is_outdated', False):
+                            outdated_count += 1
+                            print(f"    📦 {lib['name']} v{lib['version']} → v{cdn_analysis.get('latest_version', 'unknown')} available")
+            
+            # Generar recomendaciones
+            recommendations = []
+            if cdn_libraries:
+                stats = get_cdn_recommendations(cdn_libraries)
+                recommendations = stats.get('recommendations', [])
+            
+            return {
+                'cdn_libraries': cdn_libraries,
+                'outdated_count': outdated_count,
+                'recommendations': recommendations,
+                'total_cdn_usage': len(cdn_libraries)
+            }
+            
+        except Exception as e:
+            print(f"  ⚠️ Error in CDN analysis: {str(e)}")
+            return {'cdn_libraries': [], 'outdated_count': 0, 'recommendations': []}
 
 def main():
     analyzer = LibraryAnalyzer()

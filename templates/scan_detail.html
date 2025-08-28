@@ -1687,6 +1687,16 @@
                         id="delete_scan_csrf"
                         value="{{ csrf_token() }}"
                     />
+                    <!-- Preserve return parameters -->
+                    {% if scan.project_id %}
+                    <input type="hidden" name="return_project_id" value="{{ scan.project_id }}" />
+                    {% endif %}
+                    {% if request.args.get('search') %}
+                    <input type="hidden" name="return_search" value="{{ request.args.get('search') }}" />
+                    {% endif %}
+                    {% if request.args.get('page') %}
+                    <input type="hidden" name="return_page" value="{{ request.args.get('page') }}" />
+                    {% endif %}
                     <div class="modal-body">
                         <p>
                             ¿Estás seguro de que quieres eliminar el escaneo

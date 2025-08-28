@@ -121,3 +121,124 @@ def log_security_event(event_type, details, ip_address=None):
     
     if event_type in SECURITY_EVENTS:
         logging.warning(f"SECURITY_EVENT: {event_type} - {details} - IP: {ip_address} - Time: {datetime.datetime.now()}")
+
+
+# Rate Limiting Implementation
+import time
+from collections import defaultdict, deque
+from functools import wraps
+from flask import request, jsonify, flash, redirect, url_for
+
+# In-memory rate limiting store (for production, use Redis)
+rate_limit_store = defaultdict(lambda: deque())
+
+def get_client_ip():
+    """
+    Get client IP address, considering proxy headers
+    """
+    if request.environ.get('HTTP_X_FORWARDED_FOR'):
+        return request.environ['HTTP_X_FORWARDED_FOR'].split(',')[0].strip()
+    elif request.environ.get('HTTP_X_REAL_IP'):
+        return request.environ['HTTP_X_REAL_IP']
+    else:
+        return request.environ.get('REMOTE_ADDR', 'unknown')
+
+def parse_rate_limit(rate_string):
+    """
+    Parse rate limit string like "5 per minute" -> (5, 60)
+    """
+    parts = rate_string.lower().split()
+    if len(parts) != 3 or parts[1] != 'per':
+        raise ValueError(f"Invalid rate limit format: {rate_string}")
+    
+    count = int(parts[0])
+    period = parts[2]
+    
+    period_map = {
+        'second': 1,
+        'minute': 60,
+        'hour': 3600,
+        'day': 86400
+    }
+    
+    if period not in period_map:
+        raise ValueError(f"Invalid time period: {period}")
+    
+    return count, period_map[period]
+
+def rate_limit(limit_key, custom_message=None):
+    """
+    Rate limiting decorator
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if limit_key not in RATE_LIMITS:
+                return f(*args, **kwargs)
+            
+            client_ip = get_client_ip()
+            rate_key = f"{client_ip}:{limit_key}"
+            
+            try:
+                max_requests, time_window = parse_rate_limit(RATE_LIMITS[limit_key])
+            except ValueError as e:
+                # If rate limit config is invalid, allow request but log error
+                log_security_event('rate_limit_config_error', str(e), client_ip)
+                return f(*args, **kwargs)
+            
+            current_time = time.time()
+            
+            # Clean old requests outside time window
+            requests_queue = rate_limit_store[rate_key]
+            while requests_queue and requests_queue[0] <= current_time - time_window:
+                requests_queue.popleft()
+            
+            # Check if limit exceeded
+            if len(requests_queue) >= max_requests:
+                log_security_event('rate_limit_exceeded', f"Limit: {RATE_LIMITS[limit_key]}", client_ip)
+                
+                # Return appropriate response based on request type
+                message = custom_message or f"Rate limit exceeded. Maximum {max_requests} requests per {time_window} seconds."
+                
+                if request.is_json:
+                    return jsonify({'error': message, 'rate_limited': True}), 429
+                else:
+                    flash(message, 'error')
+                    return redirect(url_for('index'))
+            
+            # Add current request to queue
+            requests_queue.append(current_time)
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def get_rate_limit_status(limit_key, client_ip=None):
+    """
+    Get current rate limit status for monitoring
+    """
+    if not client_ip:
+        client_ip = get_client_ip()
+    
+    if limit_key not in RATE_LIMITS:
+        return None
+    
+    rate_key = f"{client_ip}:{limit_key}"
+    max_requests, time_window = parse_rate_limit(RATE_LIMITS[limit_key])
+    
+    current_time = time.time()
+    requests_queue = rate_limit_store[rate_key]
+    
+    # Clean old requests
+    while requests_queue and requests_queue[0] <= current_time - time_window:
+        requests_queue.popleft()
+    
+    remaining = max_requests - len(requests_queue)
+    reset_time = requests_queue[0] + time_window if requests_queue else current_time
+    
+    return {
+        'limit': max_requests,
+        'remaining': max(0, remaining),
+        'reset_time': reset_time,
+        'current_requests': len(requests_queue)
+    }

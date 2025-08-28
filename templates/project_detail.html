@@ -455,6 +455,9 @@
             </div>
             <form id="deleteScanForm" method="POST" action="">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="return_project_id" value="{{ project.id }}"/>
+                <input type="hidden" name="return_search" value="{{ request.args.get('search', '') }}"/>
+                <input type="hidden" name="return_page" value="{{ request.args.get('page', '') }}"/>
                 <div class="modal-body">
                     <p>¿Estás seguro de que quieres eliminar el escaneo para <strong id="deleteScanName">loading...</strong>?</p>
                     <p class="text-danger">Esta acción no se puede deshacer y eliminará todos los datos asociados.</p>

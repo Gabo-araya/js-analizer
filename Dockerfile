@@ -1,33 +1,26 @@
-FROM python:3.14-rc-alpine3.20
+FROM python:3.11-alpine3.19
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+# Dependencias mínimas del sistema
+RUN apk add --no-cache gcc musl-dev libffi-dev && \
+    rm -rf /var/cache/apk/*
 
-# Copy requirements first for better caching
+# Instalar dependencias Python
 COPY requirements.txt .
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copiar código de aplicación
 COPY . .
 
-# Create necessary directories and database file
-RUN mkdir -p data logs && \
-    touch analysis.db && \
-    chmod 666 analysis.db
+# Crear base de datos
+RUN touch analysis.db && chmod 666 analysis.db
 
-# Set environment variables
-ENV FLASK_APP=dashboard.py
-ENV FLASK_ENV=production
-ENV PYTHONPATH=/app
+# Variables de entorno de producción
+ENV FLASK_ENV=production \
+    FLASK_DEBUG=0 \
+    PYTHONPATH=/app
 
-# Expose port
 EXPOSE 5000
 
-# Run the application
 CMD ["python", "dashboard.py"]

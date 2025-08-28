@@ -1,24 +1,16 @@
 version: '3.8'
 
 services:
-  ntg-analyzer:
+  js-analyzer:
     build: .
-    container_name: ntg-js-analyzer
+    container_name: js-analyzer
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"
     volumes:
-      - ./data:/app/data:Z
-      - ./logs:/app/logs:Z
       - ./analysis.db:/app/analysis.db:Z
     environment:
       - FLASK_ENV=production
       - FLASK_DEBUG=0
-      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-change_this_secret_key_in_production}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-default_key_change_this}
       - TZ=America/Santiago
     restart: unless-stopped
-    networks:
-      - ntg-analyzer-network
-
-networks:
-  ntg-analyzer-network:
-    driver: bridge
