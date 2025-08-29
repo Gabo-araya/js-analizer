@@ -13,7 +13,7 @@ db.sqlite3
 
 # Playwright
 .cache/
- 
+
 # Personal
 bkup/
 .bkup/
@@ -22,3 +22,4 @@ nfo_ignore/
 .nfo.ignore/
 .claude/
 .crush/
+*.db

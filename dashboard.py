@@ -1240,11 +1240,24 @@ def index():
     # For the stats query, we need to duplicate parameters for each subquery that uses where_clause
     stats_query_params = query_params + query_params + query_params  # Three copies for the three subqueries
 
+    # Build WHERE conditions for subqueries
+    libraries_where = ""
+    files_where = ""
+    if where_conditions:
+        # Replace s. with appropriate table alias and build conditions
+        libs_conditions = []
+        files_conditions = []
+        for condition in where_conditions:
+            libs_conditions.append(condition.replace('s.', 's2.'))
+            files_conditions.append(condition.replace('s.', 's3.'))
+        libraries_where = "AND " + " AND ".join(libs_conditions)
+        files_where = "AND " + " AND ".join(files_conditions)
+    
     stats_query = f'''
         SELECT
             COUNT(DISTINCT s.id) as total_scans,
-            (SELECT COUNT(DISTINCT library_name) FROM libraries l JOIN scans s2 ON l.scan_id = s2.id WHERE l.type = 'js' {('AND ' + where_clause.replace('s.', 's2.').replace('WHERE ', '')) if 'WHERE' in where_clause else ''}) as unique_libraries,
-            (SELECT COUNT(DISTINCT fu.id) FROM file_urls fu JOIN scans s3 ON fu.scan_id = s3.id WHERE fu.file_type = 'js' {('AND ' + where_clause.replace('s.', 's3.').replace('WHERE ', '')) if 'WHERE' in where_clause else ''}) as total_files,
+            (SELECT COUNT(DISTINCT library_name) FROM libraries l JOIN scans s2 ON l.scan_id = s2.id WHERE l.type = 'js' {libraries_where}) as unique_libraries,
+            (SELECT COUNT(DISTINCT fu.id) FROM file_urls fu JOIN scans s3 ON fu.scan_id = s3.id WHERE fu.file_type = 'js' {files_where}) as total_files,
             SUM(CASE WHEN s.reviewed = 1 THEN 1 ELSE 0 END) as reviewed_scans,
             SUM(CASE WHEN s.reviewed = 0 THEN 1 ELSE 0 END) as pending_scans,
             (SELECT COUNT(*) FROM projects WHERE is_active = 1) as total_projects,
