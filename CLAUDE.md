@@ -68,8 +68,8 @@ podman-compose up --build -d
 sudo apt update && sudo apt install -y podman podman-compose sqlite3
 
 # 2. Configurar persistencia
-mkdir -p ~/ntg-js-analyzer/{data,logs,backups}
-touch ~/ntg-js-analyzer/analysis.db
+mkdir -p ~/js-analyzer/{data,logs,backups}
+touch ~/js-analyzer/analysis.db
 
 # 3. Configurar respaldos automáticos
 # Ver scripts en DEPLOYMENT.md:
@@ -100,7 +100,7 @@ rm analysis.db
 docker-compose up --build
 
 # Construir imagen independiente
-docker build -t ntg-js-analyzer .
+docker build -t js-analyzer .
 
 # Ejecutar con Podman (alternativa a Docker)
 # Ver PODMAN_MANUAL.md para instrucciones detalladas
@@ -119,7 +119,7 @@ docker build -t ntg-js-analyzer .
 ### Schema de Base de Datos (7 tablas principales)
 - **scans**: Registros principales de análisis (url, scan_date, status_code, title, headers JSON, client_id FK)
 - **libraries**: Librerías detectadas con seguimiento de vulnerabilidades (scan_id FK, library_name, version, type, source_url, description, latest_safe_version, latest_version, is_manual)
-- **version_strings**: Strings de versión en bruto encontrados en archivos (scan_id FK, file_url, file_type, line_number, line_content, version_keyword)  
+- **version_strings**: Strings de versión en bruto encontrados en archivos (scan_id FK, file_url, file_type, line_number, line_content, version_keyword)
 - **file_urls**: Todos los archivos JS/CSS descubiertos (scan_id FK, file_url, file_type, file_size, status_code)
 - **users**: Cuentas de usuario con roles (username, password_hash, role)
 - **clients**: Organizaciones cliente (name, contact_info, is_active)
@@ -151,7 +151,7 @@ docker build -t ntg-js-analyzer .
 
 **Rutas de Autenticación:**
 - `/login`: Autenticación basada en sesión
-- `/logout`: Limpieza de sesión  
+- `/logout`: Limpieza de sesión
 - `/users`: Interfaz de gestión de usuarios (solo admin)
 - `/change_own_password` (POST): Cambio de contraseña de autoservicio
 
@@ -392,7 +392,7 @@ grep -E "(SECRET_KEY|DEBUG|FLASK_ENV)" .env
 @app.after_request
 def add_security_headers(response):
     response.headers['X-Frame-Options'] = 'DENY'
-    response.headers['X-Content-Type-Options'] = 'nosniff' 
+    response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-XSS-Protection'] = '1; mode=block'
     response.headers['Content-Security-Policy'] = "politica-restrictiva"
     # + Más headers de seguridad
@@ -409,14 +409,14 @@ def add_security_headers(response):
 
 ### ✅ FORTALEZAS DE SEGURIDAD
 1. **Autenticación y Sesiones**: Implementación robusta con hash Werkzeug
-2. **Protección CSRF**: Flask-WTF apropiadamente implementado en todos los formularios  
+2. **Protección CSRF**: Flask-WTF apropiadamente implementado en todos los formularios
 3. **Inyección SQL**: Consultas parametrizadas usadas exclusivamente
 4. **Protección SSRF**: Validación integral de URL con bloqueo de IP privadas
 5. **Headers HTTP**: Implementación completa de headers de seguridad
 6. **Validación de Entrada**: Patrones apropiados de sanitización y validación
 
 ### ⚠️ VULNERABILIDADES DE SEGURIDAD IDENTIFICADAS
-1. **CRÍTICA**: Credenciales expuestas en `admin_credentials.txt` 
+1. **CRÍTICA**: Credenciales expuestas en `admin_credentials.txt`
 2. **ALTA**: Clave secreta débil en archivos ejemplo `.env`
 3. **MEDIA**: Información de debug en logs de consola
 4. **BAJA**: Implementación de rate limiting faltante
@@ -426,7 +426,7 @@ def add_security_headers(response):
 # 1. Remover credenciales expuestas (CRÍTICA)
 rm -f admin_credentials.txt
 
-# 2. Generar clave secreta fuerte (ALTA) 
+# 2. Generar clave secreta fuerte (ALTA)
 export FLASK_SECRET_KEY=$(openssl rand -hex 32)
 
 # 3. Configurar entorno de producción (MEDIA)
@@ -436,7 +436,7 @@ export FLASK_DEBUG=0
 
 ### 🔒 Puntuación de Seguridad: 7.5/10
 - **Arquitectura Defensiva**: Excelente
-- **Calidad de Implementación**: Muy Buena  
+- **Calidad de Implementación**: Muy Buena
 - **Seguridad de Configuración**: Necesita Mejora
 - **Evaluación General**: Listo para producción después de rotación de credenciales
 
@@ -481,7 +481,7 @@ export FLASK_DEBUG=0
 - **Scripts de administración incluidos**:
   ```bash
   # Estructura de scripts VPS:
-  ~/ntg-js-analyzer/
+  ~/js-analyzer/
   ├── backup-database.sh      # Backup diario SQLite
   ├── backup-to-github.sh     # Backup semanal a GitHub
   ├── update-from-github.sh   # Actualización automática

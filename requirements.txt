@@ -1,5 +1,6 @@
 Flask==2.3.3
 Flask-WTF==1.2.1
+pytz==2023.3
 requests==2.32.4
 beautifulsoup4==4.12.2
 lxml==4.9.3

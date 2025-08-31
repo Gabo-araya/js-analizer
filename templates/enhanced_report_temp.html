@@ -301,6 +301,7 @@
         </div>
     </div>
 
+
     <!-- Executive Summary Card -->
     <div class="row dashboard-animate" style="animation-delay: 0.3s;">
         <div class="col-12">
@@ -314,7 +315,7 @@
                     <div class="executive-summary">
                         <p style="font-size: var(--font-lg); line-height: var(--line-height-relaxed); margin-bottom: var(--space-4);">
                             Este reporte proporciona un análisis de seguridad integral de <strong><a href="{{ scan.url }}" target="_blank">{{ scan.url }}</a></strong>.<br />
-                            Se identificaron <strong>{{ libraries|length }}</strong> bibliotecas JavaScript y CSS
+                            Se identificaron <strong>{{ libraries|length }}</strong> blibliotecas JavaScript y CSS
                             y evaluó <strong>{{ (security_analysis.present|length + security_analysis.missing|length) if security_analysis else 0 }}</strong>
                             encabezados de seguridad HTTP.
                         </p>
@@ -338,7 +339,7 @@
                                     {% if vulnerable_count > 0 %}
                                         <li>
                                             <i class="bi bi-exclamation-triangle-fill" style="color: var(--corp-danger);"></i>
-                                            <span><strong>{{ vulnerable_count }}</strong> {{ 'librería presenta' if vulnerable_count == 1 else 'bibliotecas presentan' }} potenciales vulnerabilidades de seguridad</span>
+                                            <span><strong>{{ vulnerable_count }}</strong> {{ 'librería presenta' if vulnerable_count == 1 else 'blibliotecas presentan' }} potenciales vulnerabilidades de seguridad</span>
                                         </li>
                                     {% endif %}
 
@@ -365,7 +366,7 @@
 
                                     <li>
                                         <i class="bi bi-files" style="color: var(--corp-info);"></i>
-                                        <span><strong>{{ file_urls|length if file_urls else 0 }}</strong> archivos estáticos fueron analizados en busca de bibliotecas conocidas</span>
+                                        <span><strong>{{ file_urls|length if file_urls else 0 }}</strong> archivos estáticos fueron analizados en busca de blibliotecas conocidas</span>
                                     </li>
                                 </ul>
                             </div>
@@ -584,7 +585,7 @@
                                     {% set medium_count = namespace(value=0) %}
                                     {% set low_count = namespace(value=0) %}
 
-                                    <!-- Contar vulnerabilidades críticas (bibliotecas vulnerables) -->
+                                    <!-- Contar vulnerabilidades críticas (blibliotecas vulnerables) -->
                                     {% for lib in libraries %}
                                         {% if check_vulnerability_with_global(lib.version, lib.latest_safe_version, lib.gl_latest_safe_version) %}
                                             {% set critical_count.value = critical_count.value + 1 %}
@@ -731,7 +732,7 @@
                                     </div>
                                     {% endif %}
 
-                                    <!-- MEDIO: Headers menores + bibliotecas sin datos -->
+                                    <!-- MEDIO: Headers menores + blibliotecas sin datos -->
                                     {% set medium_headers = [] %}
                                     {% set medium_libs = [] %}
                                     {% if security_analysis.missing %}
@@ -866,7 +867,7 @@
                                         <i class="bi bi-lightbulb"></i> Prioridad Recomendada:
                                     </h6>
                                     {% if critical_count.value > 0 %}
-                                        <small>Actualizar inmediatamente las {{ critical_count.value }} {{ 'librería vulnerable' if critical_count.value == 1 else 'bibliotecas vulnerables' }} identificadas.</small>
+                                        <small>Actualizar inmediatamente las {{ critical_count.value }} {{ 'librería vulnerable' if critical_count.value == 1 else 'blibliotecas vulnerables' }} identificadas.</small>
                                     {% elif high_count.value > 0 %}
                                         <small>Implementar los headers de seguridad críticos faltantes (HSTS, CSP).</small>
                                     {% elif medium_count.value > 0 %}
@@ -1043,7 +1044,7 @@
                                     </div>
                                     <div class="mt-2 text-center">
                                         <small class="text-muted">
-                                            Total: {{ vuln_count.value + safe_count.value + unknown_count.value }} bibliotecas analizadas
+                                            Total: {{ vuln_count.value + safe_count.value + unknown_count.value }} blibliotecas analizadas
                                         </small>
                                     </div>
                                 </div>
@@ -1223,7 +1224,6 @@
                     </div>
                 </div>
 
-
                 <h5 style="color: var(--corp-primary); margin: var(--space-6) 0 var(--space-4) 0;">
                     <i class="bi bi-bookshelf"></i>
                     Inventario Detallado de Bibliotecas
@@ -1307,7 +1307,7 @@
                 <div class="text-center p-4">
                     <i class="bi bi-bookshelf display-4 text-muted"></i>
                     <h5 class="mt-3">No se Detectaron Bibliotecas</h5>
-                    <p class="text-muted">No se detectaron automáticamente bibliotecas JavaScript o CSS en este sitio web.</p>
+                    <p class="text-muted">No se detectaron automáticamente blibliotecas JavaScript o CSS en este sitio web.</p>
                 </div>
             {% endif %}
                 </div>
@@ -1430,7 +1430,7 @@
             <h5><i class="bi bi-check-circle"></i> Buena Postura de Seguridad:</h5>
             <div class="recommendation-box">
                 • Continuar monitoreando nuevas vulnerabilidades<br>
-                • Actualizar regularmente bibliotecas y dependencias<br>
+                • Actualizar regularmente blibliotecas y dependencias<br>
                 • Implementar herramientas de monitoreo de seguridad
             </div>
             {% endif %}
@@ -1445,12 +1445,11 @@
             <div class="card modern-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
                 <div class="card-body text-center py-4">
                     <img src="{{ url_for('static', filename='img/favicon.png') }}" alt="Newtenberg" class="display-4 mb-3 opacity-75" style="width: 30px; height: 30px; margin-right: 10px;">
-                    <h5><i class="bi bi-cpu me-2"></i> Análisis de Seguridad Web</h5>
+                    <h5>Reporte Generado por Newtenberg Analizador v2.2</h5>
                     <p class="mb-0 opacity-75">
                         <i class="bi bi-clock me-2"></i>{{ scan.scan_date if scan.scan_date else 'Fecha no disponible' }}
                         <span class="mx-3">|</span>
-                         URL: {{ scan.url }}
-
+                        <i class="bi bi-cpu me-2"></i>Análisis de Seguridad Web
                     </p>
                 </div>
             </div>

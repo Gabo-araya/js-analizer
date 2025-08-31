@@ -1,0 +1,718 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte de Seguridad Mejorado - {{ scan.title or scan.url }}{% endblock %}
+
+{% block head %}
+<style>
+/* Enhanced Report Styles */
+.report-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.report-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.report-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.report-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+.security-score-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0 auto 20px;
+}
+
+.score-excellent { background-color: #27ae60; }
+.score-good { background-color: #f39c12; }
+.score-poor { background-color: #e74c3c; }
+
+.section-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+
+.section-header {
+    background: #34495e;
+    color: white;
+    padding: 20px;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.section-content {
+    padding: 25px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.info-value {
+    color: #34495e;
+}
+
+.vulnerability-chart {
+    width: 300px;
+    height: 200px;
+    margin: 0 auto;
+}
+
+.library-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.library-table th,
+.library-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.library-table th {
+    background-color: #34495e;
+    color: white;
+    font-weight: 600;
+}
+
+.status-vulnerable { 
+    background-color: #fdf2f2;
+    color: #e74c3c;
+}
+
+.status-safe { 
+    background-color: #f0f9f0;
+    color: #27ae60;
+}
+
+.status-unknown { 
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.security-header {
+    background: #27ae60;
+    color: white;
+}
+
+.missing-header {
+    background: #e74c3c;
+    color: white;
+}
+
+.recommendation-box {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px 0;
+}
+
+.risk-critical { background-color: #c0392b; color: white; }
+.risk-high { background-color: #e74c3c; color: white; }
+.risk-medium { background-color: #f39c12; color: white; }
+.risk-low { background-color: #f1c40f; color: #2c3e50; }
+
+.badge-js { background-color: #f7df1e; color: #2c3e50; }
+.badge-css { background-color: #1572b6; color: white; }
+
+.charts-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin: 30px 0;
+}
+
+
+.print-button {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    z-index: 1000;
+}
+
+@media print {
+    .print-button, .navbar, .btn { display: none !important; }
+    .report-container { max-width: 100%; }
+}
+</style>
+
+<!-- CSS-based charts instead of Chart.js -->
+<style>
+.simple-chart {
+    margin: 20px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.chart-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    text-align: center;
+    color: #2c3e50;
+}
+
+.progress-bar-chart {
+    margin-bottom: 10px;
+}
+
+.progress-bar-chart .label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.progress-bar-chart .bar {
+    height: 20px;
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+.pie-chart-alternative {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.stat-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+    text-align: center;
+    flex-direction: column;
+}
+
+.stat-circle .number {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.stat-circle .label {
+    font-size: 0.7rem;
+    margin-top: 2px;
+}
+
+.vulnerable { background-color: #e74c3c; }
+.safe { background-color: #27ae60; }
+.unknown { background-color: #95a5a6; }
+.js-type { background-color: #f7df1e; color: #2c3e50; }
+.css-type { background-color: #1572b6; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="report-container">
+    <!-- Print Button -->
+    <button class="btn btn-primary print-button" >
+        <i class="bi bi-printer"></i> Imprimir Reporte
+    </button>
+
+    <!-- Report Header -->
+    <div class="report-header">
+        <h1 class="report-title">Reporte de Análisis de Seguridad del Sitio Web</h1>
+        <p class="report-subtitle">{{ scan.url }}</p>
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="security-score-circle {{ 'score-excellent' if security_analysis.security_score >= 80 else 'score-good' if security_analysis.security_score >= 60 else 'score-poor' }}">
+                    {{ security_analysis.security_score }}%
+                </div>
+                <p>Puntaje de Seguridad</p>
+            </div>
+            <div class="col-md-8 text-start">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Fecha de Escaneo</div>
+                        <div class="info-value">{{ scan.scan_date }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Bibliotecas Encontradas</div>
+                        <div class="info-value">{{ libraries|length }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Código de Estado</div>
+                        <div class="info-value">{{ scan.status_code or 'Error' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Executive Summary -->
+    <div class="section-card">
+        <div class="section-header">
+            <i class="bi bi-clipboard-data"></i> Resumen Ejecutivo
+        </div>
+        <div class="section-content">
+            <p>Este reporte proporciona un análisis de seguridad integral de <strong>{{ scan.url }}</strong>. 
+            Nuestro escáner automatizado identificó <strong>{{ libraries|length }}</strong> librerías JavaScript y CSS.</p>
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <h5>Hallazgos Clave:</h5>
+                    <ul>
+                        {% set vulnerable_count = 0 %}
+                        {% for lib in libraries %}
+                            {% if check_vulnerability_with_global(lib.version, lib.latest_safe_version, lib.gl_latest_safe_version) %}
+                                {% set vulnerable_count = vulnerable_count + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if vulnerable_count > 0 %}
+                            <li class="text-danger"><i class="bi bi-exclamation-triangle"></i> {{ vulnerable_count }} librerías pueden tener vulnerabilidades</li>
+                        {% endif %}
+                        {% if security_analysis.security_score < 70 %}
+                            <li class="text-warning"><i class="bi bi-shield-exclamation"></i> Los encabezados de seguridad necesitan mejoras ({{ security_analysis.security_score }}%)</li>
+                        {% endif %}
+                        {% if security_analysis.missing|length > 0 %}
+                            <li class="text-warning"><i class="bi bi-shield-x"></i> {{ security_analysis.missing|length }} encabezados de seguridad faltan</li>
+                        {% endif %}
+                        {% if vulnerable_count == 0 and security_analysis.security_score >= 70 %}
+                            <li class="text-success"><i class="bi bi-shield-check"></i> No se identificaron preocupaciones inmediatas de seguridad</li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <canvas id="vulnerabilityChart" class="vulnerability-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Analysis -->
+    <div class="section-card">
+        <div class="section-header">
+            <i class="bi bi-shield-check"></i> Análisis de Encabezados de Seguridad
+        </div>
+        <div class="section-content">
+            {% if security_analysis.present %}
+                <h5 class="text-success"><i class="bi bi-check-circle"></i> Encabezados de Seguridad Implementados</h5>
+                <table class="library-table">
+                    <thead class="security-header">
+                        <tr>
+                            <th>Encabezado</th>
+                            <th>Valor</th>
+                            <th>Beneficio de Seguridad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for header in security_analysis.present %}
+                        <tr class="status-safe">
+                            <td><strong>{{ header.name }}</strong></td>
+                            <td><code>{{ header.value[:50] }}{{ '...' if header.value|length > 50 else '' }}</code></td>
+                            <td>{{ header.description }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+
+            {% if security_analysis.missing %}
+                <h5 class="text-danger mt-4"><i class="bi bi-x-circle"></i> Encabezados de Seguridad Faltantes</h5>
+                <table class="library-table">
+                    <thead class="missing-header">
+                        <tr>
+                            <th>Encabezado</th>
+                            <th>Nivel de Riesgo</th>
+                            <th>Valor Recomendado</th>
+                            <th>Impacto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set risk_levels = {
+                            'Strict-Transport-Security': 'HIGH',
+                            'Content-Security-Policy': 'CRITICAL',
+                            'X-Frame-Options': 'HIGH',
+                            'X-Content-Type-Options': 'MEDIUM',
+                            'X-XSS-Protection': 'MEDIUM',
+                            'Referrer-Policy': 'LOW',
+                            'Permissions-Policy': 'LOW'
+                        } %}
+                        {% for header in security_analysis.missing %}
+                        {% set risk_level = risk_levels.get(header.name, 'MEDIUM') %}
+                        <tr class="status-vulnerable">
+                            <td><strong>{{ header.name }}</strong></td>
+                            <td><span class="badge risk-{{ risk_level.lower() }}">{{ risk_level }}</span></td>
+                            <td><code>{{ header.recommendation }}</code></td>
+                            <td>{{ header.description }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Library Analysis -->
+    <div class="section-card">
+        <div class="section-header">
+            <i class="bi bi-bookshelf"></i> Análisis de Bibliotecas
+        </div>
+        <div class="section-content">
+            {% if libraries %}
+                <!-- CSS-based Charts -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="simple-chart">
+                            <div class="chart-title">Estado de Seguridad de Bibliotecas</div>
+                            {% set vuln_count = namespace(value=0) %}
+                            {% set safe_count = namespace(value=0) %}
+                            {% set unknown_count = namespace(value=0) %}
+                            {% for lib in libraries %}
+                                {% if check_vulnerability_with_global(lib.version, lib.latest_safe_version, lib.gl_latest_safe_version) %}
+                                    {% set vuln_count.value = vuln_count.value + 1 %}
+                                {% elif lib.latest_safe_version %}
+                                    {% set safe_count.value = safe_count.value + 1 %}
+                                {% else %}
+                                    {% set unknown_count.value = unknown_count.value + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            <div class="pie-chart-alternative">
+                                <div class="stat-circle vulnerable">
+                                    <div class="number">{{ vuln_count.value }}</div>
+                                    <div class="label">Vulnerables</div>
+                                </div>
+                                <div class="stat-circle safe">
+                                    <div class="number">{{ safe_count.value }}</div>
+                                    <div class="label">Seguras</div>
+                                </div>
+                                <div class="stat-circle unknown">
+                                    <div class="number">{{ unknown_count.value }}</div>
+                                    <div class="label">Desconocidas</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="simple-chart">
+                            <div class="chart-title">Tipos de Bibliotecas</div>
+                            {% set js_count = libraries | selectattr('type', 'equalto', 'js') | list | length %}
+                            {% set css_count = libraries | selectattr('type', 'equalto', 'css') | list | length %}
+                            {% set total_libs = js_count + css_count %}
+                            {% if total_libs > 0 %}
+                            <div class="progress-bar-chart">
+                                <div class="label">
+                                    <span>JavaScript</span>
+                                    <span>{{ js_count }} ({{ ((js_count / total_libs) * 100) | round }}%)</span>
+                                </div>
+                                <div class="bar" style="background-color: #f0f0f0;">
+                                    <div class="bar-fill" style="width: {{ (js_count / total_libs) * 100 }}%; background-color: #f7df1e;"></div>
+                                </div>
+                            </div>
+                            <div class="progress-bar-chart">
+                                <div class="label">
+                                    <span>CSS</span>
+                                    <span>{{ css_count }} ({{ ((css_count / total_libs) * 100) | round }}%)</span>
+                                </div>
+                                <div class="bar" style="background-color: #f0f0f0;">
+                                    <div class="bar-fill" style="width: {{ (css_count / total_libs) * 100 }}%; background-color: #1572b6;"></div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <p class="text-center text-muted">No hay librerías para mostrar</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="simple-chart">
+                            <div class="chart-title">Distribución de Tamaños de Archivos</div>
+                            {% set small_count = namespace(value=0) %}
+                            {% set medium_count = namespace(value=0) %}
+                            {% set large_count = namespace(value=0) %}
+                            {% set huge_count = namespace(value=0) %}
+                            {% for file in file_urls %}
+                                {% if file.file_size %}
+                                    {% set size_kb = file.file_size / 1024 %}
+                                    {% if size_kb < 50 %}
+                                        {% set small_count.value = small_count.value + 1 %}
+                                    {% elif size_kb < 200 %}
+                                        {% set medium_count.value = medium_count.value + 1 %}
+                                    {% elif size_kb < 500 %}
+                                        {% set large_count.value = large_count.value + 1 %}
+                                    {% else %}
+                                        {% set huge_count.value = huge_count.value + 1 %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+                            <div class="pie-chart-alternative">
+                                <div class="stat-circle" style="background-color: #2ecc71;">
+                                    <div class="number">{{ small_count.value }}</div>
+                                    <div class="label">< 50KB</div>
+                                </div>
+                                <div class="stat-circle" style="background-color: #f39c12;">
+                                    <div class="number">{{ medium_count.value }}</div>
+                                    <div class="label">50-200KB</div>
+                                </div>
+                                <div class="stat-circle" style="background-color: #e67e22;">
+                                    <div class="number">{{ large_count.value }}</div>
+                                    <div class="label">200-500KB</div>
+                                </div>
+                                <div class="stat-circle" style="background-color: #e74c3c;">
+                                    <div class="number">{{ huge_count.value }}</div>
+                                    <div class="label">> 500KB</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="simple-chart">
+                            <div class="chart-title">Estado de Cabeceras de Seguridad</div>
+                            {% set present_count = security_analysis.present | length if security_analysis.present else 0 %}
+                            {% set missing_count = security_analysis.missing | length if security_analysis.missing else 0 %}
+                            {% set total_headers = present_count + missing_count %}
+                            {% if total_headers > 0 %}
+                            <div class="progress-bar-chart">
+                                <div class="label">
+                                    <span>Implementadas</span>
+                                    <span>{{ present_count }} ({{ ((present_count / total_headers) * 100) | round }}%)</span>
+                                </div>
+                                <div class="bar" style="background-color: #f0f0f0;">
+                                    <div class="bar-fill" style="width: {{ (present_count / total_headers) * 100 }}%; background-color: #27ae60;"></div>
+                                </div>
+                            </div>
+                            <div class="progress-bar-chart">
+                                <div class="label">
+                                    <span>Faltantes</span>
+                                    <span>{{ missing_count }} ({{ ((missing_count / total_headers) * 100) | round }}%)</span>
+                                </div>
+                                <div class="bar" style="background-color: #f0f0f0;">
+                                    <div class="bar-fill" style="width: {{ (missing_count / total_headers) * 100 }}%; background-color: #e74c3c;"></div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <p class="text-center text-muted">No hay información de cabeceras</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <table class="library-table">
+                    <thead>
+                        <tr>
+                            <th>Biblioteca</th>
+                            <th>Versión</th>
+                            <th>Type</th>
+                            <th>Estado</th>
+                            <th>Recomendación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lib in libraries %}
+                        {% set effective_safe = get_effective_safe_version(lib.latest_safe_version, lib.gl_latest_safe_version) %}
+                        {% set has_vuln = check_vulnerability_with_global(lib.version, lib.latest_safe_version, lib.gl_latest_safe_version) %}
+                        <tr class="{{ 'status-vulnerable' if has_vuln else 'status-safe' if lib.latest_safe_version else 'status-unknown' }}">
+                            <td><strong>{{ lib.library_name }}</strong></td>
+                            <td>{{ lib.version or 'Unknown' }}</td>
+                            <td><span class="badge badge-{{ lib.type }}">{{ lib.type.upper() }}</span></td>
+                            <td>
+                                {% if has_vuln %}
+                                    🔴 VULNERABLE
+                                {% elif lib.latest_safe_version %}
+                                    ✅ SAFE
+                                {% else %}
+                                    ⚠️ UNKNOWN
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if has_vuln %}
+                                    Actualizar a {{ lib.latest_safe_version }}
+                                {% elif lib.latest_safe_version %}
+                                    No se requiere acción
+                                {% else %}
+                                    Se requiere revisión manual
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="text-center p-4">
+                    <i class="bi bi-bookshelf display-4 text-muted"></i>
+                    <h5 class="mt-3">No se Detectaron Bibliotecas</h5>
+                    <p class="text-muted">No se detectaron automáticamente librerías JavaScript o CSS en este sitio web.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Technical Details -->
+    <div class="section-card">
+        <div class="section-header">
+            <i class="bi bi-gear"></i> Detalles Técnicos
+        </div>
+        <div class="section-content">
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Dominio</div>
+                    <div class="info-value">{{ scan.url.split('://')[1].split('/')[0] }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Título de la Página</div>
+                    <div class="info-value">{{ scan.title or 'No se encontró título' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Archivos JS</div>
+                    <div class="info-value">{{ file_urls | selectattr('file_type', 'equalto', 'js') | list | length }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Archivos CSS</div>
+                    <div class="info-value">{{ file_urls | selectattr('file_type', 'equalto', 'css') | list | length }}</div>
+                </div>
+            </div>
+
+            {% if file_urls %}
+            <h5 class="mt-4"><i class="bi bi-files"></i> Todos los Archivos Analizados ({{ file_urls|length }})</h5>
+            <table class="library-table">
+                <thead>
+                    <tr>
+                        <th>URL del Archivo</th>
+                        <th>Tipo</th>
+                        <th>Tamaño</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for file in file_urls %}
+                    <tr class="{{ 'table-danger' if file.status_code and file.status_code != 200 else '' }}">
+                        <td><small>{{ file.file_url | truncate_left(60) }}</small></td>
+                        <td><span class="badge badge-{{ file.file_type }}">{{ file.file_type.upper() }}</span></td>
+                        <td>{{ (file.file_size / 1024) | round(1) if file.file_size else 'Desconocido' }} KB</td>
+                        <td>
+                            {% if file.status_code == 200 %}
+                                <span class="badge bg-success">{{ file.status_code }}</span>
+                            {% elif file.status_code %}
+                                <span class="badge bg-danger">{{ file.status_code }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Desconocido</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="section-card">
+        <div class="section-header">
+            <i class="bi bi-lightbulb"></i> Recomendaciones de Seguridad
+        </div>
+        <div class="section-content">
+            {% if security_analysis.missing %}
+            <h5><i class="bi bi-shield-plus"></i> Implementar Encabezados de Seguridad Faltantes:</h5>
+            {% for header in security_analysis.missing[:3] %}
+            <div class="recommendation-box">
+                <strong>{{ header.name }}:</strong> {{ header.recommendation }}<br>
+                <small class="text-muted">{{ header.description }}</small>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% set vuln_lib_count = 0 %}
+            {% set shown_vuln_libs = 0 %}
+            {% for lib in libraries %}
+                {% if check_vulnerability_with_global(lib.version, lib.latest_safe_version, lib.gl_latest_safe_version) %}
+                    {% set vuln_lib_count = vuln_lib_count + 1 %}
+                {% endif %}
+            {% endfor %}
+            {% if vuln_lib_count > 0 %}
+            <h5 class="mt-4"><i class="bi bi-arrow-up-circle"></i> Actualizar Bibliotecas Vulnerables:</h5>
+            {% for lib in libraries %}
+                {% if check_vulnerability_with_global(lib.version, lib.latest_safe_version, lib.gl_latest_safe_version) and shown_vuln_libs < 3 %}
+                    {% set shown_vuln_libs = shown_vuln_libs + 1 %}
+                    <div class="recommendation-box">
+                        <strong>{{ lib.library_name }}:</strong> Update from {{ lib.version or 'unknown' }} to {{ lib.latest_safe_version }}
+                    </div>
+                {% endif %}
+            {% endfor %}
+            {% endif %}
+
+            {% if security_analysis.security_score < 70 %}
+            <h5 class="mt-4"><i class="bi bi-graph-up-arrow"></i> Mejorar Puntaje de Seguridad:</h5>
+            <div class="recommendation-box">
+                • Implementar política de seguridad de contenido integral (CSP)<br>
+                • Habilitar seguridad de transporte estricta HTTP (HSTS)<br>
+                • Configurar encabezado X-Frame-Options apropiado
+            </div>
+            {% endif %}
+
+            {% if not security_analysis.missing and not vulnerable_libs and security_analysis.security_score >= 70 %}
+            <h5><i class="bi bi-check-circle"></i> Buena Postura de Seguridad:</h5>
+            <div class="recommendation-box">
+                • Continuar monitoreando nuevas vulnerabilidades<br>
+                • Actualizar regularmente librerías y dependencias<br>
+                • Implementar herramientas de monitoreo de seguridad
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

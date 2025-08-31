@@ -12,6 +12,7 @@ import io
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 from datetime import datetime
+import pytz
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -45,6 +46,25 @@ except ImportError:
 
 app = Flask(__name__)
 csrf = CSRFProtect(app)
+
+# Configuración de timezone para Chile
+CHILE_TZ = pytz.timezone('America/Santiago')
+
+def get_chile_time():
+    """Obtiene la fecha y hora actual en timezone de Chile."""
+    return datetime.now(CHILE_TZ)
+
+def format_chile_time(dt_obj=None, fmt='%d-%m-%Y %H:%M'):
+    """Formatea fecha/hora en timezone de Chile."""
+    if dt_obj is None:
+        dt_obj = get_chile_time()
+    elif dt_obj.tzinfo is None:
+        # Si el datetime no tiene timezone, asumimos UTC y convertimos a Chile
+        dt_obj = pytz.UTC.localize(dt_obj).astimezone(CHILE_TZ)
+    elif dt_obj.tzinfo != CHILE_TZ:
+        # Si tiene otro timezone, convertir a Chile
+        dt_obj = dt_obj.astimezone(CHILE_TZ)
+    return dt_obj.strftime(fmt)
 
 # Secure secret key configuration
 import os
@@ -2774,7 +2794,7 @@ def export_pdf(scan_id):
             # Fallback to basic PDF generation if enhanced module fails
             buffer = create_basic_pdf_report(data)
 
-        filename = f"security_analysis_report_{scan_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        filename = f"security_analysis_report_{scan_id}_{get_chile_time().strftime('%Y%m%d_%H%M%S')}.pdf"
 
         return send_file(
             buffer,
@@ -3002,7 +3022,7 @@ def export_csv(scan_id):
                 writer.writerow([header_name, header_value])
 
         output.seek(0)
-        filename = f"scan_report_{scan_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        filename = f"scan_report_{scan_id}_{get_chile_time().strftime('%Y%m%d_%H%M%S')}.csv"
 
         response = make_response(output.getvalue())
         response.headers['Content-Disposition'] = f'attachment; filename={filename}'
@@ -3255,7 +3275,7 @@ def export_excel(scan_id):
         workbook.save(output)
         output.seek(0)
 
-        filename = f"scan_report_{scan_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        filename = f"scan_report_{scan_id}_{get_chile_time().strftime('%Y%m%d_%H%M%S')}.xlsx"
 
         return send_file(
             output,
@@ -4908,7 +4928,7 @@ def import_project_data(project_id):
 
                 # Insert scan
                 title = row.get('Título', '').strip() or None
-                scan_date = row.get('Fecha', '').strip() or datetime.now().isoformat()
+                scan_date = row.get('Fecha', '').strip() or get_chile_time().isoformat()
                 status_code = int(row.get('Estado HTTP', 0)) if row.get('Estado HTTP', '').isdigit() else None
                 reviewed = 1 if row.get('Revisado', '').lower() in ['sí', 'si', 'yes', '1', 'true'] else 0
 
@@ -4960,7 +4980,7 @@ def import_project_data(project_id):
 
                 # Insert scan
                 title = scan_data.get('title') or None
-                scan_date = scan_data.get('scan_date') or datetime.now().isoformat()
+                scan_date = scan_data.get('scan_date') or get_chile_time().isoformat()
                 status_code = scan_data.get('status_code')
                 reviewed = 1 if scan_data.get('reviewed') else 0
 
@@ -5076,13 +5096,13 @@ def export_projects(format):
             return Response(
                 output.getvalue(),
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename=projects_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'}
+                headers={'Content-Disposition': f'attachment; filename=projects_export_{get_chile_time().strftime("%Y%m%d_%H%M%S")}.csv'}
             )
 
         elif format == 'json':
             # Build JSON structure
             export_data = {
-                'export_date': datetime.now().isoformat(),
+                'export_date': get_chile_time().isoformat(),
                 'total_projects': len(projects),
                 'projects': []
             }
@@ -5127,7 +5147,7 @@ def export_projects(format):
             return Response(
                 json.dumps(export_data, indent=2, ensure_ascii=False),
                 mimetype='application/json',
-                headers={'Content-Disposition': f'attachment; filename=projects_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'}
+                headers={'Content-Disposition': f'attachment; filename=projects_export_{get_chile_time().strftime("%Y%m%d_%H%M%S")}.json'}
             )
 
         elif format == 'xlsx':
@@ -5249,7 +5269,7 @@ def export_projects(format):
             summary.merge_cells('A1:D1')
 
             summary_data = [
-                ['Fecha de exportación', datetime.now().strftime('%Y-%m-%d %H:%M:%S')],
+                ['Fecha de exportación', format_chile_time(fmt='%Y-%m-%d %H:%M:%S')],
                 ['Total de proyectos', len(projects)],
                 ['Total de URLs escaneadas', conn.execute('SELECT COUNT(*) as cnt FROM scans WHERE project_id IS NOT NULL').fetchone()['cnt']],
                 ['Proyecto con más escaneos', '']
@@ -5289,7 +5309,7 @@ def export_projects(format):
             return Response(
                 output.getvalue(),
                 mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                headers={'Content-Disposition': f'attachment; filename=projects_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'}
+                headers={'Content-Disposition': f'attachment; filename=projects_export_{get_chile_time().strftime("%Y%m%d_%H%M%S")}.xlsx'}
             )
 
         else:
@@ -5739,7 +5759,7 @@ def undo_action(action_id):
                 target_id=action_id,
                 target_description=f"Deshecha acción: {action_description}",
                 data_before={'original_action_id': action_id, 'original_action_type': history_record['action_type']},
-                data_after={'undone_by': session['username'], 'undone_at': datetime.now().isoformat()},
+                data_after={'undone_by': session['username'], 'undone_at': get_chile_time().isoformat()},
                 notes=f"Usuario {session['username']} deshizo acción {history_record['action_type']} del {history_record['timestamp']}"
             )
 
@@ -6261,13 +6281,13 @@ def export_statistics(format):
             # Prepare response
             output.seek(0)
             response = Response(output.getvalue(), mimetype='text/csv')
-            response.headers['Content-Disposition'] = f'attachment; filename=estadisticas_vulnerabilidades_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            response.headers['Content-Disposition'] = f'attachment; filename=estadisticas_vulnerabilidades_{get_chile_time().strftime("%Y%m%d_%H%M%S")}.csv'
             return response
 
         elif format == 'json':
             # Prepare JSON data
             data = {
-                'export_date': datetime.now().isoformat(),
+                'export_date': get_chile_time().isoformat(),
                 'summary': {
                     'total_vulnerable_scans': len(vulnerable_scans),
                     'total_vulnerabilities': sum(scan['vulnerability_count'] for scan in vulnerable_scans)
@@ -6294,7 +6314,7 @@ def export_statistics(format):
 
             # Return JSON response
             response = Response(json.dumps(data, indent=2, ensure_ascii=False), mimetype='application/json')
-            response.headers['Content-Disposition'] = f'attachment; filename=estadisticas_vulnerabilidades_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+            response.headers['Content-Disposition'] = f'attachment; filename=estadisticas_vulnerabilidades_{get_chile_time().strftime("%Y%m%d_%H%M%S")}.json'
             return response
 
         else:
@@ -6351,7 +6371,7 @@ def import_statistics():
                             ''', (
                                 scan_data['url'],
                                 scan_data.get('title', ''),
-                                scan_data.get('scan_date', datetime.now().strftime('%Y-%m-%d %H:%M:%S')),
+                                scan_data.get('scan_date', format_chile_time(fmt='%Y-%m-%d %H:%M:%S')),
                                 scan_data.get('status_code', 200)
                             ))
                             scan_id = cursor.lastrowid
@@ -6411,7 +6431,7 @@ def import_statistics():
                         ''', (
                             url,
                             row.get('Título', ''),
-                            row.get('Fecha Escaneo', datetime.now().strftime('%Y-%m-%d %H:%M:%S')),
+                            row.get('Fecha Escaneo', format_chile_time(fmt='%Y-%m-%d %H:%M:%S')),
                             int(row.get('Estado', 200)) if row.get('Estado', '').isdigit() else 200
                         ))
                         imported_scans += 1
