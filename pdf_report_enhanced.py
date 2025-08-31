@@ -9,7 +9,27 @@ contenido integral y elementos visuales para reportes de análisis de seguridad.
 import io
 import json
 from datetime import datetime
+import pytz
 from urllib.parse import urlparse
+
+# Configuración de timezone para Chile
+CHILE_TZ = pytz.timezone('America/Santiago')
+
+def get_chile_time():
+    """Obtiene la fecha y hora actual en timezone de Chile."""
+    return datetime.now(CHILE_TZ)
+
+def format_chile_time(dt_obj=None, fmt='%d-%m-%Y %H:%M'):
+    """Formatea fecha/hora en timezone de Chile."""
+    if dt_obj is None:
+        dt_obj = get_chile_time()
+    elif dt_obj.tzinfo is None:
+        # Si el datetime no tiene timezone, asumimos UTC y convertimos a Chile
+        dt_obj = pytz.UTC.localize(dt_obj).astimezone(CHILE_TZ)
+    elif dt_obj.tzinfo != CHILE_TZ:
+        # Si tiene otro timezone, convertir a Chile
+        dt_obj = dt_obj.astimezone(CHILE_TZ)
+    return dt_obj.strftime(fmt)
 
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
@@ -127,7 +147,7 @@ class EnhancedPDFReport:
         canvas_obj.setFont('Helvetica-Bold', 10)
         canvas_obj.setFillColor(colors.HexColor('#34495e'))
         canvas_obj.drawString(50, A4[1] - 30, "Reporte de Análisis de Seguridad - Librerías JavaScript & CSS")
-        canvas_obj.drawString(A4[0] - 150, A4[1] - 30, datetime.now().strftime('%d-%m-%Y %H:%M'))
+        canvas_obj.drawString(A4[0] - 150, A4[1] - 30, format_chile_time(fmt='%d-%m-%Y %H:%M'))
         
         # Línea del encabezado
         canvas_obj.setStrokeColor(colors.HexColor('#3498db'))
@@ -275,11 +295,11 @@ class EnhancedPDFReport:
             else:
                 scan_date = datetime.strptime(scan_date_str, '%Y-%m-%d %H:%M:%S')
         except (ValueError, TypeError):
-            scan_date = datetime.now()  # Fallback a fecha actual
+            scan_date = get_chile_time()  # Fallback a fecha actual de Chile
         
         info_data = [
-            ['Fecha de Escaneo', scan_date.strftime('%d de %B, %Y a las %H:%M UTC')],
-            ['Reporte Generado', datetime.now().strftime('%d de %B, %Y a las %H:%M UTC')],
+            ['Fecha de Escaneo', format_chile_time(scan_date, '%d de %B, %Y a las %H:%M CLT')],
+            ['Reporte Generado', format_chile_time(fmt='%d de %B, %Y a las %H:%M CLT')],
             ['Código de Estado', str(scan_dict.get('status_code') or 'Error')],
             ['Librerías Encontradas', str(len(data['libraries']))],
             ['Puntaje de Seguridad', f"{data['security_analysis']['security_score']}%"]

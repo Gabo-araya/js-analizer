@@ -11,6 +11,15 @@ import secrets
 from urllib.parse import urlparse
 import socket
 import ipaddress
+import datetime
+import pytz
+
+# Configuración de timezone para Chile
+CHILE_TZ = pytz.timezone('America/Santiago')
+
+def get_chile_time():
+    """Obtiene la fecha y hora actual en timezone de Chile."""
+    return datetime.datetime.now(CHILE_TZ)
 
 # Security Configuration
 SECURITY_CONFIG = {
@@ -120,7 +129,7 @@ def log_security_event(event_type, details, ip_address=None):
     import datetime
     
     if event_type in SECURITY_EVENTS:
-        logging.warning(f"SECURITY_EVENT: {event_type} - {details} - IP: {ip_address} - Time: {datetime.datetime.now()}")
+        logging.warning(f"SECURITY_EVENT: {event_type} - {details} - IP: {ip_address} - Time: {get_chile_time()}")
 
 
 # Rate Limiting Implementation

@@ -7,8 +7,28 @@ import ipaddress
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 from datetime import datetime
+import pytz
 import time
 from typing import Dict, List, Optional, Tuple
+
+# Configuración de timezone para Chile
+CHILE_TZ = pytz.timezone('America/Santiago')
+
+def get_chile_time():
+    """Obtiene la fecha y hora actual en timezone de Chile."""
+    return datetime.now(CHILE_TZ)
+
+def format_chile_time(dt_obj=None, fmt='%Y-%m-%d %H:%M:%S'):
+    """Formatea fecha/hora en timezone de Chile."""
+    if dt_obj is None:
+        dt_obj = get_chile_time()
+    elif dt_obj.tzinfo is None:
+        # Si el datetime no tiene timezone, asumimos UTC y convertimos a Chile
+        dt_obj = pytz.UTC.localize(dt_obj).astimezone(CHILE_TZ)
+    elif dt_obj.tzinfo != CHILE_TZ:
+        # Si tiene otro timezone, convertir a Chile
+        dt_obj = dt_obj.astimezone(CHILE_TZ)
+    return dt_obj.strftime(fmt)
 
 # Import our advanced library detectors
 try:
@@ -799,9 +819,9 @@ class LibraryAnalyzer:
             cursor = conn.cursor()
 
             cursor.execute('''
-            INSERT INTO scans (url, status_code, title, headers, project_id, reviewed)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ''', (url, response.status_code, title, json.dumps(dict(response.headers)), None, 0))
+            INSERT INTO scans (url, scan_date, status_code, title, headers, project_id, reviewed)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (url, get_chile_time().strftime('%Y-%m-%d %H:%M:%S'), response.status_code, title, json.dumps(dict(response.headers)), None, 0))
 
             scan_id = cursor.lastrowid
 
@@ -893,9 +913,9 @@ class LibraryAnalyzer:
                     conn.execute('PRAGMA busy_timeout=30000')
                 cursor = conn.cursor()
                 cursor.execute('''
-                INSERT INTO scans (url, status_code, title, headers, project_id, reviewed)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ''', (url, 0, f"Error: {str(e)}", "{}", None, 0))
+                INSERT INTO scans (url, scan_date, status_code, title, headers, project_id, reviewed)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (url, get_chile_time().strftime('%Y-%m-%d %H:%M:%S'), 0, f"Error: {str(e)}", "{}", None, 0))
                 conn.commit()
             except:
                 pass  # If we can't store the error, just continue
