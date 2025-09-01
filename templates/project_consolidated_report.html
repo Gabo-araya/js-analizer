@@ -86,6 +86,41 @@
         text-decoration: none;
     }
 
+    /* Nuevos estilos para URLs completas */
+    .usage-urls-full {
+        margin-top: 8px;
+        max-height: 120px;
+        overflow-y: auto;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 8px;
+        background-color: #f8f9fa;
+    }
+
+    .usage-url-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 4px;
+        padding: 2px 0;
+    }
+
+    .usage-url-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .usage-url-link {
+        color: #0066cc;
+        text-decoration: none;
+        font-size: 0.85rem;
+        word-break: break-all;
+        line-height: 1.3;
+    }
+
+    .usage-url-link:hover {
+        color: #004499;
+        text-decoration: underline;
+    }
+
     .consolidated-stats {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -328,19 +363,19 @@
         .heatmap-table {
             min-width: 1200px;
         }
-        
+
         .heatmap-table th,
         .heatmap-table td {
             padding: 8px 4px;
             font-size: 0.75rem;
         }
-        
+
         .heatmap-table td.data-cell {
             font-size: 1.2rem;
             min-width: 35px;
             height: 35px;
         }
-        
+
         .heatmap-table th.url-header,
         .heatmap-table td.url-cell {
             width: 200px;
@@ -353,17 +388,17 @@
         .heatmap-container {
             padding: 10px;
         }
-        
+
         .heatmap-table {
             min-width: 600px;
         }
-        
+
         .heatmap-table th,
         .heatmap-table td {
             padding: 6px 2px;
             font-size: 0.7rem;
         }
-        
+
         .heatmap-table td.data-cell {
             font-size: 1rem;
             min-width: 30px;
@@ -496,24 +531,6 @@
         color: #856404;
     }
 
-    .modern-badge {
-        display: inline-block;
-        padding: 0.25em 0.6em;
-        font-size: 0.75em;
-        font-weight: 700;
-        line-height: 1;
-        text-align: center;
-        white-space: nowrap;
-        vertical-align: baseline;
-        border-radius: 0.25rem;
-    }
-
-    .modern-badge.danger { background-color: #dc3545; color: white; }
-    .modern-badge.success { background-color: #28a745; color: white; }
-    .modern-badge.warning { background-color: #ffc107; color: #212529; }
-    .modern-badge.info { background-color: #17a2b8; color: white; }
-    .modern-badge.js { background-color: #f7df1e; color: #2c3e50; }
-    .modern-badge.css { background-color: #1572b6; color: white; }
 
     .print-button {
         position: fixed;
@@ -682,7 +699,7 @@
                                     {% set consolidated_vuln = namespace(value=0) %}
                                     {% set consolidated_safe = namespace(value=0) %}
                                     {% set consolidated_unknown = namespace(value=0) %}
-                                    
+
                                     {% for lib in consolidated_libraries %}
                                         {% if lib.version | check_vulnerability_with_global(lib.latest_safe_version, lib.gl_latest_safe_version) %}
                                             {% set consolidated_vuln.value = consolidated_vuln.value + 1 %}
@@ -692,7 +709,7 @@
                                             {% set consolidated_unknown.value = consolidated_unknown.value + 1 %}
                                         {% endif %}
                                     {% endfor %}
-                                    
+
                                     <div class="chart-summary">
                                         <div class="text-center">
                                             <span class="modern-badge danger me-2">
@@ -714,7 +731,7 @@
                                             </small>
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Datos ocultos para JavaScript -->
                                     <div style="display: none;"
                                          data-consolidated-vuln="{{ consolidated_vuln.value }}"
@@ -743,7 +760,7 @@
                                         </h4>
                                         <small class="text-muted">Puntuación Consolidada</small>
                                     </div>
-                                    
+
                                     <div class="chart-summary mt-2">
                                         <div class="d-flex justify-content-center gap-2 flex-wrap">
                                             {% if consolidated_security_analysis.security_score >= 80 %}
@@ -768,7 +785,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Datos ocultos para JavaScript -->
                                     <div style="display: none;" data-consolidated-security-score="{{ consolidated_security_analysis.security_score }}"></div>
                                 </div>
@@ -822,7 +839,7 @@
                                                             {{ clean_url }}
                                                         </td>
                                                         {% for header in security_headers %}
-                                                        <td class="data-cell {{ 'present' if header in url_data.headers else 'missing' }}" 
+                                                        <td class="data-cell {{ 'present' if header in url_data.headers else 'missing' }}"
                                                             title="{{ header }}: {{ 'Presente ✓' if header in url_data.headers else 'Ausente ✗' }} en {{ clean_url }}"
                                                             data-header="{{ header }}"
                                                             data-status="{{ 'present' if header in url_data.headers else 'missing' }}">
@@ -834,7 +851,7 @@
                                                 </tbody>
                                             </table>
                                         </div>
-                                        
+
                                         <!-- Leyenda mejorada -->
                                         <div class="heatmap-legend">
                                             <div class="d-flex justify-content-center gap-4 flex-wrap mb-2">
@@ -853,7 +870,7 @@
                                                     Pasa el cursor sobre cada celda para ver detalles completos del header
                                                 </small>
                                             </div>
-                                            
+
                                             <!-- Leyenda de Abreviaciones -->
                                             <div class="headers-abbreviations">
                                                 <h6 class="mb-2 text-center">
@@ -890,6 +907,8 @@
                             </div>
                         </div>
                     </div>
+
+
 
                 </div>
             </div>
@@ -952,11 +971,12 @@
                             <td>
                                 <div class="library-usage-info">
                                     <strong>{{ lib.scan_count }} {{ 'URL' if lib.scan_count == 1 else 'URLs' }}</strong>
-                                    <div class="usage-urls">
+                                    <div class="usage-urls-full">
                                         {% for url in lib.used_in_urls %}
-                                            <span class="usage-url" title="{{ url }}">
-                                                {{ url.split('://')[1].split('/')[0] if '://' in url else url[:30] }}
-                                            </span>
+                                            <div class="usage-url-item">
+                                                <i class="bi bi-link-45deg me-1 text-muted"></i>
+                                                <a href="{{ url }}" target="_blank" class="usage-url-link">{{ url }}</a>
+                                            </div>
                                         {% endfor %}
                                     </div>
                                 </div>
@@ -1384,6 +1404,8 @@ function initConsolidatedSecurityGauge(score) {
 
     console.log('✅ Gauge consolidado inicializado');
 }
+
+
 
 // Mostrar error si Chart.js no carga
 function showConsolidatedChartError() {
