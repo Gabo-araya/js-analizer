@@ -1001,7 +1001,7 @@
             {% if libraries %}
                 <!-- Chart.js Interactive Charts -->
                 <div class="row mb-4">
-                    <div class="col-lg-4 mb-4">
+                    <div class="col-lg-6 mb-4">
                         <div class="card modern-chart-card">
                             <div class="card-header">
                                 <h6 class="mb-0">
@@ -1055,48 +1055,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 mb-4">
-                        <div class="card modern-chart-card">
-                            <div class="card-header">
-                                <h6 class="mb-0">
-                                    <i class="bi bi-code-square me-2 text-warning"></i>
-                                    Distribución por Tecnología
-                                </h6>
-                            </div>
-                            <div class="card-body" style="height: 320px; position: relative;">
-                                <div style="height: 200px; position: relative;">
-                                    <canvas id="techBarChart"></canvas>
-                                </div>
-                                <!-- Estadísticas numéricas debajo del gráfico -->
-                                {% set js_count = libraries | selectattr('type', 'equalto', 'js') | list | length %}
-                                {% set css_count = libraries | selectattr('type', 'equalto', 'css') | list | length %}
-                                {% set total_tech = js_count + css_count %}
-                                <div class="chart-summary">
-                                    <div class="text-center">
-                                        <span class="modern-badge js me-2">
-                                            <i class="bi bi-braces"></i>
-                                            {{ js_count }} JavaScript{% if total_tech > 0 %} ({{ ((js_count / total_tech) * 100) | round }}%){% endif %}
-                                        </span>
-                                        <span class="modern-badge css">
-                                            <i class="bi bi-palette"></i>
-                                            {{ css_count }} CSS{% if total_tech > 0 %} ({{ ((css_count / total_tech) * 100) | round }}%){% endif %}
-                                        </span>
-                                    </div>
-                                    <div class="mt-2 text-center">
-                                        <small class="text-muted">
-                                            Total: {{ total_tech }} tecnologías detectadas
-                                        </small>
-                                    </div>
-                                </div>
-                                <!-- Datos ocultos para JavaScript -->
-                                <div style="display: none;"
-                                     data-js-count="{{ js_count }}"
-                                     data-css-count="{{ css_count }}"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-4 mb-4">
+                    <div class="col-lg-6 mb-4">
                         <div class="card modern-chart-card">
                             <div class="card-header">
                                 <h6 class="mb-0">
@@ -1490,7 +1449,6 @@ function initAllCharts() {
 
         // Inicializar gráficos
         initSecurityDonut(chartData.security);
-        initTechBar(chartData.technology);
         initSecurityGauge(chartData.securityScore);
         initExecutiveGauge(chartData.executiveScore);
 
@@ -1511,13 +1469,11 @@ function extractChartData() {
         const vulnEl = document.querySelector('[data-vuln-count]');
         const safeEl = document.querySelector('[data-safe-count]');
         const unknownEl = document.querySelector('[data-unknown-count]');
-        const jsEl = document.querySelector('[data-js-count]');
-        const cssEl = document.querySelector('[data-css-count]');
         const scoreEl = document.querySelector('[data-security-score]');
         const executiveEl = document.querySelector('[data-combined-score]');
         const severityEl = document.querySelector('[data-critical-count]');
 
-        if (!vulnEl || !safeEl || !unknownEl || !jsEl || !cssEl || !scoreEl || !executiveEl) {
+        if (!vulnEl || !safeEl || !unknownEl || !scoreEl || !executiveEl) {
             console.warn('⚠️ No se encontraron todos los elementos de datos básicos');
             return null;
         }
@@ -1527,10 +1483,6 @@ function extractChartData() {
                 vulnerable: parseInt(vulnEl.dataset.vulnCount) || 0,
                 safe: parseInt(safeEl.dataset.safeCount) || 0,
                 unknown: parseInt(unknownEl.dataset.unknownCount) || 0
-            },
-            technology: {
-                javascript: parseInt(jsEl.dataset.jsCount) || 0,
-                css: parseInt(cssEl.dataset.cssCount) || 0
             },
             securityScore: parseInt(scoreEl.dataset.securityScore) || 0,
             executiveScore: {
@@ -1594,48 +1546,6 @@ function initSecurityDonut(data) {
     console.log('✅ Gráfico donut inicializado');
 }
 
-// Inicializar gráfico de barras de tecnologías
-function initTechBar(data) {
-    const ctx = document.getElementById('techBarChart');
-    if (!ctx) return;
-
-    const total = data.javascript + data.css;
-    if (total === 0) return;
-
-    const jsPercent = ((data.javascript / total) * 100).toFixed(1);
-    const cssPercent = ((data.css / total) * 100).toFixed(1);
-
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: [`JavaScript (${jsPercent}%)`, `CSS (${cssPercent}%)`],
-            datasets: [{
-                data: [data.javascript, data.css],
-                backgroundColor: ['#f59e0b', '#3b82f6'],
-                borderRadius: 6
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    grid: { display: false }
-                },
-                y: {
-                    grid: { display: false }
-                }
-            }
-        }
-    });
-
-    console.log('✅ Gráfico de barras inicializado');
-}
 
 // Inicializar gauge de puntuación
 function initSecurityGauge(score) {
