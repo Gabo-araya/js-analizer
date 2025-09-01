@@ -1,0 +1,822 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte Consolidado de Proyecto - {{ project.name }}{% endblock %}
+
+{% block head %}
+<!-- Reutilizar CSS del enhanced_report -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/enhanced-report.css') }}">
+
+<style>
+    /* Estilos adicionales específicos para el reporte de proyecto */
+    .project-metadata {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+    }
+
+    .project-metadata span {
+        background: rgba(255,255,255,0.2);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+    }
+
+    .urls-analysis-section {
+        margin: 30px 0;
+    }
+
+    .url-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        overflow: hidden;
+        border-left: 4px solid #3498db;
+    }
+
+    .url-header {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .url-title {
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+        word-break: break-all;
+    }
+
+    .url-meta {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+
+    .url-content {
+        padding: 20px;
+    }
+
+    .url-libraries, .url-security {
+        margin-bottom: 20px;
+    }
+
+    .library-usage-info {
+        background: #e7f3ff;
+        padding: 10px;
+        border-radius: 5px;
+        margin-top: 10px;
+        font-size: 0.85rem;
+    }
+
+    .usage-urls {
+        margin-top: 5px;
+    }
+
+    .usage-url {
+        display: inline-block;
+        background: #007bff;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        margin: 2px;
+        text-decoration: none;
+    }
+
+    .consolidated-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin: 30px 0;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-top: 4px solid #3498db;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .project-breadcrumb {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .consolidated-headers-matrix {
+        overflow-x: auto;
+        margin: 20px 0;
+    }
+
+    .headers-matrix-table {
+        width: 100%;
+        min-width: 800px;
+        border-collapse: collapse;
+    }
+
+    .headers-matrix-table th,
+    .headers-matrix-table td {
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        text-align: center;
+        font-size: 0.85rem;
+    }
+
+    .headers-matrix-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+    }
+
+    .header-present {
+        background: #d4edda !important;
+        color: #155724;
+    }
+
+    .header-missing {
+        background: #f8d7da !important;
+        color: #721c24;
+    }
+
+    .url-column {
+        max-width: 200px;
+        word-break: break-all;
+        text-align: left !important;
+    }
+</style>
+
+<!-- Copiar CSS inline de enhanced_report.html para compatibilidad -->
+<style>
+    /* Enhanced Report Styles - Legacy (mantenido por compatibilidad) */
+    .report-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .report-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .report-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    .report-subtitle {
+        font-size: 1.2rem;
+        opacity: 0.9;
+    }
+
+    .security-score-circle {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin: 0 auto 20px;
+    }
+
+    .score-excellent { background-color: #27ae60; }
+    .score-good { background-color: #f39c12; }
+    .score-poor { background-color: #e74c3c; }
+
+    .section-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+        overflow: hidden;
+    }
+
+    .section-header {
+        background: #34495e;
+        color: white;
+        padding: 20px;
+        font-size: 1.3rem;
+        font-weight: 600;
+    }
+
+    .section-content {
+        padding: 25px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .info-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #3498db;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+
+    .info-value {
+        color: #34495e;
+    }
+
+    .library-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    .library-table th,
+    .library-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .library-table th {
+        background-color: #34495e;
+        color: white;
+        font-weight: 600;
+    }
+
+    .status-vulnerable {
+        background-color: #fdf2f2;
+        color: #e74c3c;
+    }
+
+    .status-safe {
+        background-color: #f0f9f0;
+        color: #27ae60;
+    }
+
+    .status-unknown {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .modern-badge {
+        display: inline-block;
+        padding: 0.25em 0.6em;
+        font-size: 0.75em;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
+    }
+
+    .modern-badge.danger { background-color: #dc3545; color: white; }
+    .modern-badge.success { background-color: #28a745; color: white; }
+    .modern-badge.warning { background-color: #ffc107; color: #212529; }
+    .modern-badge.info { background-color: #17a2b8; color: white; }
+    .modern-badge.js { background-color: #f7df1e; color: #2c3e50; }
+    .modern-badge.css { background-color: #1572b6; color: white; }
+
+    .print-button {
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        z-index: 1000;
+    }
+
+    @media print {
+        .print-button, .navbar, .btn, .project-breadcrumb { display: none !important; }
+        .report-container { max-width: 100%; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="report-container">
+    <!-- Breadcrumb de navegación -->
+    <div class="project-breadcrumb">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('projects') }}">Proyectos</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('project_detail', project_id=project.id) }}">{{ project.name }}</a></li>
+                <li class="breadcrumb-item active">Reporte Consolidado</li>
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Print Button -->
+    <button class="print-button btn btn-primary" onclick="window.print()">
+        <i class="bi bi-printer"></i>
+        Imprimir Reporte
+    </button>
+
+    <!-- Dashboard Header Moderno -->
+    <div class="dashboard-header dashboard-animate">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="dashboard-title">
+                    <i class="bi bi-folder-check me-3"></i>
+                    Reporte Consolidado de Proyecto
+                </h1>
+                <p class="dashboard-subtitle">
+                    <i class="bi bi-building me-2"></i>
+                    {{ project.name }}
+                </p>
+                <div class="d-flex gap-3 text-white-50">
+                    <span><i class="bi bi-globe me-1"></i>{{ project_stats.total_urls }} URLs analizadas</span>
+                    <span><i class="bi bi-check-circle me-1"></i>{{ project_stats.total_scans }} escaneos consolidados</span>
+                    <span><i class="bi bi-calendar-event me-1"></i>Generado automáticamente</span>
+                </div>
+                {% if project.description %}
+                <div class="mt-2 text-white-75" style="font-size: 0.9rem;">
+                    <i class="bi bi-info-circle me-1"></i>{{ project.description }}
+                </div>
+                {% endif %}
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="modern-score-circle {{ 'excellent' if consolidated_security_analysis.security_score >= 80 else 'good' if consolidated_security_analysis.security_score >= 60 else 'poor' }}">
+                    {{ consolidated_security_analysis.security_score }}%
+                </div>
+                <div class="mt-2 text-white-50 small">Puntuación Consolidada de Seguridad</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Executive Summary Card -->
+    <div class="row dashboard-animate" style="animation-delay: 0.3s;">
+        <div class="col-12">
+            <div class="card modern-card">
+                <div class="card-header modern-card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <i class="bi bi-clipboard-data"></i>
+                    <span>Resumen Ejecutivo del Proyecto</span>
+                </div>
+                <div class="card-body modern-card-body">
+            <!-- Consolidated Statistics -->
+            <div class="consolidated-stats">
+                <div class="stat-card">
+                    <div class="stat-number">{{ project_stats.total_urls }}</div>
+                    <div class="stat-label">URLs Únicas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ project_stats.total_libraries }}</div>
+                    <div class="stat-label">Bibliotecas Encontradas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number {{ 'text-danger' if project_stats.total_vulnerabilities > 0 else 'text-success' }}">{{ project_stats.total_vulnerabilities }}</div>
+                    <div class="stat-label">Vulnerabilidades Detectadas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ project_stats.total_files }}</div>
+                    <div class="stat-label">Archivos JavaScript</div>
+                </div>
+            </div>
+
+            <!-- Key Findings -->
+            <div class="mt-4">
+                <h5 style="color: #2c3e50; margin-bottom: 20px;">
+                    <i class="bi bi-search"></i>
+                    Hallazgos Principales del Proyecto:
+                </h5>
+                <ul class="list-unstyled">
+                    {% if project_stats.total_vulnerabilities > 0 %}
+                    <li class="mb-2">
+                        <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+                        <strong>{{ project_stats.total_vulnerabilities }}</strong> {{ 'vulnerabilidad detectada' if project_stats.total_vulnerabilities == 1 else 'vulnerabilidades detectadas' }} en el conjunto de URLs del proyecto
+                    </li>
+                    {% endif %}
+
+                    {% if consolidated_security_analysis.security_score < 70 %}
+                    <li class="mb-2">
+                        <i class="bi bi-shield-exclamation text-warning me-2"></i>
+                        Los encabezados de seguridad HTTP requieren mejoras (Puntuación: <strong>{{ consolidated_security_analysis.security_score }}%</strong>)
+                    </li>
+                    {% endif %}
+
+                    {% if consolidated_security_analysis.missing|length > 0 %}
+                    <li class="mb-2">
+                        <i class="bi bi-shield-x text-warning me-2"></i>
+                        <strong>{{ consolidated_security_analysis.missing|length }}</strong> {{ 'encabezado crítico de seguridad falta' if consolidated_security_analysis.missing|length == 1 else 'encabezados críticos de seguridad faltan' }} en algunas URLs
+                    </li>
+                    {% endif %}
+
+                    {% if project_stats.total_vulnerabilities == 0 and consolidated_security_analysis.security_score >= 70 %}
+                    <li class="mb-2">
+                        <i class="bi bi-shield-check-fill text-success me-2"></i>
+                        Excelente postura de seguridad general - No se identificaron vulnerabilidades críticas
+                    </li>
+                    {% endif %}
+
+                    <li class="mb-2">
+                        <i class="bi bi-folder text-info me-2"></i>
+                        El proyecto <strong>{{ project.name }}</strong> incluye análisis de <strong>{{ project_stats.total_urls }}</strong> URLs únicas con datos consolidados
+                    </li>
+                </ul>
+            </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consolidated Libraries Analysis Card -->
+    <div class="row dashboard-animate" style="animation-delay: 0.4s;">
+        <div class="col-12">
+            <div class="card modern-card">
+                <div class="card-header modern-card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <i class="bi bi-bookshelf"></i>
+                    <span>Inventario Consolidado de Bibliotecas JavaScript</span>
+                </div>
+                <div class="card-body modern-card-body">
+        <div class="section-content">
+            {% if consolidated_libraries %}
+                <table class="library-table">
+                    <thead>
+                        <tr>
+                            <th>Biblioteca / Framework</th>
+                            <th>Versión</th>
+                            <th>Estado de Seguridad</th>
+                            <th>Usado en URLs</th>
+                            <th>Recomendación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lib in consolidated_libraries %}
+                        {% set effective_safe = lib.latest_safe_version | get_effective_safe_version(lib.gl_latest_safe_version) %}
+                        {% set has_vuln = lib.version | check_vulnerability_with_global(lib.latest_safe_version, lib.gl_latest_safe_version) %}
+                        <tr class="{{ 'status-vulnerable' if has_vuln else 'status-safe' if lib.latest_safe_version else 'status-unknown' }}">
+                            <td>
+                                <strong>{{ lib.library_name }}</strong>
+                                {% if lib.description %}
+                                <br><small class="text-muted">{{ lib.description }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code>{{ lib.version or 'Desconocida' }}</code>
+                            </td>
+                            <td>
+                                {% if has_vuln %}
+                                    <span class="modern-badge danger">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        VULNERABLE
+                                    </span>
+                                {% elif lib.latest_safe_version %}
+                                    <span class="modern-badge success">
+                                        <i class="bi bi-shield-check"></i>
+                                        SEGURA
+                                    </span>
+                                {% else %}
+                                    <span class="modern-badge warning">
+                                        <i class="bi bi-question-circle"></i>
+                                        SIN DATOS
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="library-usage-info">
+                                    <strong>{{ lib.scan_count }} {{ 'URL' if lib.scan_count == 1 else 'URLs' }}</strong>
+                                    <div class="usage-urls">
+                                        {% for url in lib.used_in_urls %}
+                                            <span class="usage-url" title="{{ url }}">
+                                                {{ url.split('://')[1].split('/')[0] if '://' in url else url[:30] }}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if has_vuln %}
+                                    <strong class="text-danger">Actualizar urgentemente</strong>
+                                    {% if effective_safe %}
+                                    <br><small>Versión segura: {{ effective_safe }}</small>
+                                    {% endif %}
+                                {% elif lib.latest_safe_version %}
+                                    <span class="text-success">✓ Versión actual es segura</span>
+                                {% else %}
+                                    <span class="text-warning">Revisión manual requerida</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="text-center p-4">
+                    <i class="bi bi-bookshelf display-4 text-muted"></i>
+                    <h5 class="mt-3">No se Detectaron Bibliotecas</h5>
+                    <p class="text-muted">No se detectaron bibliotecas JavaScript en los escaneos revisados de este proyecto.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Consolidated Security Headers Analysis -->
+    <div class="section-card">
+        <div class="section-header">
+            <i class="bi bi-shield-check"></i>
+            Análisis Consolidado de Encabezados de Seguridad
+        </div>
+        <div class="section-content">
+            <p class="mb-4">
+                Este análisis muestra el estado de los encabezados de seguridad HTTP consolidado para todas las
+                <strong>{{ consolidated_security_analysis.total_urls }}</strong> URLs del proyecto.
+            </p>
+
+            <!-- Security Headers Matrix -->
+            <h6 class="mt-4 mb-3">
+                <i class="bi bi-table"></i>
+                Matriz de Cobertura de Headers por URL
+            </h6>
+            <div class="consolidated-headers-matrix">
+                <table class="headers-matrix-table">
+                    <thead>
+                        <tr>
+                            <th class="url-column">URL</th>
+                            {% for header in ['Strict-Transport-Security', 'Content-Security-Policy', 'X-Frame-Options', 'X-Content-Type-Options', 'X-XSS-Protection', 'Referrer-Policy', 'Permissions-Policy'] %}
+                            <th>{{ header.replace('-', '-<br>') | safe }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for url_data in urls_data %}
+                        <tr>
+                            <td class="url-column">
+                                <a href="{{ url_data.scan.url }}" target="_blank" class="text-decoration-none">
+                                    {{ url_data.scan.url.split('://')[1] if '://' in url_data.scan.url else url_data.scan.url }}
+                                </a>
+                            </td>
+                            {% for header in ['Strict-Transport-Security', 'Content-Security-Policy', 'X-Frame-Options', 'X-Content-Type-Options', 'X-XSS-Protection', 'Referrer-Policy', 'Permissions-Policy'] %}
+                            <td class="{{ 'header-present' if header in url_data.headers else 'header-missing' }}">
+                                {{ '✓' if header in url_data.headers else '✗' }}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Headers Present Across Project -->
+            {% if consolidated_security_analysis.present %}
+                <h6 class="mt-4 mb-3 text-success">
+                    <i class="bi bi-check-circle-fill"></i>
+                    Encabezados de Seguridad Implementados
+                </h6>
+                <table class="library-table">
+                    <thead>
+                        <tr>
+                            <th>Encabezado HTTP</th>
+                            <th>Presente en URLs</th>
+                            <th>Ausente en URLs</th>
+                            <th>Valor Ejemplo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for header in consolidated_security_analysis.present %}
+                        <tr class="status-safe">
+                            <td><strong>{{ header.name }}</strong></td>
+                            <td>
+                                <span class="modern-badge success">{{ header.present_in_urls|length }}</span>
+                                {% if header.missing_in_urls|length > 0 %}
+                                    <small class="text-muted d-block">
+                                        Falta en {{ header.missing_in_urls|length }} URLs
+                                    </small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if header.missing_in_urls|length > 0 %}
+                                    <span class="modern-badge warning">{{ header.missing_in_urls|length }}</span>
+                                {% else %}
+                                    <span class="modern-badge success">0</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code style="font-size: 0.8rem;">{{ header.value[:50] }}{{ '...' if header.value|length > 50 else '' }}</code>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+
+            <!-- Headers Missing Across Project -->
+            {% if consolidated_security_analysis.missing %}
+                <h6 class="mt-4 mb-3 text-danger">
+                    <i class="bi bi-x-circle-fill"></i>
+                    Encabezados de Seguridad Faltantes en Todas las URLs
+                </h6>
+                <table class="library-table">
+                    <thead>
+                        <tr>
+                            <th>Encabezado Faltante</th>
+                            <th>Impacto en Seguridad</th>
+                            <th>Configuración Recomendada</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for header in consolidated_security_analysis.missing %}
+                        <tr class="status-vulnerable">
+                            <td><strong>{{ header.name }}</strong></td>
+                            <td>{{ header.description }}</td>
+                            <td>
+                                <code style="font-size: 0.8rem;">{{ header.recommendation }}</code>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Analysis by URL Card -->
+    <div class="row dashboard-animate" style="animation-delay: 0.5s;">
+        <div class="col-12">
+            <div class="card modern-card">
+                <div class="card-header modern-card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <i class="bi bi-list-ul"></i>
+                    <span>Análisis Detallado por URL</span>
+                </div>
+                <div class="card-body modern-card-body">
+            <p class="mb-4">
+                Análisis individual de cada URL incluida en el proyecto (solo se muestran los escaneos más recientes y revisados).
+            </p>
+
+            <div class="urls-analysis-section">
+                {% for url_data in urls_data %}
+                <div class="url-card">
+                    <div class="url-header">
+                        <h6 class="url-title">
+                            <a href="{{ url_data.scan.url }}" target="_blank" class="text-decoration-none">
+                                {{ url_data.scan.url }}
+                            </a>
+                        </h6>
+                        <div class="url-meta">
+                            <i class="bi bi-calendar me-1"></i>{{ url_data.scan.scan_date }}
+                            <span class="ms-3"><i class="bi bi-files me-1"></i>{{ url_data.libraries|length }} bibliotecas</span>
+                            <span class="ms-3"><i class="bi bi-shield me-1"></i>{{ url_data.security_analysis.security_score }}% seguridad</span>
+                        </div>
+                    </div>
+                    <div class="url-content">
+                        <!-- URL Libraries -->
+                        {% if url_data.libraries %}
+                        <div class="url-libraries">
+                            <h6><i class="bi bi-bookshelf me-2"></i>Bibliotecas JavaScript:</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for lib in url_data.libraries %}
+                                {% set has_vuln = lib.version | check_vulnerability_with_global(lib.latest_safe_version, lib.gl_latest_safe_version) %}
+                                <span class="modern-badge {{ 'danger' if has_vuln else 'success' if lib.latest_safe_version else 'warning' }}">
+                                    {{ lib.library_name }} {{ lib.version or '?' }}
+                                    {% if has_vuln %}⚠️{% endif %}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- URL Security Score -->
+                        <div class="url-security">
+                            <h6><i class="bi bi-shield-check me-2"></i>Puntuación de Seguridad:
+                                <span class="badge {{ 'bg-success' if url_data.security_analysis.security_score >= 80 else 'bg-warning' if url_data.security_analysis.security_score >= 60 else 'bg-danger' }}">
+                                    {{ url_data.security_analysis.security_score }}%
+                                </span>
+                            </h6>
+                            {% if url_data.security_analysis.missing %}
+                            <small class="text-muted">
+                                Faltan {{ url_data.security_analysis.missing|length }} encabezados de seguridad
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Recommendations Card -->
+    <div class="row dashboard-animate" style="animation-delay: 0.6s;">
+        <div class="col-12">
+            <div class="card modern-card">
+                <div class="card-header modern-card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <i class="bi bi-lightbulb"></i>
+                    <span>Recomendaciones Consolidadas del Proyecto</span>
+                </div>
+                <div class="card-body modern-card-body">
+            {% set vulnerable_libs = [] %}
+            {% for lib in consolidated_libraries %}
+                {% if lib.version and lib.version | check_vulnerability_with_global(lib.latest_safe_version, lib.gl_latest_safe_version) %}
+                    {% set _ = vulnerable_libs.append(lib) %}
+                {% endif %}
+            {% endfor %}
+
+            {% if vulnerable_libs %}
+            <h6 class="text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Prioridad Alta - Vulnerabilidades</h6>
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    {% for lib in vulnerable_libs[:5] %}
+                    <li>Actualizar <strong>{{ lib.library_name }}</strong> desde versión {{ lib.version }} (presente en {{ lib.scan_count }} URLs)</li>
+                    {% endfor %}
+                    {% if vulnerable_libs|length > 5 %}
+                    <li><em>... y {{ vulnerable_libs|length - 5 }} vulnerabilidades adicionales</em></li>
+                    {% endif %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if consolidated_security_analysis.missing %}
+            <h6 class="text-warning mt-4"><i class="bi bi-shield-plus me-2"></i>Mejorar Seguridad HTTP</h6>
+            <div class="alert alert-warning">
+                <p>Implementar los siguientes encabezados de seguridad en todas las URLs:</p>
+                <ul class="mb-0">
+                    {% for header in consolidated_security_analysis.missing[:3] %}
+                    <li><strong>{{ header.name }}:</strong> {{ header.description }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if consolidated_security_analysis.security_score >= 70 and project_stats.total_vulnerabilities == 0 %}
+            <h6 class="text-success"><i class="bi bi-check-circle-fill me-2"></i>Buena Postura de Seguridad</h6>
+            <div class="alert alert-success">
+                <ul class="mb-0">
+                    <li>El proyecto mantiene un buen nivel de seguridad general</li>
+                    <li>Continuar monitoreando nuevas vulnerabilidades regularmente</li>
+                    <li>Mantener las bibliotecas actualizadas</li>
+                </ul>
+            </div>
+            {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Dashboard -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card modern-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <div class="card-body text-center py-4">
+            <h5><i class="bi bi-cpu me-2"></i> Reporte Consolididado de Análisis de Seguridad Web <br />
+            <i class="bi bi-folder-check me-2"></i>Proyecto: {{ project.name }}
+            </h5>
+            <p class="mb-0">
+                {% if project.website %}
+                <i class="bi bi-link me-2"></i> URL: <a href="{{ project.website }}" target="_blank" class="text-white">{{ project.website }}</a>
+                {% endif %}
+            </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js CDN - Reutilizar del enhanced_report -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+// Datos del proyecto pasados desde Python
+const projectStats = {{ project_stats_json | safe }};
+const consolidatedLibraries = {{ consolidated_libraries_json | safe }};
+const urlsData = {{ urls_data_json | safe }};
+
+console.log('🎨 Reporte consolidado del proyecto cargado');
+console.log('📊 Estadísticas del proyecto:', projectStats);
+console.log('📚 Bibliotecas consolidadas:', consolidatedLibraries.length);
+console.log('🌐 URLs analizadas:', urlsData.length);
+
+// Aquí se pueden agregar gráficos específicos para el reporte de proyecto
+// Por ahora, mantener funcionalidad básica de impresión
+</script>
+{% endblock %}

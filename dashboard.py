@@ -129,6 +129,16 @@ def truncate_left(value, length=40):
         return value
     return '...' + value[-(length-3):]
 
+@app.template_filter('check_vulnerability_with_global')
+def check_vulnerability_with_global_filter(current_version, individual_safe, global_safe):
+    """Template filter to check vulnerability with global library data"""
+    return check_vulnerability_with_global(current_version, individual_safe, global_safe)
+
+@app.template_filter('get_effective_safe_version')
+def get_effective_safe_version_filter(individual_safe, global_safe):
+    """Template filter to get effective safe version"""
+    return get_effective_safe_version(individual_safe, global_safe)
+
 def analyze_security_headers(headers):
     """
     Analyzes HTTP headers for security best practices (Enhanced 2024)
@@ -2744,6 +2754,274 @@ def get_scan_export_data(scan_id):
     # Deep convert all Row objects to ensure JSON serialization compatibility
     return convert_rows_deep(result)
 
+def get_project_consolidated_data(project_id):
+    """
+    Get consolidated data for project report:
+    1. Filter only scans with reviewed = 1  
+    2. Deduplicate by URL (take most recent)
+    3. Aggregate all libraries and files
+    4. Consolidate security headers
+    """
+    conn = get_db_connection()
+    
+    # Get project info
+    project = conn.execute('SELECT * FROM projects WHERE id = ? AND is_active = 1', (project_id,)).fetchone()
+    if not project:
+        conn.close()
+        return None
+    
+    # Get latest reviewed scans for each URL in project (deduplication logic)
+    latest_scans_query = '''
+        WITH latest_scans AS (
+            SELECT url, MAX(scan_date) as latest_date
+            FROM scans 
+            WHERE project_id = ? AND reviewed = 1
+            GROUP BY url
+        )
+        SELECT s.*, ls.url as deduplicated_url
+        FROM scans s
+        INNER JOIN latest_scans ls ON s.url = ls.url AND s.scan_date = ls.latest_date
+        WHERE s.project_id = ? AND s.reviewed = 1
+        ORDER BY s.scan_date DESC
+    '''
+    
+    scans = conn.execute(latest_scans_query, (project_id, project_id)).fetchall()
+    
+    if not scans:
+        conn.close()
+        return {
+            'project': convert_rows_deep(project),
+            'scans': [],
+            'consolidated_libraries': [],
+            'consolidated_file_urls': [], 
+            'consolidated_headers': {},
+            'consolidated_security_analysis': {},
+            'urls_data': [],
+            'project_stats': {
+                'total_urls': 0,
+                'total_scans': 0,
+                'total_libraries': 0,
+                'total_vulnerabilities': 0,
+                'total_files': 0
+            }
+        }
+    
+    # Extract scan IDs for further queries
+    scan_ids = [scan['id'] for scan in scans]
+    scan_ids_placeholder = ','.join('?' * len(scan_ids))
+    
+    # Get all libraries from deduplicated scans
+    libraries_query = f'''
+        SELECT l.*, s.url, s.scan_date
+        FROM libraries l
+        INNER JOIN scans s ON l.scan_id = s.id
+        WHERE l.scan_id IN ({scan_ids_placeholder}) AND l.type = 'js'
+        ORDER BY s.url, l.library_name
+    '''
+    all_libraries = conn.execute(libraries_query, scan_ids).fetchall()
+    
+    # Get all file URLs from deduplicated scans
+    file_urls_query = f'''
+        SELECT f.*, s.url as scan_url
+        FROM file_urls f
+        INNER JOIN scans s ON f.scan_id = s.id  
+        WHERE f.scan_id IN ({scan_ids_placeholder}) AND f.file_type = 'js'
+        ORDER BY s.url, f.file_url
+    '''
+    all_file_urls = conn.execute(file_urls_query, scan_ids).fetchall()
+    
+    # Get all version strings from deduplicated scans
+    version_strings_query = f'''
+        SELECT v.*, s.url as scan_url
+        FROM version_strings v
+        INNER JOIN scans s ON v.scan_id = s.id
+        WHERE v.scan_id IN ({scan_ids_placeholder}) AND v.file_type = 'js'
+        ORDER BY s.url, v.file_url, v.line_number
+    '''
+    all_version_strings = conn.execute(version_strings_query, scan_ids).fetchall()
+    
+    conn.close()
+    
+    # Process and deduplicate libraries across URLs
+    consolidated_libraries = deduplicate_libraries(all_libraries)
+    
+    # Consolidate security headers from all scans
+    consolidated_headers, consolidated_security_analysis = consolidate_security_headers(scans)
+    
+    # Create URL-specific data for detailed view
+    urls_data = []
+    for scan in scans:
+        url_libraries = [lib for lib in all_libraries if lib['scan_id'] == scan['id']]
+        url_files = [f for f in all_file_urls if f['scan_id'] == scan['id']]
+        
+        # Parse headers for this specific URL
+        scan_headers = json.loads(scan['headers']) if scan['headers'] else {}
+        url_security_analysis = analyze_security_headers(scan_headers)
+        
+        urls_data.append({
+            'scan': convert_rows_deep(scan),
+            'libraries': convert_rows_deep(url_libraries),
+            'file_urls': convert_rows_deep(url_files),
+            'headers': scan_headers,
+            'security_analysis': url_security_analysis
+        })
+    
+    # Calculate project statistics
+    project_stats = calculate_project_stats(scans, consolidated_libraries, all_file_urls)
+    
+    result = {
+        'project': convert_rows_deep(project),
+        'scans': convert_rows_deep(scans),
+        'consolidated_libraries': consolidated_libraries,
+        'consolidated_file_urls': convert_rows_deep(all_file_urls),
+        'consolidated_version_strings': convert_rows_deep(all_version_strings),
+        'consolidated_headers': consolidated_headers,
+        'consolidated_security_analysis': consolidated_security_analysis,
+        'urls_data': urls_data,
+        'project_stats': project_stats
+    }
+    
+    return result
+
+def deduplicate_libraries(all_libraries):
+    """
+    Deduplicate libraries across URLs:
+    - Group by library_name and version
+    - Keep track of which URLs use each library
+    - Maintain vulnerability information
+    """
+    libraries_dict = {}
+    
+    for lib in all_libraries:
+        key = f"{lib['library_name']}_{lib['version'] or 'unknown'}"
+        
+        if key not in libraries_dict:
+            lib_dict = dict(lib)
+            lib_dict['used_in_urls'] = [lib['url']]
+            lib_dict['scan_count'] = 1
+            libraries_dict[key] = lib_dict
+        else:
+            # Add URL to the list if not already present
+            if lib['url'] not in libraries_dict[key]['used_in_urls']:
+                libraries_dict[key]['used_in_urls'].append(lib['url'])
+                libraries_dict[key]['scan_count'] += 1
+    
+    # Convert back to list and sort
+    consolidated = list(libraries_dict.values())
+    consolidated.sort(key=lambda x: (x['library_name'], x['version'] or ''))
+    
+    return consolidated
+
+def consolidate_security_headers(scans):
+    """
+    Consolidate security headers from multiple scans:
+    - Analyze headers present/missing across all URLs
+    - Calculate overall security score
+    - Generate consolidated recommendations
+    """
+    all_headers = {}
+    security_analyses = []
+    
+    # Process each scan's headers
+    for scan in scans:
+        scan_headers = json.loads(scan['headers']) if scan['headers'] else {}
+        all_headers[scan['url']] = scan_headers
+        
+        # Get security analysis for this scan
+        security_analysis = analyze_security_headers(scan_headers)
+        security_analyses.append({
+            'url': scan['url'],
+            'analysis': security_analysis
+        })
+    
+    # Consolidate security analysis across all URLs
+    all_security_headers = {
+        'Strict-Transport-Security': {'name': 'Strict-Transport-Security', 'description': 'Fuerza conexiones HTTPS seguras', 'recommendation': 'max-age=31536000; includeSubDomains'},
+        'Content-Security-Policy': {'name': 'Content-Security-Policy', 'description': 'Previene ataques XSS y de inyección de código', 'recommendation': "default-src 'self'"},
+        'X-Frame-Options': {'name': 'X-Frame-Options', 'description': 'Previene ataques de clickjacking', 'recommendation': 'DENY'},
+        'X-Content-Type-Options': {'name': 'X-Content-Type-Options', 'description': 'Previene ataques de MIME sniffing', 'recommendation': 'nosniff'},
+        'X-XSS-Protection': {'name': 'X-XSS-Protection', 'description': 'Activa protección XSS del navegador', 'recommendation': '1; mode=block'},
+        'Referrer-Policy': {'name': 'Referrer-Policy', 'description': 'Controla información del referrer', 'recommendation': 'strict-origin-when-cross-origin'},
+        'Permissions-Policy': {'name': 'Permissions-Policy', 'description': 'Controla características del navegador', 'recommendation': 'geolocation=(), microphone=(), camera=()'}
+    }
+    
+    present_headers = []
+    missing_headers = []
+    
+    # Determine which headers are consistently present/missing
+    for header_name, header_info in all_security_headers.items():
+        urls_with_header = []
+        urls_without_header = []
+        header_values = []
+        
+        for url, headers in all_headers.items():
+            if header_name in headers:
+                urls_with_header.append(url)
+                header_values.append(headers[header_name])
+            else:
+                urls_without_header.append(url)
+        
+        if urls_with_header:
+            # Header is present in at least one URL
+            present_headers.append({
+                'name': header_name,
+                'description': header_info['description'],
+                'value': header_values[0] if header_values else '',  # Use first occurrence
+                'present_in_urls': urls_with_header,
+                'missing_in_urls': urls_without_header
+            })
+        else:
+            # Header is missing in all URLs
+            missing_headers.append({
+                'name': header_name,
+                'description': header_info['description'],
+                'recommendation': header_info['recommendation'],
+                'missing_in_urls': list(all_headers.keys())
+            })
+    
+    # Calculate consolidated security score
+    total_headers = len(all_security_headers)
+    present_count = len(present_headers)
+    security_score = int((present_count / total_headers) * 100) if total_headers > 0 else 0
+    
+    consolidated_security_analysis = {
+        'present': present_headers,
+        'missing': missing_headers,
+        'security_score': security_score,
+        'total_urls': len(all_headers)
+    }
+    
+    return all_headers, consolidated_security_analysis
+
+def calculate_project_stats(scans, consolidated_libraries, all_file_urls):
+    """Calculate consolidated project statistics"""
+    
+    # Count vulnerabilities using global library data
+    vulnerable_count = 0
+    for lib in consolidated_libraries:
+        # Check if this library has vulnerability using existing logic
+        effective_safe = get_effective_safe_version(
+            lib.get('latest_safe_version'), 
+            lib.get('gl_latest_safe_version')
+        )
+        if check_vulnerability_with_global(
+            lib.get('version'),
+            lib.get('latest_safe_version'), 
+            lib.get('gl_latest_safe_version')
+        ):
+            vulnerable_count += 1
+    
+    stats = {
+        'total_urls': len(scans),
+        'total_scans': len(scans),
+        'total_libraries': len(consolidated_libraries),
+        'total_vulnerabilities': vulnerable_count,
+        'total_files': len(all_file_urls),
+        'urls_analyzed': [scan['url'] for scan in scans]
+    }
+    
+    return stats
+
 @app.route('/report/enhanced/<int:scan_id>')
 @login_required
 def enhanced_report(scan_id):
@@ -2774,6 +3052,48 @@ def enhanced_report(scan_id):
         traceback.print_exc()
         flash(f'Error al generar reporte: {str(e)}', 'error')
         return redirect(url_for('scan_detail', scan_id=scan_id))
+
+@app.route('/report/project/<int:project_id>')
+@login_required
+def project_consolidated_report(project_id):
+    """Display consolidated HTML report for project with all reviewed scans"""
+    try:
+        data = get_project_consolidated_data(project_id)
+        if not data:
+            flash('Proyecto no encontrado', 'error')
+            return redirect(url_for('projects'))
+        
+        # Check if project has any reviewed scans
+        if not data['scans']:
+            flash('No hay escaneos revisados en este proyecto para generar el reporte', 'warning')
+            return redirect(url_for('project_detail', project_id=project_id))
+        
+        # Pre-serialize data to JSON for JavaScript
+        import json
+        consolidated_libraries_json = json.dumps(data['consolidated_libraries'])
+        urls_data_json = json.dumps(data['urls_data'])
+        project_stats_json = json.dumps(data['project_stats'])
+        
+        return render_template('project_consolidated_report.html',
+                             project=data['project'],
+                             scans=data['scans'],
+                             consolidated_libraries=data['consolidated_libraries'],
+                             consolidated_libraries_json=consolidated_libraries_json,
+                             consolidated_file_urls=data['consolidated_file_urls'],
+                             consolidated_version_strings=data['consolidated_version_strings'],
+                             consolidated_headers=data['consolidated_headers'],
+                             consolidated_security_analysis=data['consolidated_security_analysis'],
+                             urls_data=data['urls_data'],
+                             urls_data_json=urls_data_json,
+                             project_stats=data['project_stats'],
+                             project_stats_json=project_stats_json)
+    
+    except Exception as e:
+        print(f"Project consolidated report error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash(f'Error al generar reporte consolidado: {str(e)}', 'error')
+        return redirect(url_for('project_detail', project_id=project_id))
 
 @app.route('/export/pdf/<int:scan_id>')
 @login_required
