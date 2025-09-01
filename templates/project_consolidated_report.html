@@ -160,6 +160,216 @@
         word-break: break-all;
         text-align: left !important;
     }
+
+    /* Matrix Heatmap Styles - Simplified Table Layout */
+    .heatmap-container {
+        width: 100%;
+        overflow-x: auto;
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+    }
+
+    .heatmap-table {
+        width: 100%;
+        min-width: 1400px;
+        border-collapse: separate;
+        border-spacing: 3px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .heatmap-table th {
+        background-color: #495057;
+        color: white;
+        padding: 12px 6px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 0.75rem;
+        border-radius: 6px;
+        line-height: 1.2;
+        vertical-align: middle;
+        min-width: 50px;
+    }
+
+    .heatmap-table th.url-header {
+        background-color: #343a40;
+        width: 300px;
+        min-width: 250px;
+        text-align: left;
+        padding-left: 15px;
+    }
+
+    .heatmap-table td {
+        padding: 12px 6px;
+        text-align: center;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        cursor: help;
+        position: relative;
+        min-width: 50px;
+    }
+
+    .heatmap-table td.url-cell {
+        background-color: #e9ecef;
+        color: #495057;
+        text-align: left;
+        padding-left: 15px;
+        font-size: 0.8rem;
+        line-height: 1.3;
+        width: 300px;
+        min-width: 250px;
+        word-break: break-all;
+        font-weight: 500;
+    }
+
+    .heatmap-table td.data-cell {
+        font-size: 1.4rem;
+        font-weight: bold;
+        min-width: 45px;
+        height: 45px;
+        vertical-align: middle;
+    }
+
+    .heatmap-table td.data-cell.present {
+        background-color: #d4edda;
+        color: #155724;
+        border: 2px solid #c3e6cb;
+    }
+
+    .heatmap-table td.data-cell.missing {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 2px solid #f5c6cb;
+    }
+
+    .heatmap-table td.data-cell:hover {
+        transform: scale(1.15);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        z-index: 100;
+        position: relative;
+        border-width: 3px;
+    }
+
+    .heatmap-table td.data-cell.present:hover {
+        background-color: #c3e6cb;
+        border-color: #28a745;
+    }
+
+    .heatmap-table td.data-cell.missing:hover {
+        background-color: #f5c6cb;
+        border-color: #dc3545;
+    }
+
+    /* Heatmap Legend */
+    .heatmap-legend {
+        border-top: 1px solid #dee2e6;
+        padding-top: 15px;
+        margin-top: 15px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .legend-dot {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: bold;
+        border: 2px solid;
+    }
+
+    .legend-dot.present {
+        background-color: #d4edda;
+        color: #155724;
+        border-color: #c3e6cb;
+    }
+
+    .legend-dot.missing {
+        background-color: #f8d7da;
+        color: #721c24;
+        border-color: #f5c6cb;
+    }
+
+    /* Headers Abbreviations Legend */
+    .headers-abbreviations {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 15px;
+    }
+
+    .headers-abbreviations h6 {
+        color: #495057;
+        font-weight: 600;
+    }
+
+    .headers-abbreviations .row {
+        line-height: 1.6;
+    }
+
+    .headers-abbreviations strong {
+        color: #343a40;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 992px) {
+        .heatmap-table {
+            min-width: 1200px;
+        }
+        
+        .heatmap-table th,
+        .heatmap-table td {
+            padding: 8px 4px;
+            font-size: 0.75rem;
+        }
+        
+        .heatmap-table td.data-cell {
+            font-size: 1.2rem;
+            min-width: 35px;
+            height: 35px;
+        }
+        
+        .heatmap-table th.url-header,
+        .heatmap-table td.url-cell {
+            width: 200px;
+            min-width: 180px;
+            font-size: 0.7rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .heatmap-container {
+            padding: 10px;
+        }
+        
+        .heatmap-table {
+            min-width: 600px;
+        }
+        
+        .heatmap-table th,
+        .heatmap-table td {
+            padding: 6px 2px;
+            font-size: 0.7rem;
+        }
+        
+        .heatmap-table td.data-cell {
+            font-size: 1rem;
+            min-width: 30px;
+            height: 30px;
+        }
+    }
 </style>
 
 <!-- Copiar CSS inline de enhanced_report.html para compatibilidad -->
@@ -445,6 +655,247 @@
         </div>
     </div>
 
+    <!-- Project Analytics Dashboard Card -->
+    <div class="row dashboard-animate" style="animation-delay: 0.35s;">
+        <div class="col-12">
+            <div class="card modern-card">
+                <div class="card-header modern-card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    <span>Dashboard de Analíticas del Proyecto</span>
+                </div>
+                <div class="card-body modern-card-body">
+                    <div class="row mb-4 justify-content-center">
+                        <!-- Gráfico 1: Estado General de Bibliotecas -->
+                        <div class="col-lg-6 mb-4">
+                            <div class="card modern-chart-card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-shield-check me-2 text-primary"></i>
+                                        Estado de Bibliotecas Consolidado
+                                    </h6>
+                                </div>
+                                <div class="card-body" style="height: 320px; position: relative;">
+                                    <div style="height: 200px; position: relative;">
+                                        <canvas id="consolidatedSecurityDonut"></canvas>
+                                    </div>
+                                    <!-- Calcular datos consolidados -->
+                                    {% set consolidated_vuln = namespace(value=0) %}
+                                    {% set consolidated_safe = namespace(value=0) %}
+                                    {% set consolidated_unknown = namespace(value=0) %}
+                                    
+                                    {% for lib in consolidated_libraries %}
+                                        {% if lib.version | check_vulnerability_with_global(lib.latest_safe_version, lib.gl_latest_safe_version) %}
+                                            {% set consolidated_vuln.value = consolidated_vuln.value + 1 %}
+                                        {% elif lib.latest_safe_version %}
+                                            {% set consolidated_safe.value = consolidated_safe.value + 1 %}
+                                        {% else %}
+                                            {% set consolidated_unknown.value = consolidated_unknown.value + 1 %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    <div class="chart-summary">
+                                        <div class="text-center">
+                                            <span class="modern-badge danger me-2">
+                                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                                {{ consolidated_vuln.value }} Vulnerables
+                                            </span>
+                                            <span class="modern-badge success me-2">
+                                                <i class="bi bi-shield-check"></i>
+                                                {{ consolidated_safe.value }} Seguras
+                                            </span>
+                                            <span class="modern-badge warning">
+                                                <i class="bi bi-question-circle"></i>
+                                                {{ consolidated_unknown.value }} Sin Datos
+                                            </span>
+                                        </div>
+                                        <div class="mt-2 text-center">
+                                            <small class="text-muted">
+                                                Total: {{ consolidated_vuln.value + consolidated_safe.value + consolidated_unknown.value }} bibliotecas únicas
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Datos ocultos para JavaScript -->
+                                    <div style="display: none;"
+                                         data-consolidated-vuln="{{ consolidated_vuln.value }}"
+                                         data-consolidated-safe="{{ consolidated_safe.value }}"
+                                         data-consolidated-unknown="{{ consolidated_unknown.value }}"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gráfico 2: Puntuación General del Proyecto -->
+                        <div class="col-lg-6 mb-4">
+                            <div class="card modern-chart-card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-speedometer2 me-2 text-info"></i>
+                                        Puntuación Consolidada
+                                    </h6>
+                                </div>
+                                <div class="card-body text-center" style="height: 320px; display: flex; flex-direction: column; justify-content: center;">
+                                    <div style="height: 120px; position: relative;">
+                                        <canvas id="consolidatedSecurityGauge"></canvas>
+                                    </div>
+                                    <div class="mt-3">
+                                        <h4 class="mb-1" style="color: {{ '#22c55e' if consolidated_security_analysis.security_score >= 75 else '#f59e0b' if consolidated_security_analysis.security_score >= 50 else '#ef4444' }}">
+                                            {{ consolidated_security_analysis.security_score }}%
+                                        </h4>
+                                        <small class="text-muted">Puntuación Consolidada</small>
+                                    </div>
+                                    
+                                    <div class="chart-summary mt-2">
+                                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                            {% if consolidated_security_analysis.security_score >= 80 %}
+                                                <span class="modern-badge success">
+                                                    <i class="bi bi-star-fill"></i>
+                                                    Excelente
+                                                </span>
+                                            {% elif consolidated_security_analysis.security_score >= 60 %}
+                                                <span class="modern-badge warning">
+                                                    <i class="bi bi-check-circle"></i>
+                                                    Bueno
+                                                </span>
+                                            {% else %}
+                                                <span class="modern-badge danger">
+                                                    <i class="bi bi-exclamation-triangle"></i>
+                                                    Necesita Mejoras
+                                                </span>
+                                            {% endif %}
+                                            <span class="modern-badge info">
+                                                <i class="bi bi-shield"></i>
+                                                {{ consolidated_security_analysis.present|length if consolidated_security_analysis.present else 0 }}/{{ (consolidated_security_analysis.present|length + consolidated_security_analysis.missing|length) if consolidated_security_analysis else 0 }} Headers
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Datos ocultos para JavaScript -->
+                                    <div style="display: none;" data-consolidated-security-score="{{ consolidated_security_analysis.security_score }}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Matrix Heatmap: Cobertura de Headers por URL -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card modern-chart-card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-grid-3x3-gap me-2 text-success"></i>
+                                        Matrix de Cobertura de Headers de Seguridad
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="headersMatrixHeatmap">
+                                        <div class="heatmap-container">
+                                            <table class="heatmap-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="url-header">URL del Proyecto</th>
+                                                        {% set security_headers = ['Strict-Transport-Security', 'Content-Security-Policy', 'X-Frame-Options', 'X-Content-Type-Options', 'Cross-Origin-Embedder-Policy', 'Cross-Origin-Opener-Policy', 'Referrer-Policy', 'Permissions-Policy', 'Cross-Origin-Resource-Policy', 'X-XSS-Protection', 'Expect-CT', 'Origin-Agent-Cluster'] %}
+                                                        {% for header in security_headers %}
+                                                        <th title="{{ header }}">
+                                                            {% if header == 'Strict-Transport-Security' %}HSTS
+                                                            {% elif header == 'Content-Security-Policy' %}CSP
+                                                            {% elif header == 'X-Frame-Options' %}Frame
+                                                            {% elif header == 'X-Content-Type-Options' %}Content
+                                                            {% elif header == 'Cross-Origin-Embedder-Policy' %}COEP
+                                                            {% elif header == 'Cross-Origin-Opener-Policy' %}COOP
+                                                            {% elif header == 'Referrer-Policy' %}Referrer
+                                                            {% elif header == 'Permissions-Policy' %}Permissions
+                                                            {% elif header == 'Cross-Origin-Resource-Policy' %}CORP
+                                                            {% elif header == 'X-XSS-Protection' %}XSS
+                                                            {% elif header == 'Expect-CT' %}CT
+                                                            {% elif header == 'Origin-Agent-Cluster' %}OAC
+                                                            {% else %}{{ header.split('-')[0] }}
+                                                            {% endif %}
+                                                        </th>
+                                                        {% endfor %}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for url_data in urls_data %}
+                                                    <tr data-url="{{ url_data.scan.url }}">
+                                                        <td class="url-cell" title="{{ url_data.scan.url }}">
+                                                            {% set clean_url = url_data.scan.url.split('://')[1] if '://' in url_data.scan.url else url_data.scan.url %}
+                                                            {{ clean_url }}
+                                                        </td>
+                                                        {% for header in security_headers %}
+                                                        <td class="data-cell {{ 'present' if header in url_data.headers else 'missing' }}" 
+                                                            title="{{ header }}: {{ 'Presente ✓' if header in url_data.headers else 'Ausente ✗' }} en {{ clean_url }}"
+                                                            data-header="{{ header }}"
+                                                            data-status="{{ 'present' if header in url_data.headers else 'missing' }}">
+                                                            {{ '●' if header in url_data.headers else '○' }}
+                                                        </td>
+                                                        {% endfor %}
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        
+                                        <!-- Leyenda mejorada -->
+                                        <div class="heatmap-legend">
+                                            <div class="d-flex justify-content-center gap-4 flex-wrap mb-2">
+                                                <div class="legend-item">
+                                                    <span class="legend-dot present">●</span>
+                                                    <small><strong>Header Presente</strong></small>
+                                                </div>
+                                                <div class="legend-item">
+                                                    <span class="legend-dot missing">○</span>
+                                                    <small><strong>Header Ausente</strong></small>
+                                                </div>
+                                            </div>
+                                            <div class="text-center mb-3">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-cursor me-1"></i>
+                                                    Pasa el cursor sobre cada celda para ver detalles completos del header
+                                                </small>
+                                            </div>
+                                            
+                                            <!-- Leyenda de Abreviaciones -->
+                                            <div class="headers-abbreviations">
+                                                <h6 class="mb-2 text-center">
+                                                    <i class="bi bi-list-ul"></i>
+                                                    Abreviaciones de Headers
+                                                </h6>
+                                                <div class="row small">
+                                                    <div class="col-md-4">
+                                                        <strong>Críticos:</strong><br>
+                                                        <span class="text-danger">HSTS</span>: Strict-Transport-Security<br>
+                                                        <span class="text-danger">CSP</span>: Content-Security-Policy
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <strong>Altos:</strong><br>
+                                                        <span class="text-warning">Frame</span>: X-Frame-Options<br>
+                                                        <span class="text-warning">Content</span>: X-Content-Type-Options<br>
+                                                        <span class="text-warning">COEP</span>: Cross-Origin-Embedder-Policy<br>
+                                                        <span class="text-warning">COOP</span>: Cross-Origin-Opener-Policy
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <strong>Medios/Bajos:</strong><br>
+                                                        <span class="text-info">Referrer</span>: Referrer-Policy<br>
+                                                        <span class="text-info">Permissions</span>: Permissions-Policy<br>
+                                                        <span class="text-info">CORP</span>: Cross-Origin-Resource-Policy<br>
+                                                        <span class="text-secondary">XSS</span>: X-XSS-Protection<br>
+                                                        <span class="text-secondary">CT</span>: Expect-CT<br>
+                                                        <span class="text-secondary">OAC</span>: Origin-Agent-Cluster
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Consolidated Libraries Analysis Card -->
     <div class="row dashboard-animate" style="animation-delay: 0.4s;">
         <div class="col-12">
@@ -548,39 +999,6 @@
                 <strong>{{ consolidated_security_analysis.total_urls }}</strong> URLs del proyecto.
             </p>
 
-            <!-- Security Headers Matrix -->
-            <h6 class="mt-4 mb-3">
-                <i class="bi bi-table"></i>
-                Matriz de Cobertura de Headers por URL
-            </h6>
-            <div class="consolidated-headers-matrix">
-                <table class="headers-matrix-table">
-                    <thead>
-                        <tr>
-                            <th class="url-column">URL</th>
-                            {% for header in ['Strict-Transport-Security', 'Content-Security-Policy', 'X-Frame-Options', 'X-Content-Type-Options', 'X-XSS-Protection', 'Referrer-Policy', 'Permissions-Policy'] %}
-                            <th>{{ header.replace('-', '-<br>') | safe }}</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for url_data in urls_data %}
-                        <tr>
-                            <td class="url-column">
-                                <a href="{{ url_data.scan.url }}" target="_blank" class="text-decoration-none">
-                                    {{ url_data.scan.url.split('://')[1] if '://' in url_data.scan.url else url_data.scan.url }}
-                                </a>
-                            </td>
-                            {% for header in ['Strict-Transport-Security', 'Content-Security-Policy', 'X-Frame-Options', 'X-Content-Type-Options', 'X-XSS-Protection', 'Referrer-Policy', 'Permissions-Policy'] %}
-                            <td class="{{ 'header-present' if header in url_data.headers else 'header-missing' }}">
-                                {{ '✓' if header in url_data.headers else '✗' }}
-                            </td>
-                            {% endfor %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
 
             <!-- Headers Present Across Project -->
             {% if consolidated_security_analysis.present %}
@@ -816,7 +1234,173 @@ console.log('📊 Estadísticas del proyecto:', projectStats);
 console.log('📚 Bibliotecas consolidadas:', consolidatedLibraries.length);
 console.log('🌐 URLs analizadas:', urlsData.length);
 
-// Aquí se pueden agregar gráficos específicos para el reporte de proyecto
-// Por ahora, mantener funcionalidad básica de impresión
+// Inicializar gráficos consolidados
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎨 DOM listo, verificando Chart.js...');
+
+    // Pequeño delay para asegurar que Chart.js esté listo
+    setTimeout(function() {
+        if (typeof Chart !== 'undefined') {
+            console.log('✅ Chart.js disponible, inicializando gráficos consolidados...');
+            initConsolidatedCharts();
+        } else {
+            console.error('❌ Chart.js no está disponible');
+            showConsolidatedChartError();
+        }
+    }, 500);
+});
+
+// Función principal para inicializar gráficos consolidados
+function initConsolidatedCharts() {
+    const chartData = extractConsolidatedChartData();
+
+    if (chartData) {
+        console.log('📊 Datos consolidados extraídos:', chartData);
+
+        // Inicializar gráficos consolidados
+        initConsolidatedSecurityDonut(chartData.security);
+        initConsolidatedSecurityGauge(chartData.securityScore);
+    } else {
+        console.warn('⚠️ No se pudieron extraer los datos consolidados');
+    }
+}
+
+// Extraer datos consolidados
+function extractConsolidatedChartData() {
+    try {
+        const vulnEl = document.querySelector('[data-consolidated-vuln]');
+        const safeEl = document.querySelector('[data-consolidated-safe]');
+        const unknownEl = document.querySelector('[data-consolidated-unknown]');
+        const scoreEl = document.querySelector('[data-consolidated-security-score]');
+
+        if (!vulnEl || !safeEl || !unknownEl || !scoreEl) {
+            console.warn('⚠️ No se encontraron todos los elementos de datos consolidados');
+            return null;
+        }
+
+        return {
+            security: {
+                vulnerable: parseInt(vulnEl.dataset.consolidatedVuln) || 0,
+                safe: parseInt(safeEl.dataset.consolidatedSafe) || 0,
+                unknown: parseInt(unknownEl.dataset.consolidatedUnknown) || 0
+            },
+            securityScore: parseInt(scoreEl.dataset.consolidatedSecurityScore) || 0
+        };
+    } catch (error) {
+        console.error('❌ Error extrayendo datos consolidados:', error);
+        return null;
+    }
+}
+
+// Gráfico donut consolidado de seguridad
+function initConsolidatedSecurityDonut(data) {
+    const ctx = document.getElementById('consolidatedSecurityDonut');
+    if (!ctx) return;
+
+    const total = data.vulnerable + data.safe + data.unknown;
+    if (total === 0) return;
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Vulnerables', 'Seguras', 'Sin Datos'],
+            datasets: [{
+                data: [data.vulnerable, data.safe, data.unknown],
+                backgroundColor: ['#ef4444', '#22c55e', '#94a3b8'],
+                borderWidth: 0,
+                cutout: '65%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false  // Usamos badges personalizados
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed;
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${context.label}: ${value} bibliotecas (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    console.log('✅ Gráfico donut consolidado inicializado');
+}
+
+
+// Gauge consolidado de puntuación
+function initConsolidatedSecurityGauge(score) {
+    const ctx = document.getElementById('consolidatedSecurityGauge');
+    if (!ctx) return;
+
+    let scoreColor = '#22c55e';
+    if (score < 50) scoreColor = '#ef4444';
+    else if (score < 75) scoreColor = '#f59e0b';
+
+    const remaining = 100 - score;
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [score, remaining],
+                backgroundColor: [scoreColor, '#f1f5f9'],
+                borderWidth: 0,
+                cutout: '80%'
+            }]
+        },
+        options: {
+            rotation: -90,
+            circumference: 180,
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (context.dataIndex === 0) {
+                                return `Puntuación Consolidada: ${score}%`;
+                            }
+                            return null;
+                        }
+                    }
+                }
+            },
+            animation: {
+                animateRotate: true,
+                duration: 1800,
+                easing: 'easeOutQuart'
+            }
+        }
+    });
+
+    console.log('✅ Gauge consolidado inicializado');
+}
+
+// Mostrar error si Chart.js no carga
+function showConsolidatedChartError() {
+    const containers = ['consolidatedSecurityDonut', 'consolidatedSecurityGauge'];
+
+    containers.forEach(id => {
+        const canvas = document.getElementById(id);
+        if (canvas) {
+            canvas.parentElement.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-exclamation-triangle display-4 mb-3"></i>
+                    <h6>Error cargando gráficos</h6>
+                    <small>Chart.js no disponible</small>
+                </div>
+            `;
+        }
+    });
+}
 </script>
 {% endblock %}
