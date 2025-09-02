@@ -4778,6 +4778,59 @@ def associate_library(library_id):
 
     return redirect(url_for('asociar_bibliotecas'))
 
+@app.route('/asociar-proyectos')
+@login_required
+def asociar_proyectos():
+    conn = get_db_connection()
+    unassociated_scans = conn.execute('''
+        SELECT s.id, s.url, s.title, s.scan_date, s.status_code
+        FROM scans s
+        WHERE s.project_id IS NULL
+        ORDER BY s.scan_date DESC
+    ''').fetchall()
+
+    active_projects = conn.execute('SELECT id, name FROM projects WHERE is_active = 1 ORDER BY name').fetchall()
+    conn.close()
+
+    return render_template('asociar_proyectos.html',
+                           unassociated_scans=unassociated_scans,
+                           active_projects=active_projects)
+
+@app.route('/associate-scan/<int:scan_id>', methods=['POST'])
+@login_required
+def associate_scan(scan_id):
+    project_id = request.form.get('project_id')
+
+    if not project_id or not project_id.isdigit():
+        flash('Seleccione un proyecto válido.', 'error')
+        return redirect(url_for('asociar_proyectos'))
+
+    try:
+        conn = get_db_connection()
+        # Check if scan exists and doesn't have project assigned
+        scan = conn.execute('SELECT id FROM scans WHERE id = ? AND project_id IS NULL', (scan_id,)).fetchone()
+        if not scan:
+            flash('El escaneo no existe o ya tiene un proyecto asignado.', 'error')
+            conn.close()
+            return redirect(url_for('asociar_proyectos'))
+
+        # Check if project exists and is active
+        project = conn.execute('SELECT id FROM projects WHERE id = ? AND is_active = 1', (project_id,)).fetchone()
+        if not project:
+            flash('El proyecto seleccionado no existe o no está activo.', 'error')
+            conn.close()
+            return redirect(url_for('asociar_proyectos'))
+
+        # Update scan with project_id
+        conn.execute('UPDATE scans SET project_id = ? WHERE id = ?', (project_id, scan_id))
+        conn.commit()
+        conn.close()
+        flash('Escaneo asociado exitosamente al proyecto.', 'success')
+    except Exception as e:
+        flash(f'Error al asociar el escaneo: {str(e)}', 'error')
+
+    return redirect(url_for('asociar_proyectos'))
+
 # Project Management Routes
 @app.route('/projects')
 @login_required
