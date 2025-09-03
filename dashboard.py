@@ -2113,6 +2113,68 @@ def bulk_update_scan_project():
         flash(f'Error al actualizar proyectos de escaneos: {str(e)}', 'error')
         return redirect(url_for('index'))
 
+@app.route('/bulk-delete-scans', methods=['POST'])
+@login_required
+def bulk_delete_scans():
+    try:
+        scan_ids_str = request.form.get('scan_ids', '').strip()
+
+        # Parse scan IDs
+        if not scan_ids_str:
+            flash('No se seleccionaron escaneos para eliminar.', 'error')
+            return redirect(url_for('index'))
+
+        try:
+            scan_ids = [int(id.strip()) for id in scan_ids_str.split(',') if id.strip()]
+        except ValueError:
+            flash('IDs de escaneo inválidos.', 'error')
+            return redirect(url_for('index'))
+
+        if not scan_ids:
+            flash('No se seleccionaron escaneos válidos para eliminar.', 'error')
+            return redirect(url_for('index'))
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Delete related records first for all scans (foreign key constraints)
+        placeholders = ','.join(['?'] * len(scan_ids))
+        cursor.execute(f'DELETE FROM version_strings WHERE scan_id IN ({placeholders})', scan_ids)
+        cursor.execute(f'DELETE FROM file_urls WHERE scan_id IN ({placeholders})', scan_ids)
+        cursor.execute(f'DELETE FROM libraries WHERE scan_id IN ({placeholders})', scan_ids)
+        
+        # Delete the scans
+        cursor.execute(f'DELETE FROM scans WHERE id IN ({placeholders})', scan_ids)
+
+        deleted_count = cursor.rowcount
+        conn.commit()
+        conn.close()
+
+        flash(f'¡{deleted_count} escaneos eliminados exitosamente!', 'success')
+
+        # Check if we need to redirect to a specific project page
+        project_id = request.form.get('return_project_id', '')
+        search = request.form.get('return_search', '')
+        status = request.form.get('return_status', '')
+
+        if project_id:
+            redirect_params = {'project_id': project_id}
+            if search:
+                redirect_params['search'] = search
+            if status:
+                redirect_params['status'] = status
+            return redirect(url_for('project_detail', **redirect_params))
+        
+        # Otherwise redirect to index
+        redirect_params = {}
+        if search:
+            redirect_params['search'] = search
+        return redirect(url_for('index', **redirect_params))
+
+    except Exception as e:
+        flash(f'Error al eliminar escaneos: {str(e)}', 'error')
+        return redirect(url_for('index'))
+
 @app.route('/re-scan/<int:scan_id>', methods=['POST'])
 @login_required
 def re_scan_url(scan_id):

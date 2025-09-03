@@ -241,6 +241,11 @@
                                     data-bs-toggle="modal" data-bs-target="#bulkEditProjectModal">
                                 <i class="bi bi-pencil"></i> Cambiar Proyecto
                             </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                    id="bulk-delete-scans-btn"
+                                    data-bs-toggle="modal" data-bs-target="#bulkDeleteScansModal">
+                                <i class="bi bi-trash"></i> Eliminar Seleccionados
+                            </button>
                         </div>
                     </div>
                     <div class="table-responsive">
@@ -713,6 +718,49 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
+<!-- Bulk Delete Scans Modal -->
+<div class="modal fade" id="bulkDeleteScansModal" tabindex="-1" aria-labelledby="bulkDeleteScansModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkDeleteScansModalLabel">
+                    <i class="bi bi-trash"></i> Eliminar Múltiples Escaneos
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger" role="alert">
+                    <strong>¡Advertencia!</strong> Esta acción no se puede deshacer.
+                </div>
+                <p>¿Estás seguro de que quieres eliminar <strong id="bulkDeleteCount">0</strong> escaneo(s) seleccionado(s)?</p>
+                <p>Esto eliminará permanentemente:</p>
+                <ul>
+                    <li>Los escaneos y toda su información</li>
+                    <li>Las bibliotecas asociadas</li>
+                    <li>Los archivos detectados</li>
+                    <li>Las versiones encontradas</li>
+                </ul>
+                <div id="scanPreviewList" class="mt-3">
+                    <small class="text-muted">Escaneos que serán eliminados:</small>
+                    <ul id="scanList" class="list-unstyled mt-2" style="max-height: 200px; overflow-y: auto;">
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="/bulk-delete-scans" id="bulkDeleteForm" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="scan_ids" id="bulkDeleteScanIds" value=""/>
+                    <input type="hidden" name="return_url" value="{{ request.url }}"/>
+                    <button type="submit" class="btn btn-danger">
+                        Sí, Eliminar Todos
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Handle edit scan project modal
 document.addEventListener('DOMContentLoaded', function() {
@@ -795,6 +843,58 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedCountSpan = document.getElementById('bulkSelectedCount');
             if (selectedCountSpan) {
                 selectedCountSpan.textContent = scanIds.length;
+            }
+        });
+    }
+
+    // Handle bulk delete modal
+    const bulkDeleteModal = document.getElementById('bulkDeleteScansModal');
+    if (bulkDeleteModal) {
+        bulkDeleteModal.addEventListener('show.bs.modal', function(event) {
+            // Get all selected scan IDs and their info
+            const checkedBoxes = document.querySelectorAll('.scan-checkbox:checked');
+            const scanIds = Array.from(checkedBoxes).map(cb => cb.value);
+            
+            // Update hidden input with scan IDs
+            const scanIdsInput = document.getElementById('bulkDeleteScanIds');
+            if (scanIdsInput) {
+                scanIdsInput.value = scanIds.join(',');
+            }
+            
+            // Update count display
+            const deleteCountSpan = document.getElementById('bulkDeleteCount');
+            if (deleteCountSpan) {
+                deleteCountSpan.textContent = scanIds.length;
+            }
+
+            // Build preview list of scans to be deleted
+            const scanList = document.getElementById('scanList');
+            if (scanList) {
+                scanList.innerHTML = '';
+                
+                checkedBoxes.forEach(checkbox => {
+                    const row = checkbox.closest('tr');
+                    const titleElement = row.querySelector('a[href*="/scan/"]');
+                    const urlElement = row.querySelector('small.text-muted');
+                    
+                    if (titleElement && urlElement) {
+                        const title = titleElement.textContent.trim();
+                        const urlText = urlElement.textContent.split('|')[0].trim();
+                        
+                        const listItem = document.createElement('li');
+                        listItem.className = 'mb-2';
+                        listItem.innerHTML = `
+                            <div class="d-flex">
+                                <i class="bi bi-file-earmark text-muted me-2"></i>
+                                <div>
+                                    <div class="fw-bold">${title}</div>
+                                    <small class="text-muted">${urlText}</small>
+                                </div>
+                            </div>
+                        `;
+                        scanList.appendChild(listItem);
+                    }
+                });
             }
         });
     }

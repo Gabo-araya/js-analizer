@@ -144,4 +144,53 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Handle bulk delete button
+    const bulkDeleteBtn = document.getElementById('bulk-delete-scans-btn');
+    const bulkDeleteModal = document.getElementById('bulkDeleteModal');
+    
+    if (bulkDeleteBtn && bulkDeleteModal) {
+        bulkDeleteModal.addEventListener('show.bs.modal', function(event) {
+            // Get all selected scan IDs and their URLs
+            const checkedBoxes = document.querySelectorAll('.scan-checkbox:checked');
+            const scanIds = Array.from(checkedBoxes).map(cb => cb.value);
+            const scanUrls = Array.from(checkedBoxes).map(cb => {
+                // Find the URL in the same row as the checkbox
+                const row = cb.closest('tr');
+                const urlCell = row.querySelector('td:nth-child(2)') || row.querySelector('td:nth-child(3)');
+                return urlCell ? urlCell.textContent.trim().substring(0, 50) + '...' : 'URL no encontrada';
+            });
+            
+            // Update hidden input with scan IDs
+            const bulkDeleteScanIds = document.getElementById('bulkDeleteScanIds');
+            if (bulkDeleteScanIds) {
+                bulkDeleteScanIds.value = scanIds.join(',');
+            }
+            
+            // Update selected count display
+            const deleteSelectedCount = document.getElementById('deleteSelectedCount');
+            if (deleteSelectedCount) {
+                deleteSelectedCount.textContent = scanIds.length;
+            }
+            
+            // Update scan list display
+            const scanList = document.getElementById('bulkDeleteScanList');
+            if (scanList) {
+                scanList.innerHTML = '';
+                for (let i = 0; i < Math.min(scanIds.length, 10); i++) {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item small';
+                    li.innerHTML = `<strong>#${scanIds[i]}</strong>: ${scanUrls[i]}`;
+                    scanList.appendChild(li);
+                }
+                
+                if (scanIds.length > 10) {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item small text-muted';
+                    li.innerHTML = `<em>... y ${scanIds.length - 10} más</em>`;
+                    scanList.appendChild(li);
+                }
+            }
+        });
+    }
 });
