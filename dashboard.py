@@ -5027,20 +5027,20 @@ def project_detail(project_id):
     for scan in scans_raw:
         scan_dict = dict(scan)
 
-        # Get libraries for this scan to count vulnerabilities correctly
+        # Get libraries for this scan to count vulnerabilities correctly (same logic as dashboard - only individual safe versions)
         libraries_query = '''
-            SELECT l.version, COALESCE(l.latest_safe_version, gl.latest_safe_version) as safe_version
-            FROM libraries l
-            LEFT JOIN global_libraries gl ON l.library_name = gl.library_name AND l.type = gl.type
-            WHERE l.scan_id = ?
-            AND COALESCE(l.latest_safe_version, gl.latest_safe_version) IS NOT NULL
-            AND l.version IS NOT NULL
-            AND l.version != ''
+            SELECT version, latest_safe_version
+            FROM libraries
+            WHERE scan_id = ?
+            AND version IS NOT NULL
+            AND latest_safe_version IS NOT NULL
+            AND version != ''
+            AND latest_safe_version != ''
         '''
         libraries = conn.execute(libraries_query, (scan['id'],)).fetchall()
 
         vulnerability_count = sum(1 for lib in libraries
-                                if has_vulnerability(lib['version'], lib['safe_version']))
+                                if has_vulnerability(lib['version'], lib['latest_safe_version']))
 
         scan_dict['vulnerability_count'] = vulnerability_count
         scans.append(scan_dict)
@@ -5063,21 +5063,21 @@ def project_detail(project_id):
     '''
     stats_raw = conn.execute(stats_query, query_params).fetchone()
 
-    # Calculate total_vulnerabilities using has_vulnerability function
+    # Calculate total_vulnerabilities using has_vulnerability function (same logic as dashboard - only individual safe versions)
     total_vulnerabilities_query = f'''
-        SELECT l.version, COALESCE(l.latest_safe_version, gl.latest_safe_version) as safe_version
+        SELECT l.version, l.latest_safe_version
         FROM scans s
         LEFT JOIN libraries l ON s.id = l.scan_id
-        LEFT JOIN global_libraries gl ON l.library_name = gl.library_name AND l.type = gl.type
         {where_clause}
-        AND COALESCE(l.latest_safe_version, gl.latest_safe_version) IS NOT NULL
+        AND l.latest_safe_version IS NOT NULL
+        AND l.latest_safe_version != ''
         AND l.version IS NOT NULL
         AND l.version != ''
     '''
     all_libraries = conn.execute(total_vulnerabilities_query, query_params).fetchall()
 
     total_vulnerabilities = sum(1 for lib in all_libraries
-                              if has_vulnerability(lib['version'], lib['safe_version']))
+                              if has_vulnerability(lib['version'], lib['latest_safe_version']))
 
     # Convert stats to dict and add calculated vulnerabilities
     stats = dict(stats_raw)
