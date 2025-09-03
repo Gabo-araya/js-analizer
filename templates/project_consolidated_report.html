@@ -606,82 +606,76 @@
                     <span>Resumen Ejecutivo del Proyecto</span>
                 </div>
                 <div class="card-body modern-card-body">
-            <!-- Consolidated Statistics -->
-            <div class="consolidated-stats">
-                <div class="stat-card">
-                    <div class="stat-number">{{ project_stats.total_urls }}</div>
-                    <div class="stat-label">URLs Únicas</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">{{ project_stats.total_libraries }}</div>
-                    <div class="stat-label">Bibliotecas Encontradas</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number {{ 'text-danger' if project_stats.total_vulnerabilities > 0 else 'text-success' }}">{{ project_stats.total_vulnerabilities }}</div>
-                    <div class="stat-label">Vulnerabilidades Detectadas</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">{{ project_stats.total_files }}</div>
-                    <div class="stat-label">Archivos JavaScript</div>
-                </div>
-            </div>
-
-            <!-- Key Findings -->
-            <div class="mt-4">
-                <h5 style="color: #2c3e50; margin-bottom: 20px;">
-                    <i class="bi bi-search"></i>
-                    Hallazgos Principales del Proyecto:
-                </h5>
-                <ul class="list-unstyled">
-                    {% if project_stats.total_vulnerabilities > 0 %}
-                    <li class="mb-2">
-                        <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
-                        <strong>{{ project_stats.total_vulnerabilities }}</strong> {{ 'vulnerabilidad detectada' if project_stats.total_vulnerabilities == 1 else 'vulnerabilidades detectadas' }} en el conjunto de URLs del proyecto
-                    </li>
-                    {% endif %}
-
-                    {% if consolidated_security_analysis.security_score < 70 %}
-                    <li class="mb-2">
-                        <i class="bi bi-shield-exclamation text-warning me-2"></i>
-                        Los encabezados de seguridad HTTP requieren mejoras (Puntuación: <strong>{{ consolidated_security_analysis.security_score }}%</strong>)
-                    </li>
-                    {% endif %}
-
-                    {% if consolidated_security_analysis.missing|length > 0 %}
-                    <li class="mb-2">
-                        <i class="bi bi-shield-x text-warning me-2"></i>
-                        <strong>{{ consolidated_security_analysis.missing|length }}</strong> {{ 'encabezado crítico de seguridad falta' if consolidated_security_analysis.missing|length == 1 else 'encabezados críticos de seguridad faltan' }} en algunas URLs
-                    </li>
-                    {% endif %}
-
-                    {% if project_stats.total_vulnerabilities == 0 and consolidated_security_analysis.security_score >= 70 %}
-                    <li class="mb-2">
-                        <i class="bi bi-shield-check-fill text-success me-2"></i>
-                        Excelente postura de seguridad general - No se identificaron vulnerabilidades críticas
-                    </li>
-                    {% endif %}
-
-                    <li class="mb-2">
-                        <i class="bi bi-folder text-info me-2"></i>
-                        El proyecto <strong>{{ project.name }}</strong> incluye análisis de <strong>{{ project_stats.total_urls }}</strong> URLs únicas con datos consolidados
-                    </li>
-                </ul>
-            </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Project Analytics Dashboard Card -->
-    <div class="row dashboard-animate" style="animation-delay: 0.35s;">
-        <div class="col-12">
-            <div class="card modern-card">
-                <div class="card-header modern-card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                    <i class="bi bi-graph-up-arrow"></i>
-                    <span>Dashboard de Analíticas del Proyecto</span>
-                </div>
-                <div class="card-body modern-card-body">
                     <div class="row mb-4 justify-content-center">
+                        <div class="col-lg-6 mb-4">
+                            <div class="card modern-chart-card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-search"></i>
+                                        Hallazgos Principales del Proyecto:
+                                    </h6>
+                                </div>
+                                <div class="card-body modern-card-body">
+                                    <!-- Consolidated Statistics -->
+                                    <div class="consolidated-stats">
+                                        <div class="stat-card">
+                                            <div class="stat-number">{{ project_stats.total_urls }}</div>
+                                            <div class="stat-label">URLs Únicas</div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-number">{{ project_stats.total_libraries }}</div>
+                                            <div class="stat-label">Bibliotecas Encontradas</div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-number {{ 'text-danger' if project_stats.total_vulnerabilities > 0 else 'text-success' }}">{{ project_stats.total_vulnerabilities }}</div>
+                                            <div class="stat-label">Vulnerabilidades Detectadas</div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-number">{{ project_stats.total_files }}</div>
+                                            <div class="stat-label">Archivos JavaScript</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Key Findings -->
+                                    <div class="mt-4">
+                                        <ul class="list-unstyled">
+                                            {% if project_stats.total_vulnerabilities > 0 %}
+                                            <li class="mb-2">
+                                                <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+                                                <strong>{{ project_stats.total_vulnerabilities }}</strong> {{ 'vulnerabilidad detectada' if project_stats.total_vulnerabilities == 1 else 'vulnerabilidades detectadas' }} en el conjunto de URLs del proyecto
+                                            </li>
+                                            {% endif %}
+
+                                            {% if consolidated_security_analysis.security_score < 70 %}
+                                            <li class="mb-2">
+                                                <i class="bi bi-shield-exclamation text-warning me-2"></i>
+                                                Los encabezados de seguridad HTTP requieren mejoras (Puntuación: <strong>{{ consolidated_security_analysis.security_score }}%</strong>)
+                                            </li>
+                                            {% endif %}
+
+                                            {% if consolidated_security_analysis.missing|length > 0 %}
+                                            <li class="mb-2">
+                                                <i class="bi bi-shield-x text-warning me-2"></i>
+                                                <strong>{{ consolidated_security_analysis.missing|length }}</strong> {{ 'encabezado crítico de seguridad falta' if consolidated_security_analysis.missing|length == 1 else 'encabezados críticos de seguridad faltan' }} en algunas URLs
+                                            </li>
+                                            {% endif %}
+
+                                            {% if project_stats.total_vulnerabilities == 0 and consolidated_security_analysis.security_score >= 70 %}
+                                            <li class="mb-2">
+                                                <i class="bi bi-shield-check-fill text-success me-2"></i>
+                                                Excelente postura de seguridad general - No se identificaron vulnerabilidades críticas
+                                            </li>
+                                            {% endif %}
+
+                                            <li class="mb-2">
+                                                <i class="bi bi-folder text-info me-2"></i>
+                                                El proyecto <strong>{{ project.name }}</strong> incluye análisis de <strong>{{ project_stats.total_urls }}</strong> URLs únicas con datos consolidados
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <!-- Gráfico 1: Estado General de Bibliotecas -->
                         <div class="col-lg-6 mb-4">
                             <div class="card modern-chart-card">
@@ -741,179 +735,181 @@
                             </div>
                         </div>
 
-                        <!-- Gráfico 2: Puntuación General del Proyecto -->
-                        <div class="col-lg-6 mb-4">
-                            <div class="card modern-chart-card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">
-                                        <i class="bi bi-speedometer2 me-2 text-info"></i>
-                                        Puntuación Consolidada
-                                    </h6>
-                                </div>
-                                <div class="card-body text-center" style="height: 320px; display: flex; flex-direction: column; justify-content: center;">
-                                    <div style="height: 120px; position: relative;">
-                                        <canvas id="consolidatedSecurityGauge"></canvas>
+                        <!-- Gráfico 2 -->
+                        <!--div class="row mb-4 justify-content-center">
+                            <div class="col-lg-6 mb-4">
+                                <div class="card modern-chart-card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">
+                                            <i class="bi bi-speedometer2 me-2 text-info"></i>
+                                            Puntuación Consolidada
+                                        </h6>
                                     </div>
-                                    <div class="mt-3">
-                                        <h4 class="mb-1" style="color: {{ '#22c55e' if consolidated_security_analysis.security_score >= 75 else '#f59e0b' if consolidated_security_analysis.security_score >= 50 else '#ef4444' }}">
-                                            {{ consolidated_security_analysis.security_score }}%
-                                        </h4>
-                                        <small class="text-muted">Puntuación Consolidada</small>
-                                    </div>
-
-                                    <div class="chart-summary mt-2">
-                                        <div class="d-flex justify-content-center gap-2 flex-wrap">
-                                            {% if consolidated_security_analysis.security_score >= 80 %}
-                                                <span class="modern-badge success">
-                                                    <i class="bi bi-star-fill"></i>
-                                                    Excelente
-                                                </span>
-                                            {% elif consolidated_security_analysis.security_score >= 60 %}
-                                                <span class="modern-badge warning">
-                                                    <i class="bi bi-check-circle"></i>
-                                                    Bueno
-                                                </span>
-                                            {% else %}
-                                                <span class="modern-badge danger">
-                                                    <i class="bi bi-exclamation-triangle"></i>
-                                                    Necesita Mejoras
-                                                </span>
-                                            {% endif %}
-                                            <span class="modern-badge info">
-                                                <i class="bi bi-shield"></i>
-                                                {{ consolidated_security_analysis.present|length if consolidated_security_analysis.present else 0 }}/{{ (consolidated_security_analysis.present|length + consolidated_security_analysis.missing|length) if consolidated_security_analysis else 0 }} Headers
-                                            </span>
+                                    <div class="card-body text-center" style="height: 320px; display: flex; flex-direction: column; justify-content: center;">
+                                        <div style="height: 120px; position: relative;">
+                                            <canvas id="consolidatedSecurityGauge"></canvas>
                                         </div>
-                                    </div>
-
-                                    <!-- Datos ocultos para JavaScript -->
-                                    <div style="display: none;" data-consolidated-security-score="{{ consolidated_security_analysis.security_score }}"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Matrix Heatmap: Cobertura de Headers por URL -->
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card modern-chart-card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">
-                                        <i class="bi bi-grid-3x3-gap me-2 text-success"></i>
-                                        Matrix de Cobertura de Headers de Seguridad
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div id="headersMatrixHeatmap">
-                                        <div class="heatmap-container">
-                                            <table class="heatmap-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th class="url-header">URL del Proyecto</th>
-                                                        {% set security_headers = ['Strict-Transport-Security', 'Content-Security-Policy', 'X-Frame-Options', 'X-Content-Type-Options', 'Cross-Origin-Embedder-Policy', 'Cross-Origin-Opener-Policy', 'Referrer-Policy', 'Permissions-Policy', 'Cross-Origin-Resource-Policy', 'X-XSS-Protection', 'Expect-CT', 'Origin-Agent-Cluster'] %}
-                                                        {% for header in security_headers %}
-                                                        <th title="{{ header }}">
-                                                            {% if header == 'Strict-Transport-Security' %}HSTS
-                                                            {% elif header == 'Content-Security-Policy' %}CSP
-                                                            {% elif header == 'X-Frame-Options' %}Frame
-                                                            {% elif header == 'X-Content-Type-Options' %}Content
-                                                            {% elif header == 'Cross-Origin-Embedder-Policy' %}COEP
-                                                            {% elif header == 'Cross-Origin-Opener-Policy' %}COOP
-                                                            {% elif header == 'Referrer-Policy' %}Referrer
-                                                            {% elif header == 'Permissions-Policy' %}Permissions
-                                                            {% elif header == 'Cross-Origin-Resource-Policy' %}CORP
-                                                            {% elif header == 'X-XSS-Protection' %}XSS
-                                                            {% elif header == 'Expect-CT' %}CT
-                                                            {% elif header == 'Origin-Agent-Cluster' %}OAC
-                                                            {% else %}{{ header.split('-')[0] }}
-                                                            {% endif %}
-                                                        </th>
-                                                        {% endfor %}
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {% for url_data in urls_data %}
-                                                    <tr data-url="{{ url_data.scan.url }}">
-                                                        <td class="url-cell" title="{{ url_data.scan.url }}">
-                                                            {% set clean_url = url_data.scan.url.split('://')[1] if '://' in url_data.scan.url else url_data.scan.url %}
-                                                            {{ clean_url }}
-                                                        </td>
-                                                        {% for header in security_headers %}
-                                                        <td class="data-cell {{ 'present' if header in url_data.headers else 'missing' }}"
-                                                            title="{{ header }}: {{ 'Presente ✓' if header in url_data.headers else 'Ausente ✗' }} en {{ clean_url }}"
-                                                            data-header="{{ header }}"
-                                                            data-status="{{ 'present' if header in url_data.headers else 'missing' }}">
-                                                            {{ '●' if header in url_data.headers else '○' }}
-                                                        </td>
-                                                        {% endfor %}
-                                                    </tr>
-                                                    {% endfor %}
-                                                </tbody>
-                                            </table>
+                                        <div class="mt-3">
+                                            <h4 class="mb-1" style="color: {{ '#22c55e' if consolidated_security_analysis.security_score >= 75 else '#f59e0b' if consolidated_security_analysis.security_score >= 50 else '#ef4444' }}">
+                                                {{ consolidated_security_analysis.security_score }}%
+                                            </h4>
+                                            <small class="text-muted">Puntuación Consolidada</small>
                                         </div>
 
-                                        <!-- Leyenda mejorada -->
-                                        <div class="heatmap-legend">
-                                            <div class="d-flex justify-content-center gap-4 flex-wrap mb-2">
-                                                <div class="legend-item">
-                                                    <span class="legend-dot present">●</span>
-                                                    <small><strong>Header Presente</strong></small>
-                                                </div>
-                                                <div class="legend-item">
-                                                    <span class="legend-dot missing">○</span>
-                                                    <small><strong>Header Ausente</strong></small>
-                                                </div>
-                                            </div>
-                                            <div class="text-center mb-3">
-                                                <small class="text-muted">
-                                                    <i class="bi bi-cursor me-1"></i>
-                                                    Pasa el cursor sobre cada celda para ver detalles completos del header
-                                                </small>
-                                            </div>
-
-                                            <!-- Leyenda de Abreviaciones -->
-                                            <div class="headers-abbreviations">
-                                                <h6 class="mb-2 text-center">
-                                                    <i class="bi bi-list-ul"></i>
-                                                    Abreviaciones de Headers
-                                                </h6>
-                                                <div class="row small">
-                                                    <div class="col-md-4">
-                                                        <strong>Críticos:</strong><br>
-                                                        <span class="text-danger">HSTS</span>: Strict-Transport-Security<br>
-                                                        <span class="text-danger">CSP</span>: Content-Security-Policy
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <strong>Altos:</strong><br>
-                                                        <span class="text-warning">Frame</span>: X-Frame-Options<br>
-                                                        <span class="text-warning">Content</span>: X-Content-Type-Options<br>
-                                                        <span class="text-warning">COEP</span>: Cross-Origin-Embedder-Policy<br>
-                                                        <span class="text-warning">COOP</span>: Cross-Origin-Opener-Policy
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <strong>Medios/Bajos:</strong><br>
-                                                        <span class="text-info">Referrer</span>: Referrer-Policy<br>
-                                                        <span class="text-info">Permissions</span>: Permissions-Policy<br>
-                                                        <span class="text-info">CORP</span>: Cross-Origin-Resource-Policy<br>
-                                                        <span class="text-secondary">XSS</span>: X-XSS-Protection<br>
-                                                        <span class="text-secondary">CT</span>: Expect-CT<br>
-                                                        <span class="text-secondary">OAC</span>: Origin-Agent-Cluster
-                                                    </div>
-                                                </div>
+                                        <div class="chart-summary mt-2">
+                                            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                                {% if consolidated_security_analysis.security_score >= 80 %}
+                                                    <span class="modern-badge success">
+                                                        <i class="bi bi-star-fill"></i>
+                                                        Excelente
+                                                    </span>
+                                                {% elif consolidated_security_analysis.security_score >= 60 %}
+                                                    <span class="modern-badge warning">
+                                                        <i class="bi bi-check-circle"></i>
+                                                        Bueno
+                                                    </span>
+                                                {% else %}
+                                                    <span class="modern-badge danger">
+                                                        <i class="bi bi-exclamation-triangle"></i>
+                                                        Necesita Mejoras
+                                                    </span>
+                                                {% endif %}
+                                                <span class="modern-badge info">
+                                                    <i class="bi bi-shield"></i>
+                                                    {{ consolidated_security_analysis.present|length if consolidated_security_analysis.present else 0 }}/{{ (consolidated_security_analysis.present|length + consolidated_security_analysis.missing|length) if consolidated_security_analysis else 0 }} Headers
+                                                </span>
                                             </div>
                                         </div>
+
+                                        <!-- Datos ocultos para JavaScript -->
+                                        <div style="display: none;" data-consolidated-security-score="{{ consolidated_security_analysis.security_score }}"></div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </div-->
+
                     </div>
-
-
-
                 </div>
             </div>
         </div>
     </div>
+
+
+    <!-- Matrix Heatmap: Cobertura de Headers por URL -->
+    <div class="row dashboard-animate" style="animation-delay: 0.35s;">
+        <div class="col-12">
+            <div class="card modern-chart-card">
+                <div class="card-header modern-card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <i class="bi bi-grid-3x3-gap me-2"></i>
+                    <span>Matriz de Cobertura de Headers de Seguridad</span>
+                </div>
+                <div class="card-body modern-card-body">
+                    <div id="headersMatrixHeatmap mb-4">
+                        <div class="heatmap-container">
+                            <table class="heatmap-table">
+                                <thead>
+                                    <tr>
+                                        <th class="url-header">URL del Proyecto</th>
+                                        {% set security_headers = ['Strict-Transport-Security', 'Content-Security-Policy', 'X-Frame-Options', 'X-Content-Type-Options', 'Cross-Origin-Embedder-Policy', 'Cross-Origin-Opener-Policy', 'Referrer-Policy', 'Permissions-Policy', 'Cross-Origin-Resource-Policy', 'X-XSS-Protection', 'Expect-CT', 'Origin-Agent-Cluster'] %}
+                                        {% for header in security_headers %}
+                                        <th title="{{ header }}">
+                                            {% if header == 'Strict-Transport-Security' %}HSTS
+                                            {% elif header == 'Content-Security-Policy' %}CSP
+                                            {% elif header == 'X-Frame-Options' %}Frame
+                                            {% elif header == 'X-Content-Type-Options' %}Content
+                                            {% elif header == 'Cross-Origin-Embedder-Policy' %}COEP
+                                            {% elif header == 'Cross-Origin-Opener-Policy' %}COOP
+                                            {% elif header == 'Referrer-Policy' %}Referrer
+                                            {% elif header == 'Permissions-Policy' %}Permissions
+                                            {% elif header == 'Cross-Origin-Resource-Policy' %}CORP
+                                            {% elif header == 'X-XSS-Protection' %}XSS
+                                            {% elif header == 'Expect-CT' %}CT
+                                            {% elif header == 'Origin-Agent-Cluster' %}OAC
+                                            {% else %}{{ header.split('-')[0] }}
+                                            {% endif %}
+                                        </th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for url_data in urls_data %}
+                                    <tr data-url="{{ url_data.scan.url }}">
+                                        <td class="url-cell" title="{{ url_data.scan.url }}">
+                                            {% set clean_url = url_data.scan.url.split('://')[1] if '://' in url_data.scan.url else url_data.scan.url %}
+                                            {{ clean_url }}
+                                        </td>
+                                        {% for header in security_headers %}
+                                        <td class="data-cell {{ 'present' if header in url_data.headers else 'missing' }}"
+                                            title="{{ header }}: {{ 'Presente ✓' if header in url_data.headers else 'Ausente ✗' }} en {{ clean_url }}"
+                                            data-header="{{ header }}"
+                                            data-status="{{ 'present' if header in url_data.headers else 'missing' }}">
+                                            {{ '●' if header in url_data.headers else '○' }}
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Leyenda mejorada -->
+                        <div class="heatmap-legend">
+                            <div class="d-flex justify-content-center gap-4 flex-wrap mb-2">
+                                <div class="legend-item">
+                                    <span class="legend-dot present">●</span>
+                                    <small><strong>Header Presente</strong></small>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-dot missing">○</span>
+                                    <small><strong>Header Ausente</strong></small>
+                                </div>
+                            </div>
+                            <div class="text-center mb-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-cursor me-1"></i>
+                                    Pasa el cursor sobre cada celda para ver detalles completos del header
+                                </small>
+                            </div>
+
+                            <!-- Leyenda de Abreviaciones -->
+                            <div class="headers-abbreviations">
+                                <h6 class="mb-2 text-center">
+                                    <i class="bi bi-list-ul"></i>
+                                    Abreviaciones de Headers
+                                </h6>
+                                <div class="row small">
+                                    <div class="col-md-4">
+                                        <strong>Críticos:</strong><br>
+                                        <span class="text-danger">HSTS</span>: Strict-Transport-Security<br>
+                                        <span class="text-danger">CSP</span>: Content-Security-Policy
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Altos:</strong><br>
+                                        <span class="text-warning">Frame</span>: X-Frame-Options<br>
+                                        <span class="text-warning">Content</span>: X-Content-Type-Options<br>
+                                        <span class="text-warning">COEP</span>: Cross-Origin-Embedder-Policy<br>
+                                        <span class="text-warning">COOP</span>: Cross-Origin-Opener-Policy
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Medios/Bajos:</strong><br>
+                                        <span class="text-info">Referrer</span>: Referrer-Policy<br>
+                                        <span class="text-info">Permissions</span>: Permissions-Policy<br>
+                                        <span class="text-info">CORP</span>: Cross-Origin-Resource-Policy<br>
+                                        <span class="text-secondary">XSS</span>: X-XSS-Protection<br>
+                                        <span class="text-secondary">CT</span>: Expect-CT<br>
+                                        <span class="text-secondary">OAC</span>: Origin-Agent-Cluster
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
 
     <!-- Consolidated Libraries Analysis Card -->
     <div class="row dashboard-animate" style="animation-delay: 0.4s;">
@@ -971,14 +967,7 @@
                             <td>
                                 <div class="library-usage-info">
                                     <strong>{{ lib.scan_count }} {{ 'URL' if lib.scan_count == 1 else 'URLs' }}</strong>
-                                    <div class="usage-urls-full">
-                                        {% for url in lib.used_in_urls %}
-                                            <div class="usage-url-item">
-                                                <i class="bi bi-link-45deg me-1 text-muted"></i>
-                                                <a href="{{ url }}" target="_blank" class="usage-url-link">{{ url }}</a>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
+
                                 </div>
                             </td>
                             <td>
@@ -1162,6 +1151,220 @@
         </div>
     </div>
 
+    <!-- Critical Libraries Analysis Card -->
+    <div class="row dashboard-animate" style="animation-delay: 0.55s;">
+        <div class="col-12">
+            <div class="card modern-card">
+                <div class="card-header modern-card-header" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white;">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>Bibliotecas que Requieren Atención Inmediata</span>
+                </div>
+                <div class="card-body modern-card-body">
+                    {% set vulnerable_entries = [] %}
+                    {% set unknown_entries = [] %}
+
+                    {# Create individual entries for each library-site-source combination #}
+                    {% for lib in consolidated_libraries %}
+                        {% set has_vuln = lib.version | check_vulnerability_with_global(lib.latest_safe_version, lib.gl_latest_safe_version) %}
+
+                        {# Create cross product of scan_urls and source_urls #}
+                        {% for scan_url in lib.scan_urls %}
+                            {% if lib.source_urls_list %}
+                                {% for source_url in lib.source_urls_list %}
+                                    {% set entry = {
+                                        'scan_url': scan_url,
+                                        'source_url': source_url,
+                                        'library_name': lib.library_name,
+                                        'version': lib.version,
+                                        'description': lib.description,
+                                        'latest_safe_version': lib.latest_safe_version,
+                                        'gl_latest_safe_version': lib.gl_latest_safe_version
+                                    } %}
+
+                                    {% if has_vuln %}
+                                        {% set _ = vulnerable_entries.append(entry) %}
+                                    {% elif not lib.latest_safe_version and not lib.gl_latest_safe_version %}
+                                        {% set _ = unknown_entries.append(entry) %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                {# Handle libraries without source URLs #}
+                                {% set entry = {
+                                    'scan_url': scan_url,
+                                    'source_url': None,
+                                    'library_name': lib.library_name,
+                                    'version': lib.version,
+                                    'description': lib.description,
+                                    'latest_safe_version': lib.latest_safe_version,
+                                    'gl_latest_safe_version': lib.gl_latest_safe_version
+                                } %}
+
+                                {% if has_vuln %}
+                                    {% set _ = vulnerable_entries.append(entry) %}
+                                {% elif not lib.latest_safe_version and not lib.gl_latest_safe_version %}
+                                    {% set _ = unknown_entries.append(entry) %}
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+
+                    {# Sort entries by scan_url (site) #}
+                    {% set vulnerable_entries = vulnerable_entries | sort(attribute='scan_url') %}
+                    {% set unknown_entries = unknown_entries | sort(attribute='scan_url') %}
+
+                    {% if vulnerable_entries or unknown_entries %}
+                        <!-- Vulnerable Libraries Section -->
+                        {% if vulnerable_entries %}
+                        <div class="mb-4">
+                            <h5 class="text-danger mb-3">
+                                <i class="bi bi-shield-exclamation me-2"></i>
+                                Bibliotecas Vulnerables ({{ vulnerable_entries|length }})
+                                <small class="text-muted">- Actualización Urgente Requerida</small>
+                            </h5>
+                            <div class="table-responsive">
+                                <table class="library-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 25%">Sitio Escaneado</th>
+                                            <th style="width: 20%">Biblioteca</th>
+                                            <th style="width: 10%">Versión Actual</th>
+                                            <th style="width: 15%">Versión Segura</th>
+                                            <th style="width: 30%">Archivo Fuente</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for entry in vulnerable_entries %}
+                                        {% set effective_safe = entry.latest_safe_version | get_effective_safe_version(entry.gl_latest_safe_version) %}
+                                        <tr class="status-vulnerable">
+                                            <td>
+                                                <div class="mb-1">
+                                                    <i class="bi bi-globe text-info me-1"></i>
+                                                    <a href="{{ entry.scan_url }}" target="_blank" class="text-decoration-none" style="font-size: 0.85rem; word-break: break-all;">
+                                                        {{ entry.scan_url }}
+                                                    </a>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <strong class="text-danger">{{ entry.library_name }}</strong>
+                                                {% if entry.description %}
+                                                <br><small class="text-muted">{{ entry.description }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="modern-badge danger">
+                                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                                    {{ entry.version or 'Desconocida' }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if effective_safe %}
+                                                    <span class="modern-badge success">{{ effective_safe }}</span>
+                                                    {% if entry.gl_latest_safe_version and not entry.latest_safe_version %}
+                                                        <br><small class="text-info">(versión global)</small>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="text-muted">No disponible</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if entry.source_url %}
+                                                    <div class="mb-1">
+                                                        <i class="bi bi-file-earmark-code text-primary me-1"></i>
+                                                        <a href="{{ entry.source_url }}" target="_blank" class="text-decoration-none" style="font-size: 0.85rem; word-break: break-all;">
+                                                            {{ entry.source_url }}
+                                                        </a>
+                                                    </div>
+                                                {% else %}
+                                                    <span class="text-muted">URL no disponible</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Unknown/Manual Review Libraries Section -->
+                        {% if unknown_entries %}
+                        <div class="mb-3">
+                            <h5 class="text-warning mb-3">
+                                <i class="bi bi-question-circle-fill me-2"></i>
+                                Bibliotecas que Requieren Revisión Manual ({{ unknown_entries|length }})
+                                <small class="text-muted">- Sin Información de Vulnerabilidades</small>
+                            </h5>
+                            <div class="table-responsive">
+                                <table class="library-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 25%">Sitio Escaneado</th>
+                                            <th style="width: 20%">Biblioteca</th>
+                                            <th style="width: 10%">Versión Actual</th>
+                                            <th style="width: 15%">Estado</th>
+                                            <th style="width: 30%">Archivo Fuente</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for entry in unknown_entries %}
+                                        <tr class="status-unknown">
+                                            <td>
+                                                <div class="mb-1">
+                                                    <i class="bi bi-globe text-info me-1"></i>
+                                                    <a href="{{ entry.scan_url }}" target="_blank" class="text-decoration-none" style="font-size: 0.85rem; word-break: break-all;">
+                                                        {{ entry.scan_url }}
+                                                    </a>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <strong class="text-warning">{{ entry.library_name }}</strong>
+                                                {% if entry.description %}
+                                                <br><small class="text-muted">{{ entry.description }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="modern-badge warning">
+                                                    <i class="bi bi-question-circle"></i>
+                                                    {{ entry.version or 'Desconocida' }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="modern-badge warning">
+                                                    <i class="bi bi-search"></i>
+                                                    Revisar Manualmente
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if entry.source_url %}
+                                                    <div class="mb-1">
+                                                        <i class="bi bi-file-earmark-code text-primary me-1"></i>
+                                                        <a href="{{ entry.source_url }}" target="_blank" class="text-decoration-none" style="font-size: 0.85rem; word-break: break-all;">
+                                                            {{ entry.source_url }}
+                                                        </a>
+                                                    </div>
+                                                {% else %}
+                                                    <span class="text-muted">URL no disponible</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center p-4">
+                            <i class="bi bi-shield-check-fill display-4 text-success mb-3"></i>
+                            <h5 class="text-success">¡Excelente!</h5>
+                            <p class="text-muted">No se detectaron bibliotecas vulnerables ni que requieran revisión manual en este proyecto.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Project Recommendations Card -->
     <div class="row dashboard-animate" style="animation-delay: 0.6s;">
         <div class="col-12">
@@ -1171,23 +1374,23 @@
                     <span>Recomendaciones Consolidadas del Proyecto</span>
                 </div>
                 <div class="card-body modern-card-body">
-            {% set vulnerable_libs = [] %}
-            {% for lib in consolidated_libraries %}
-                {% if lib.version and lib.version | check_vulnerability_with_global(lib.latest_safe_version, lib.gl_latest_safe_version) %}
-                    {% set _ = vulnerable_libs.append(lib) %}
-                {% endif %}
-            {% endfor %}
-
-            {% if vulnerable_libs %}
-            <h6 class="text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Prioridad Alta - Vulnerabilidades</h6>
+            {# Use the vulnerable_entries that were already created above #}
+            {% if vulnerable_entries %}
+            <h6 class="text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Prioridad Alta - Todas las Vulnerabilidades ({{ vulnerable_entries|length }})</h6>
             <div class="alert alert-danger">
                 <ul class="mb-0">
-                    {% for lib in vulnerable_libs[:5] %}
-                    <li>Actualizar <strong>{{ lib.library_name }}</strong> desde versión {{ lib.version }} (presente en {{ lib.scan_count }} URLs)</li>
+                    {% for entry in vulnerable_entries %}
+                    <li>
+                        <strong>{{ entry.library_name }}</strong> versión {{ entry.version }}
+                        <br>
+                        <small class="text-muted">
+                            <i class="bi bi-globe me-1"></i>Sitio: <a href="{{ entry.scan_url }}" target="_blank" class="text-dark">{{ entry.scan_url }}</a>
+                            {% if entry.source_url %}
+                            <br><i class="bi bi-file-earmark-code me-1"></i>Archivo: <a href="{{ entry.source_url }}" target="_blank" class="text-dark">{{ entry.source_url }}</a>
+                            {% endif %}
+                        </small>
+                    </li>
                     {% endfor %}
-                    {% if vulnerable_libs|length > 5 %}
-                    <li><em>... y {{ vulnerable_libs|length - 5 }} vulnerabilidades adicionales</em></li>
-                    {% endif %}
                 </ul>
             </div>
             {% endif %}

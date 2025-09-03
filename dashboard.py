@@ -2694,7 +2694,12 @@ def delete_library(library_id):
         conn.close()
 
         flash(f'Librería "{library_name}" eliminada exitosamente!', 'success')
-        return redirect(url_for('scan_detail', scan_id=scan_id) + '#libraries')
+        
+        # Check if request came from asociar-bibliotecas page
+        if request.referrer and 'asociar-bibliotecas' in request.referrer:
+            return redirect(url_for('asociar_bibliotecas'))
+        else:
+            return redirect(url_for('scan_detail', scan_id=scan_id) + '#libraries')
 
     except Exception as e:
         flash(f'Error al eliminar librería: {str(e)}', 'error')
@@ -2889,6 +2894,7 @@ def deduplicate_libraries(all_libraries):
     - Group by library_name and version
     - Keep track of which URLs use each library
     - Maintain vulnerability information
+    - Track source URLs and scan URLs separately
     """
     libraries_dict = {}
     
@@ -2897,14 +2903,22 @@ def deduplicate_libraries(all_libraries):
         
         if key not in libraries_dict:
             lib_dict = dict(lib)
-            lib_dict['used_in_urls'] = [lib['url']]
+            lib_dict['used_in_urls'] = [lib['url']]  # scan URLs
+            lib_dict['source_urls_list'] = [lib['source_url']] if lib['source_url'] else []
             lib_dict['scan_count'] = 1
+            # Add scan_url field for clarity
+            lib_dict['scan_urls'] = [lib['url']]
             libraries_dict[key] = lib_dict
         else:
-            # Add URL to the list if not already present
+            # Add scan URL to the list if not already present
             if lib['url'] not in libraries_dict[key]['used_in_urls']:
                 libraries_dict[key]['used_in_urls'].append(lib['url'])
+                libraries_dict[key]['scan_urls'].append(lib['url'])
                 libraries_dict[key]['scan_count'] += 1
+            
+            # Add source URL if not already present and not null
+            if lib['source_url'] and lib['source_url'] not in libraries_dict[key]['source_urls_list']:
+                libraries_dict[key]['source_urls_list'].append(lib['source_url'])
     
     # Convert back to list and sort
     consolidated = list(libraries_dict.values())
@@ -4474,14 +4488,14 @@ def global_libraries():
     # Get search parameter
     search_query = request.args.get('search', '').strip()
 
-    # Build query with search filter including manual libraries count
+    # Build query with search filter including associated libraries count
     if search_query:
         libraries = conn.execute('''
             SELECT gl.id, gl.library_name, gl.type, gl.latest_safe_version, gl.latest_version,
                    gl.description, gl.vulnerability_info, gl.source_url, gl.created_date, gl.updated_date,
                    COUNT(l.id) as manual_count
             FROM global_libraries gl
-            LEFT JOIN libraries l ON gl.id = l.global_library_id AND l.is_manual = 1
+            LEFT JOIN libraries l ON gl.id = l.global_library_id
             WHERE gl.library_name LIKE ? OR gl.description LIKE ?
             GROUP BY gl.id, gl.library_name, gl.type, gl.latest_safe_version, gl.latest_version,
                      gl.description, gl.vulnerability_info, gl.source_url, gl.created_date, gl.updated_date
@@ -4493,7 +4507,7 @@ def global_libraries():
                    gl.description, gl.vulnerability_info, gl.source_url, gl.created_date, gl.updated_date,
                    COUNT(l.id) as manual_count
             FROM global_libraries gl
-            LEFT JOIN libraries l ON gl.id = l.global_library_id AND l.is_manual = 1
+            LEFT JOIN libraries l ON gl.id = l.global_library_id
             GROUP BY gl.id, gl.library_name, gl.type, gl.latest_safe_version, gl.latest_version,
                      gl.description, gl.vulnerability_info, gl.source_url, gl.created_date, gl.updated_date
             ORDER BY gl.library_name
@@ -4689,25 +4703,52 @@ def delete_global_library(library_id):
 @login_required
 def asociar_bibliotecas():
     conn = get_db_connection()
+    
+    # Get pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 50  # Show 50 libraries per page
+    offset = (page - 1) * per_page
+    
+    # Get total count for pagination
+    total_count = conn.execute('''
+        SELECT COUNT(*) FROM libraries l
+        WHERE l.global_library_id IS NULL
+    ''').fetchone()[0]
+    
+    # Get paginated results
     unassociated_libs = conn.execute('''
-        SELECT l.id, l.library_name, l.version, l.scan_id, s.url
+        SELECT l.id, l.library_name, l.version, l.scan_id, s.url, l.is_manual
         FROM libraries l
         JOIN scans s ON l.scan_id = s.id
-        WHERE l.is_manual = 1 AND l.global_library_id IS NULL
+        WHERE l.global_library_id IS NULL
         ORDER BY s.scan_date DESC, l.library_name
-    ''').fetchall()
+        LIMIT ? OFFSET ?
+    ''', (per_page, offset)).fetchall()
 
     global_libraries = conn.execute('SELECT id, library_name, type FROM global_libraries ORDER BY library_name').fetchall()
     conn.close()
+    
+    # Create pagination object
+    pagination = {
+        'page': page,
+        'per_page': per_page,
+        'total': total_count,
+        'total_pages': (total_count + per_page - 1) // per_page,
+        'has_prev': page > 1,
+        'has_next': page < (total_count + per_page - 1) // per_page,
+        'prev_num': page - 1 if page > 1 else None,
+        'next_num': page + 1 if page < (total_count + per_page - 1) // per_page else None
+    }
 
     return render_template('asociar_bibliotecas.html',
                            unassociated_libs=unassociated_libs,
-                           global_libraries=global_libraries)
+                           global_libraries=global_libraries,
+                           pagination=pagination)
 
 @app.route('/global-library/<int:global_lib_id>/manual-libraries')
 @login_required
 def global_library_manual_libraries(global_lib_id):
-    """Show all manual libraries associated with a specific global library"""
+    """Show all libraries (manual and automatic) associated with a specific global library"""
     conn = get_db_connection()
 
     # Get global library info
@@ -4722,16 +4763,16 @@ def global_library_manual_libraries(global_lib_id):
         flash('Biblioteca global no encontrada', 'error')
         return redirect(url_for('global_libraries'))
 
-    # Get all manual libraries associated with this global library
+    # Get all libraries (manual and automatic) associated with this global library
     manual_libraries = conn.execute('''
         SELECT l.id, l.library_name, l.version, l.type, l.source_url,
                l.description, l.latest_safe_version, l.latest_version,
-               s.id as scan_id, s.url, s.title, s.scan_date,
+               l.is_manual, s.id as scan_id, s.url, s.title, s.scan_date,
                c.name as project_name, c.id as project_id
         FROM libraries l
         INNER JOIN scans s ON l.scan_id = s.id
         LEFT JOIN projects c ON s.project_id = c.id
-        WHERE l.global_library_id = ? AND l.is_manual = 1
+        WHERE l.global_library_id = ?
         ORDER BY s.scan_date DESC, l.library_name
     ''', (global_lib_id,)).fetchall()
 
@@ -5087,7 +5128,7 @@ def project_detail(project_id):
     projects = conn.execute('SELECT id, name FROM projects WHERE is_active = 1 ORDER BY name').fetchall()
 
     conn.close()
-    return render_template('project_detail.html', project=project, scans=scans, stats=stats, projects=projects)
+    return render_template('project_detail.html', project=project, scans=scans, stats=stats, projects=projects, all_projects=projects)
 
 @app.route('/export-project-data/<int:project_id>/<format>')
 @login_required

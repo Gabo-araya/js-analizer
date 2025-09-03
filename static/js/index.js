@@ -119,3 +119,29 @@ document.addEventListener('visibilitychange', function() {
 setTimeout(function() {
     hideLoadingOverlay();
 }, 300000); // 5 minutes
+
+// Handle bulk edit project button
+document.addEventListener('DOMContentLoaded', function() {
+    const bulkEditBtn = document.getElementById('bulk-edit-project-btn');
+    const bulkEditModal = document.getElementById('bulkEditProjectModal');
+    
+    if (bulkEditBtn && bulkEditModal) {
+        bulkEditModal.addEventListener('show.bs.modal', function(event) {
+            // Get all selected scan IDs
+            const checkedBoxes = document.querySelectorAll('.scan-checkbox:checked');
+            const scanIds = Array.from(checkedBoxes).map(cb => cb.value);
+            
+            // Update hidden input with scan IDs
+            const scanIdsInput = document.getElementById('bulkScanIds');
+            if (scanIdsInput) {
+                scanIdsInput.value = scanIds.join(',');
+            }
+            
+            // Update selected count display
+            const selectedCountSpan = document.getElementById('bulkSelectedCount');
+            if (selectedCountSpan) {
+                selectedCountSpan.textContent = scanIds.length;
+            }
+        });
+    }
+});

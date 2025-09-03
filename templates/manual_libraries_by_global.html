@@ -20,7 +20,7 @@ global_library.library_name }}{% endblock %} {% block content %}
                 <div>
                     <h2>
                         <i class="bi bi-link-45deg"></i>
-                        Bibliotecas Manuales Asociadas
+                        Bibliotecas Asociadas
                     </h2>
                     <div class="card bg-light">
                         <div class="card-body">
@@ -83,18 +83,44 @@ global_library.library_name }}{% endblock %} {% block content %}
 
             <!-- Statistics Cards -->
             <div class="row mb-4">
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="card border-primary">
                         <div class="card-body text-center">
                             <i class="bi bi-list-ul display-6 text-primary"></i>
                             <h4 class="mt-2">{{ manual_libraries|length }}</h4>
                             <small class="text-muted"
-                                >Total Bibliotecas Manuales</small
+                                >Total Bibliotecas</small
                             >
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
+                    <div class="card border-primary">
+                        <div class="card-body text-center">
+                            <i class="bi bi-person-plus display-6 text-primary"></i>
+                            <h4 class="mt-2">
+                                {{ manual_libraries|selectattr('is_manual')|list|length }}
+                            </h4>
+                            <small class="text-muted"
+                                >Manuales</small
+                            >
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card border-info">
+                        <div class="card-body text-center">
+                            <i class="bi bi-cpu display-6 text-info"></i>
+                            <h4 class="mt-2">
+                                {{ manual_libraries|rejectattr('is_manual')|list|length }}
+                            </h4>
+                            <small class="text-muted"
+                                >Automáticas</small
+                            >
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
                     <div class="card border-danger">
                         <div class="card-body text-center">
                             <i
@@ -106,12 +132,12 @@ global_library.library_name }}{% endblock %} {% block content %}
                                 }}
                             </h4>
                             <small class="text-muted"
-                                >Con Vulnerabilidades</small
+                                >Vulnerables</small
                             >
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="card border-success">
                         <div class="card-body text-center">
                             <i
@@ -123,21 +149,21 @@ global_library.library_name }}{% endblock %} {% block content %}
                                 }}
                             </h4>
                             <small class="text-muted"
-                                >Sin Vulnerabilidades</small
+                                >Seguras</small
                             >
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card border-info">
+                <div class="col-md-2">
+                    <div class="card border-warning">
                         <div class="card-body text-center">
-                            <i class="bi bi-building display-6 text-info"></i>
+                            <i class="bi bi-building display-6 text-warning"></i>
                             <h4 class="mt-2">
                                 {{
-                                manual_libraries|map(attribute='e_name')|unique|list|length
+                                manual_libraries|map(attribute='project_name')|unique|list|length
                                 }}
                             </h4>
-                            <small class="text-muted">Proyectos Únicos</small>
+                            <small class="text-muted">Proyectos</small>
                         </div>
                     </div>
                 </div>
@@ -148,7 +174,7 @@ global_library.library_name }}{% endblock %} {% block content %}
                 <div class="card-header bg-white">
                     <h5 class="mb-0">
                         <i class="bi bi-list-task"></i>
-                        Lista de Bibliotecas Manuales ({{
+                        Lista de Bibliotecas ({{
                         manual_libraries|length }})
                     </h5>
                 </div>
@@ -160,6 +186,7 @@ global_library.library_name }}{% endblock %} {% block content %}
                                 <tr>
                                     <th>Biblioteca</th>
                                     <th>Versión Actual</th>
+                                    <th>Tipo</th>
                                     <th>Estado</th>
                                     <th>Escaneo</th>
                                     <th>Proyecto</th>
@@ -201,6 +228,17 @@ global_library.library_name }}{% endblock %} {% block content %}
                                         <span class="text-muted"
                                             >No especificada</span
                                         >
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if lib.is_manual %}
+                                        <span class="badge bg-primary">
+                                            <i class="bi bi-person-plus"></i> Manual
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-cpu"></i> Automática
+                                        </span>
                                         {% endif %}
                                     </td>
                                     <td>
@@ -284,9 +322,9 @@ global_library.library_name }}{% endblock %} {% block content %}
                     {% else %}
                     <div class="text-center p-5">
                         <i class="bi bi-link-45deg display-4 text-muted"></i>
-                        <h5 class="mt-3">Sin Bibliotecas Manuales Asociadas</h5>
+                        <h5 class="mt-3">Sin Bibliotecas Asociadas</h5>
                         <p class="text-muted mb-4">
-                            No hay bibliotecas manuales asociadas a "{{
+                            No hay bibliotecas asociadas a "{{
                             global_library.library_name }}" en este momento.
                         </p>
                         <div

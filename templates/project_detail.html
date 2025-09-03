@@ -230,10 +230,26 @@
                 </div>
                 <div class="card-body p-0">
                     {% if scans %}
+                    <!-- Bulk Actions Bar -->
+                    <div class="p-3 border-bottom" id="bulkActionsBar" style="display: none">
+                        <div class="d-flex gap-2 align-items-center">
+                            <span class="text-muted">
+                                <span id="selectedCount">0</span> escaneos seleccionados
+                            </span>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    id="bulk-edit-project-btn"
+                                    data-bs-toggle="modal" data-bs-target="#bulkEditProjectModal">
+                                <i class="bi bi-pencil"></i> Cambiar Proyecto
+                            </button>
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
+                                    <th scope="col" width="30">
+                                        <input type="checkbox" id="selectAllScans" class="form-check-input" />
+                                    </th>
                                     <th>URL</th>
                                     <th>Estado</th>
                                     <th>Conteos</th>
@@ -244,6 +260,9 @@
                             <tbody>
                                 {% for scan in scans %}
                                 <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input scan-checkbox" value="{{ scan.id }}" />
+                                    </td>
                                     <td>
                                         <div class="fw-bold">
                                             <a href="/scan/{{ scan.id }}#libraries" class="" title="Ver detalles">{{ (scan.title or 'Sin título')|e }}
@@ -654,6 +673,46 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
+<!-- Bulk Edit Project Modal -->
+<div class="modal fade" id="bulkEditProjectModal" tabindex="-1" aria-labelledby="bulkEditProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkEditProjectModalLabel">
+                    <i class="bi bi-pencil"></i> Cambiar Proyecto de Múltiples Escaneos
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form method="POST" action="/bulk-update-scan-project" id="bulkEditProjectForm">
+                <input type="hidden" name="csrf_token" id="bulk_edit_project_csrf" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="scan_ids" id="bulkScanIds" value=""/>
+                <input type="hidden" name="return_url" value="{{ request.url }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="bulkProjectSelect" class="form-label">Nuevo Proyecto</label>
+                        <select class="form-select" id="bulkProjectSelect" name="project_id">
+                            <option value="">Sin proyecto específico</option>
+                            {% for project in all_projects %}
+                            <option value="{{ project.id }}">{{ project.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            Selecciona el nuevo proyecto para todos los escaneos seleccionados.
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Escaneos seleccionados:</strong> <span id="bulkSelectedCount">0</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Actualizar Proyecto de Todos</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 // Handle edit scan project modal
 document.addEventListener('DOMContentLoaded', function() {
@@ -676,6 +735,69 @@ document.addEventListener('DOMContentLoaded', function() {
         const projectSelect = document.getElementById('scanProjectSelect');
         projectSelect.value = currentProjectId || '';
     });
+
+    // Bulk actions functionality
+    const selectAllCheckbox = document.getElementById("selectAllScans");
+    const scanCheckboxes = document.querySelectorAll(".scan-checkbox");
+    const bulkActionsBar = document.getElementById("bulkActionsBar");
+    const selectedCountSpan = document.getElementById("selectedCount");
+
+    // Handle select all checkbox
+    selectAllCheckbox.addEventListener("change", function () {
+        scanCheckboxes.forEach((checkbox) => {
+            checkbox.checked = this.checked;
+        });
+        updateBulkActionsVisibility();
+    });
+
+    // Handle individual checkboxes
+    scanCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", function () {
+            updateSelectAllState();
+            updateBulkActionsVisibility();
+        });
+    });
+
+    function updateSelectAllState() {
+        const checkedCount = document.querySelectorAll(".scan-checkbox:checked").length;
+        const totalCount = scanCheckboxes.length;
+
+        selectAllCheckbox.checked = checkedCount === totalCount;
+        selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < totalCount;
+    }
+
+    function updateBulkActionsVisibility() {
+        const checkedCount = document.querySelectorAll(".scan-checkbox:checked").length;
+        selectedCountSpan.textContent = checkedCount;
+
+        if (checkedCount > 0) {
+            bulkActionsBar.style.display = "block";
+        } else {
+            bulkActionsBar.style.display = "none";
+        }
+    }
+
+    // Handle bulk edit project modal
+    const bulkEditModal = document.getElementById('bulkEditProjectModal');
+    if (bulkEditModal) {
+        bulkEditModal.addEventListener('show.bs.modal', function(event) {
+            // Get all selected scan IDs
+            const checkedBoxes = document.querySelectorAll('.scan-checkbox:checked');
+            const scanIds = Array.from(checkedBoxes).map(cb => cb.value);
+            
+            // Update hidden input with scan IDs
+            const scanIdsInput = document.getElementById('bulkScanIds');
+            if (scanIdsInput) {
+                scanIdsInput.value = scanIds.join(',');
+            }
+            
+            // Update selected count display
+            const selectedCountSpan = document.getElementById('bulkSelectedCount');
+            if (selectedCountSpan) {
+                selectedCountSpan.textContent = scanIds.length;
+            }
+        });
+    }
 });
 </script>
 
