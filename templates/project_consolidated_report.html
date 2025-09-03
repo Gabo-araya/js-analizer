@@ -1286,73 +1286,7 @@
                         </div>
                         {% endif %}
 
-                        <!-- Unknown/Manual Review Libraries Section -->
-                        {% if unknown_entries %}
-                        <div class="mb-3">
-                            <h5 class="text-warning mb-3">
-                                <i class="bi bi-question-circle-fill me-2"></i>
-                                Bibliotecas que Requieren Revisión Manual ({{ unknown_entries|length }})
-                                <small class="text-muted">- Sin Información de Vulnerabilidades</small>
-                            </h5>
-                            <div class="table-responsive">
-                                <table class="library-table">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 25%">Sitio Escaneado</th>
-                                            <th style="width: 20%">Biblioteca</th>
-                                            <th style="width: 10%">Versión Actual</th>
-                                            <th style="width: 15%">Estado</th>
-                                            <th style="width: 30%">Archivo Fuente</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for entry in unknown_entries %}
-                                        <tr class="status-unknown">
-                                            <td>
-                                                <div class="mb-1">
-                                                    <i class="bi bi-globe text-info me-1"></i>
-                                                    <a href="{{ entry.scan_url }}" target="_blank" class="text-decoration-none" style="font-size: 0.85rem; word-break: break-all;">
-                                                        {{ entry.scan_url }}
-                                                    </a>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <strong class="text-warning">{{ entry.library_name }}</strong>
-                                                {% if entry.description %}
-                                                <br><small class="text-muted">{{ entry.description }}</small>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                <span class="modern-badge warning">
-                                                    <i class="bi bi-question-circle"></i>
-                                                    {{ entry.version or 'Desconocida' }}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="modern-badge warning">
-                                                    <i class="bi bi-search"></i>
-                                                    Revisar Manualmente
-                                                </span>
-                                            </td>
-                                            <td>
-                                                {% if entry.source_url %}
-                                                    <div class="mb-1">
-                                                        <i class="bi bi-file-earmark-code text-primary me-1"></i>
-                                                        <a href="{{ entry.source_url }}" target="_blank" class="text-decoration-none" style="font-size: 0.85rem; word-break: break-all;">
-                                                            {{ entry.source_url }}
-                                                        </a>
-                                                    </div>
-                                                {% else %}
-                                                    <span class="text-muted">URL no disponible</span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        {% endif %}
+
                     {% else %}
                         <div class="text-center p-4">
                             <i class="bi bi-shield-check-fill display-4 text-success mb-3"></i>

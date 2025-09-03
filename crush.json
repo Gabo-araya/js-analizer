@@ -1,0 +1,18 @@
+{
+  "$schema": "https://charm.land/crush.json",
+  "providers": {
+    "ollama": {
+      "name": "Ollama",
+      "base_url": "http://localhost:11434/",
+      "type": "openai",
+      "models": [
+        {
+          "name": "hf.co/unsloth/Qwen2.5-Coder-3B-Instruct-128K-GGUF:Q5_K_M",
+          "id": "a174b1c5f13d",
+          "context_window": 32768,
+          "default_max_tokens": 10000
+        }
+      ]
+    }
+  }
+}
